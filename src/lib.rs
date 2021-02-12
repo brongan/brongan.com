@@ -2,32 +2,17 @@ extern crate rand;
 
 use image::{DynamicImage, Rgba, RgbaImage};
 use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut};
+use rand::distributions::uniform::Uniform;
+use rand::distributions::Distribution;
 use rand::seq::SliceRandom;
-use rand::Rng;
 use rusttype::{point, Font, Scale};
 use std::fmt;
 
 mod color;
-
 use color::{hex_color, Color};
 
-#[derive(Debug, PartialEq, Default)]
-struct Point2D {
-    x: i32,
-    y: i32,
-}
-
-impl Point2D {
-    fn distance(&self, other: &Point2D) -> f64 {
-        (((other.x - self.x).pow(2) + (other.y - self.y).pow(2)) as f64).sqrt()
-    }
-}
-
-impl fmt::Display for Point2D {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}, {})", self.x, self.y)
-    }
-}
+mod point2d;
+use point2d::Point2D;
 
 enum IshiharaColor {
     Inside,
@@ -54,6 +39,8 @@ const RED_GREEN_INSIDE: &[&str] = &[
 //Dark Green, Green, Light Green
 const RED_GREEN_OUTSIDE: &[&str] = &["#5a8a50", "#a2ab5a", "#c9cc7d"];
 
+const FONT_SCALE: f32 = 256.0;
+
 impl Circle {
     const MAX_RADIUS: f64 = 6.9;
     const MIN_RADIUS: f64 = 3.0;
@@ -62,14 +49,17 @@ impl Circle {
         let goal_area = Circle::GOAL_AREA_RATIO * x as f64 * y as f64;
         let mut circles: Vec<Circle> = Vec::new();
         let mut area: f64 = 0.0;
+        let uniform = Uniform::new(
+            Point2D { x: 0, y: 0 },
+            Point2D {
+                x: x as i32,
+                y: y as i32,
+            },
+        );
 
         //Create circles with random coordinates and radii with size based on its distance from the closest circle
         while area < goal_area {
-            let candidate_point = Point2D {
-                x: rng.gen_range(0..x) as i32,
-                y: rng.gen_range(0..y) as i32,
-            };
-
+            let candidate_point = uniform.sample(rng);
             if let Some(radius) = max_allowed_radius(&candidate_point, &circles, rng) {
                 area += std::f64::consts::PI * radius.powi(2) as f64;
                 let new_circle = Circle {
@@ -128,7 +118,7 @@ fn max_allowed_radius(
 fn render_text(text: &str) -> RgbaImage {
     let font_data = include_bytes!("../resources/fonts/Roboto-Regular.ttf");
     let font = Font::try_from_bytes(font_data as &[u8]).expect("Error constructing Font");
-    let scale = Scale::uniform(256.0);
+    let scale = Scale::uniform(FONT_SCALE);
     let color = Color {
         red: 0,
         green: 0,
