@@ -2,41 +2,20 @@ extern crate fixedbitset;
 extern crate rand;
 extern crate web_sys;
 mod utils;
+mod webgl;
 
 use rand::distributions::{Bernoulli, Distribution};
 use rand::thread_rng;
 use std::default::Default;
+use utils::Timer;
 use wasm_bindgen::prelude::*;
+use web_sys::HtmlCanvasElement;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-// A macro to provide `println!(..)`-style syntax for `console.log` logging.
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
-
-pub struct Timer<'a> {
-    name: &'a str,
-}
-
-impl<'a> Timer<'a> {
-    pub fn new(name: &'a str) -> Timer<'a> {
-        web_sys::console::time_with_label(name);
-        Timer { name }
-    }
-}
-
-impl<'a> Drop for Timer<'a> {
-    fn drop(&mut self) {
-        web_sys::console::time_end_with_label(self.name);
-    }
-}
 
 #[wasm_bindgen]
 pub fn set_panic_hook() {
@@ -67,6 +46,20 @@ pub struct Universe {
     height: u32,
     cells: Vec<Cell>,
     _next: Vec<Cell>,
+}
+
+#[wasm_bindgen]
+pub struct WebGLRenderer {
+    canvas: HtmlCanvasElement,
+    universe: Universe,
+}
+
+#[wasm_bindgen]
+impl Universe {
+    /// Get the dead and alive values of the entire universe.
+    pub fn get_cells(&self) -> *const Cell {
+        self.cells.as_ptr()
+    }
 }
 
 impl Universe {
@@ -115,11 +108,6 @@ impl Universe {
         let se = self.get_index(south, east);
         count += self.cells[se] as u8;
         count
-    }
-
-    /// Get the dead and alive values of the entire universe.
-    pub fn get_cells(&self) -> *const Cell {
-        self.cells.as_ptr()
     }
 
     /// Set cells to be alive in a universe by passing the row and column
