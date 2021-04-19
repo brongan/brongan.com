@@ -1,14 +1,59 @@
 use crate::log;
+use crate::Cell;
 use crate::{Universe, WebGLRenderer};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{HtmlCanvasElement, WebGlProgram, WebGlRenderingContext, WebGlShader};
+use web_sys::{HtmlCanvasElement, WebGlProgram, WebGlRenderingContext, WebGlShader, WebGlTexture};
 
 impl WebGLRenderer {
-    const CELL_SIZE: u32 = 5;
+    const CELL_SIZE: u32 = 25;
     const _GRID_COLOR: &'static str = "#CCCCCC";
     const _DEAD_COLOR: &'static str = "#FFFFFF";
     const _ALIVE_COLOR: &'static str = "#000000";
+
+    pub fn get_texture(&self, context: &WebGlRenderingContext) -> Option<WebGlTexture> {
+        let texture = context.create_texture();
+        context.bind_texture(WebGlRenderingContext::TEXTURE_2D, texture.as_ref());
+        let level = 0;
+        let internal_format = WebGlRenderingContext::RGBA;
+        let width = self.universe.width;
+        let height = self.universe.height;
+        let border = 0;
+        let src_format = WebGlRenderingContext::RGBA;
+        let src_type = WebGlRenderingContext::UNSIGNED_BYTE;
+        let pixel = &self.universe.cells;
+        log!(
+            "Width: {}, Height: {} Pixel size: {}",
+            width,
+            height,
+            pixel.len()
+        );
+
+        let pixel: Vec<u8> = self
+            .universe
+            .cells
+            .iter()
+            .map(|x| match x {
+                Cell::Alive => 255,
+                Cell::Dead => 0,
+            })
+            .collect();
+
+        context
+            .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+                WebGlRenderingContext::TEXTURE_2D,
+                level,
+                internal_format as i32,
+                width as i32,
+                height as i32,
+                border,
+                src_format,
+                src_type,
+                Some(pixel.as_slice()),
+            )
+            .ok()?;
+        texture
+    }
 }
 
 #[wasm_bindgen]
@@ -56,23 +101,19 @@ impl WebGLRenderer {
             uniform float vpw; // Width, in pixels
             uniform float vph; // Height, in pixels
 
-            uniform vec2 offset;
-            uniform vec2 pitch;
+            uniform vec2 offset; // offsets are for nerds
+            uniform vec2 pitch; // idk like the cell size or something
+
+            uniform sampler2D uSampler; // give me cells
 
             void main() {
-              float lX = gl_FragCoord.x / vpw;
-              float lY = gl_FragCoord.y / vph;
+              float newX = (vpw) * (gl_FragCoord.x);
+              float newY = (vph) * (gl_FragCoord.y);
 
-              float scaleFactor = 10000.0;
-
-              float offX = (scaleFactor * offset[0]) + gl_FragCoord.x;
-              float offY = (scaleFactor * offset[1]) + (1.0 - gl_FragCoord.y);
-
-              if (int(mod(offX, pitch[0])) == 0 ||
-                  int(mod(offY, pitch[1])) == 0) {
+              if (int(mod(newX, pitch[0])) == 0 || int(mod(newY, pitch[1])) == 0) {
                 gl_FragColor = vec4(0.0, 0.0, 0.0, 0.5);
               } else {
-                gl_FragColor = vec4(0.5, 0.0, 0.0, 1.0);
+                gl_FragColor = texture2D(uSampler, (gl_FragCoord.xy + 1.0) / 2.0);
               }
             }
     "#,
@@ -81,13 +122,32 @@ impl WebGLRenderer {
         let program = link_program(&context, &vert_shader, &frag_shader)?;
         context.use_program(Some(&program));
         let pitch_loc = context.get_uniform_location(&program, "pitch");
-        context.uniform2fv_with_f32_array(pitch_loc.as_ref(), &[50.0, 50.0]);
+        context.uniform2fv_with_f32_array(
+            pitch_loc.as_ref(),
+            &[
+                (WebGLRenderer::CELL_SIZE + 1) as f32,
+                (WebGLRenderer::CELL_SIZE + 1) as f32,
+            ],
+        );
         let offset_loc = context.get_uniform_location(&program, "offset");
-        context.uniform2fv_with_f32_array(offset_loc.as_ref(), &[0.0, 1.0]);
+        context.uniform2fv_with_f32_array(offset_loc.as_ref(), &[1.0, 1.0]);
         let vpw_loc = context.get_uniform_location(&program, "vpw");
         context.uniform1f(vpw_loc.as_ref(), self.canvas.width() as f32);
         let vph_loc = context.get_uniform_location(&program, "vph");
         context.uniform1f(vph_loc.as_ref(), self.canvas.height() as f32);
+        let usampler_loc = context.get_uniform_location(&program, "uSampler");
+
+        // Tell WebGL we want to affect texture unit 0
+        context.active_texture(WebGlRenderingContext::TEXTURE0);
+
+        // Bind the texture to texture unit 0
+        context.bind_texture(
+            WebGlRenderingContext::TEXTURE_2D,
+            self.get_texture(&context).as_ref(),
+        );
+
+        // Tell the shader we bound the texture to texture unit 0
+        context.uniform1i(usampler_loc.as_ref(), 0);
 
         let vertices: [f32; 12] = [
             1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0,
