@@ -23,6 +23,7 @@ pub fn set_panic_hook() {
     utils::set_panic_hook();
 }
 
+#[wasm_bindgen]
 #[derive(Default)]
 pub struct Universe {
     width: u32,
@@ -35,18 +36,7 @@ pub struct Universe {
 pub struct WebGLRenderer {
     canvas: HtmlCanvasElement,
     universe: Universe,
-}
-
-#[wasm_bindgen]
-impl Universe {
-    pub fn get_cell_texture(&self) -> [u8] {
-        self.cells
-            .map(|cell| match cell {
-                true => [0, 0, 0],
-                false => [1, 1, 1],
-            })
-            .collect()
-    }
+    texture: Vec<u8>,
 }
 
 impl Universe {
@@ -125,13 +115,12 @@ impl fmt::Display for Universe {
     }
 }
 
-/// Public methods, exported to JavaScript.
-// #[wasm_bindgen]
+#[wasm_bindgen]
 impl Universe {
     pub fn tick(&mut self) {
-        //       let _timer = Timer::new("Universe::tick");
+        let _timer = Timer::new("Universe::tick");
         {
-            // let _timer = Timer::new("new generation");
+            let _timer = Timer::new("new generation");
             for row in 0..self.height {
                 for col in 0..self.width {
                     let idx = self.get_index(row, col);
@@ -159,7 +148,7 @@ impl Universe {
                 }
             }
         }
-        //        let _timer = Timer::new("swap cells");
+        let _timer = Timer::new("swap cells");
         std::mem::swap(&mut self.cells, &mut self._next);
     }
 
@@ -211,6 +200,10 @@ impl Universe {
         log!("Toggling Cell at: ({}, {})", row, column);
         let idx = self.get_index(row, column);
         self.cells.toggle(idx);
+    }
+
+    pub fn is_alive(&self, idx: usize) -> bool {
+        self.cells.contains(idx)
     }
 
     pub fn insert_pulsar(&mut self, row: u32, column: u32) {
