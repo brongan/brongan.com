@@ -1,17 +1,33 @@
 use crate::log;
-use crate::Cell;
 use crate::{Universe, WebGLRenderer};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{HtmlCanvasElement, WebGlProgram, WebGlRenderingContext, WebGlShader, WebGlTexture};
 
 impl WebGLRenderer {
-    const CELL_SIZE: u32 = 25;
+    const CELL_SIZE: u32 = 8;
     const _GRID_COLOR: &'static str = "#CCCCCC";
     const _DEAD_COLOR: &'static str = "#FFFFFF";
     const _ALIVE_COLOR: &'static str = "#000000";
 
-    pub fn get_texture(&self, context: &WebGlRenderingContext) -> Option<WebGlTexture> {
+    pub fn get_cell_texture(&mut self) -> &[u8] {
+        for elem in self.texture.iter_mut() {
+            *elem = 0;
+        }
+
+        for i in 0..self.universe.cells.len() as usize {
+            if self.universe.is_alive(i) {
+            } else {
+                self.texture[4 * i] = 255;
+                self.texture[4 * i + 1] = 255;
+                self.texture[4 * i + 2] = 255;
+            }
+            self.texture[4 * i + 3] = 255;
+        }
+        self.texture.as_slice()
+    }
+
+    pub fn get_texture(&mut self, context: &WebGlRenderingContext) -> Option<WebGlTexture> {
         let texture = context.create_texture();
         context.bind_texture(WebGlRenderingContext::TEXTURE_2D, texture.as_ref());
         let level = 0;
@@ -21,24 +37,8 @@ impl WebGLRenderer {
         let border = 0;
         let src_format = WebGlRenderingContext::RGBA;
         let src_type = WebGlRenderingContext::UNSIGNED_BYTE;
-        let pixel = &self.universe.cells;
-        log!(
-            "Width: {}, Height: {} Pixel size: {}",
-            width,
-            height,
-            pixel.len()
-        );
-
-        let pixel: Vec<u8> = self
-            .universe
-            .cells
-            .iter()
-            .map(|x| match x {
-                Cell::Alive => 255,
-                Cell::Dead => 0,
-            })
-            .collect();
-
+        let pixel = self.get_cell_texture();
+        assert!(pixel.len() == (width * height * 4) as usize);
         context
             .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
                 WebGlRenderingContext::TEXTURE_2D,
@@ -49,7 +49,7 @@ impl WebGLRenderer {
                 border,
                 src_format,
                 src_type,
-                Some(pixel.as_slice()),
+                Some(pixel),
             )
             .ok()?;
         texture
@@ -64,17 +64,22 @@ impl WebGLRenderer {
 
         canvas.set_height((WebGLRenderer::CELL_SIZE + 1) * universe.height + 1);
         canvas.set_width((WebGLRenderer::CELL_SIZE + 1) * universe.width + 1);
+        let size = universe.cells.len();
+        let texture: Vec<u8> = vec![0; size * 4];
 
-        WebGLRenderer { canvas, universe }
+        WebGLRenderer {
+            canvas,
+            universe,
+            texture,
+        }
     }
 
-    pub fn render(&self) -> Result<(), JsValue> {
-        log!(
-            "Rendering Universe ({}, {}) with WebGL!",
-            self.universe.width,
-            self.universe.height
-        );
+    pub fn tick(&mut self) -> Result<(), JsValue> {
+        self.universe.tick();
+        Ok(())
+    }
 
+    pub fn render(&mut self) -> Result<(), JsValue> {
         let context = self
             .canvas
             .get_context("webgl")?
@@ -113,7 +118,7 @@ impl WebGLRenderer {
               if (int(mod(newX, pitch[0])) == 0 || int(mod(newY, pitch[1])) == 0) {
                 gl_FragColor = vec4(0.0, 0.0, 0.0, 0.5);
               } else {
-                gl_FragColor = texture2D(uSampler, (gl_FragCoord.xy + 1.0) / 2.0);
+                gl_FragColor = texture2D(uSampler, (gl_FragCoord.xy) / vpw);
               }
             }
     "#,
@@ -146,6 +151,27 @@ impl WebGLRenderer {
             self.get_texture(&context).as_ref(),
         );
 
+        if (self.universe.width & (self.universe.width - 1)) == 0
+            && (self.universe.height & (self.universe.height - 1)) == 0
+        {
+            context.generate_mipmap(WebGlRenderingContext::TEXTURE_2D);
+        } else {
+            context.tex_parameteri(
+                WebGlRenderingContext::TEXTURE_2D,
+                WebGlRenderingContext::TEXTURE_WRAP_S,
+                WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+            );
+            context.tex_parameteri(
+                WebGlRenderingContext::TEXTURE_2D,
+                WebGlRenderingContext::TEXTURE_WRAP_T,
+                WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+            );
+            context.tex_parameteri(
+                WebGlRenderingContext::TEXTURE_2D,
+                WebGlRenderingContext::TEXTURE_MIN_FILTER,
+                WebGlRenderingContext::LINEAR as i32,
+            );
+        }
         // Tell the shader we bound the texture to texture unit 0
         context.uniform1i(usampler_loc.as_ref(), 0);
 
