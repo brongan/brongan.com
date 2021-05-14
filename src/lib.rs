@@ -8,9 +8,11 @@ use fixedbitset::FixedBitSet;
 use rand::distributions::{Bernoulli, Distribution};
 use rand::thread_rng;
 use std::default::Default;
+use std::fmt;
 use utils::Timer;
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlCanvasElement;
+use webgl::WebGLRenderer;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -23,6 +25,63 @@ pub fn set_panic_hook() {
     utils::set_panic_hook();
 }
 
+pub trait UniverseRenderer {
+    fn render(&mut self, universe: &Universe) -> Result<(), JsValue>;
+    fn get_cell_index(&self, x: u32, y: u32) -> (u32, u32);
+}
+
+#[wasm_bindgen]
+pub struct UniverseController {
+    universe: Universe,
+    renderer: Box<dyn UniverseRenderer>,
+}
+
+#[wasm_bindgen]
+impl UniverseController {
+    pub fn new(canvas: HtmlCanvasElement, width: u32, height: u32) -> UniverseController {
+        let renderer = WebGLRenderer::new(canvas, width, height).unwrap();
+        UniverseController {
+            universe: Universe::new(width, height),
+            renderer: Box::new(renderer),
+        }
+    }
+
+    pub fn render(&mut self) -> Result<(), JsValue> {
+        self.renderer.render(&self.universe)
+    }
+
+    pub fn tick(&mut self) {
+        self.universe.tick();
+    }
+
+    pub fn reset(&mut self) -> Result<(), JsValue> {
+        self.universe.reset();
+        self.renderer.render(&self.universe)
+    }
+
+    pub fn kill_all(&mut self) -> Result<(), JsValue> {
+        self.universe.kill_all();
+        self.renderer.render(&self.universe)
+    }
+
+    pub fn toggle_cell(&mut self, x: u32, y: u32) {
+        let (x, y) = self.renderer.get_cell_index(x, y);
+        self.universe.toggle_cell(x, y)
+    }
+
+    pub fn insert_pulsar(&mut self, x: u32, y: u32) -> Result<(), JsValue> {
+        let (x, y) = self.renderer.get_cell_index(x, y);
+        self.universe.insert_pulsar(x, y);
+        self.renderer.render(&self.universe)
+    }
+
+    pub fn insert_glider(&mut self, x: u32, y: u32) -> Result<(), JsValue> {
+        let (x, y) = self.renderer.get_cell_index(x, y);
+        self.universe.insert_glider(x, y);
+        self.renderer.render(&self.universe)
+    }
+}
+
 #[wasm_bindgen]
 #[derive(Default)]
 pub struct Universe {
@@ -33,10 +92,15 @@ pub struct Universe {
 }
 
 #[wasm_bindgen]
-pub struct WebGLRenderer {
-    canvas: HtmlCanvasElement,
-    universe: Universe,
-    texture: Vec<u8>,
+impl Universe {
+    pub fn new(width: u32, height: u32) -> Universe {
+        Universe {
+            width,
+            height,
+            cells: Universe::create_cells(width, height),
+            _next: FixedBitSet::with_capacity((width * height) as usize),
+        }
+    }
 }
 
 impl Universe {
@@ -96,27 +160,7 @@ impl Universe {
             self.cells.set(idx, true);
         }
     }
-}
 
-use std::fmt;
-
-impl fmt::Display for Universe {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for i in 0..self.width * self.height {
-            let symbol = if !self.cells[i as usize] {
-                '◻'
-            } else {
-                '◼'
-            };
-            write!(f, "{}", symbol)?;
-        }
-        writeln!(f)?;
-        Ok(())
-    }
-}
-
-#[wasm_bindgen]
-impl Universe {
     pub fn tick(&mut self) {
         let _timer = Timer::new("Universe::tick");
         {
@@ -150,15 +194,6 @@ impl Universe {
         }
         let _timer = Timer::new("swap cells");
         std::mem::swap(&mut self.cells, &mut self._next);
-    }
-
-    pub fn new(width: u32, height: u32) -> Universe {
-        Universe {
-            width,
-            height,
-            cells: Universe::create_cells(width, height),
-            _next: FixedBitSet::with_capacity((width * height) as usize),
-        }
     }
 
     fn create_cells(width: u32, height: u32) -> FixedBitSet {
@@ -268,5 +303,21 @@ impl Universe {
             let idx = self.get_index(neighbor_row, neighbor_col);
             self.cells.set(idx, value);
         }
+    }
+}
+
+// debug print
+impl fmt::Display for Universe {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for i in 0..self.width * self.height {
+            let symbol = if !self.cells[i as usize] {
+                '◻'
+            } else {
+                '◼'
+            };
+            write!(f, "{}", symbol)?;
+        }
+        writeln!(f)?;
+        Ok(())
     }
 }
