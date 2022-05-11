@@ -1,42 +1,30 @@
 extern crate fixedbitset;
 extern crate rand;
 extern crate web_sys;
-mod utils;
+
 mod webgl;
+mod util;
 
 use fixedbitset::FixedBitSet;
 use rand::distributions::{Bernoulli, Distribution};
 use rand::thread_rng;
 use std::default::Default;
 use std::fmt;
-use utils::Timer;
-use wasm_bindgen::prelude::*;
 use web_sys::HtmlCanvasElement;
-use webgl::WebGLRenderer;
 
-// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
-// allocator.
-#[cfg(feature = "wee_alloc")]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-#[wasm_bindgen]
-pub fn set_panic_hook() {
-    utils::set_panic_hook();
-}
+use crate::utils::Timer;
+use crate::webgl::WebGLRenderer;
 
 pub trait UniverseRenderer {
-    fn render(&mut self, universe: &Universe) -> Result<(), JsValue>;
+    fn render(&mut self, universe: &Universe);
     fn get_cell_index(&self, x: u32, y: u32) -> (u32, u32);
 }
 
-#[wasm_bindgen]
 pub struct UniverseController {
     universe: Universe,
     renderer: Box<dyn UniverseRenderer>,
 }
 
-#[wasm_bindgen]
 impl UniverseController {
     pub fn new(canvas: HtmlCanvasElement, width: u32, height: u32) -> UniverseController {
         let renderer = WebGLRenderer::new(canvas, width, height).unwrap();
@@ -46,7 +34,7 @@ impl UniverseController {
         }
     }
 
-    pub fn render(&mut self) -> Result<(), JsValue> {
+    pub fn render(&mut self)  {
         self.renderer.render(&self.universe)
     }
 
@@ -54,12 +42,12 @@ impl UniverseController {
         self.universe.tick();
     }
 
-    pub fn reset(&mut self) -> Result<(), JsValue> {
+    pub fn reset(&mut self)  {
         self.universe.reset();
         self.renderer.render(&self.universe)
     }
 
-    pub fn kill_all(&mut self) -> Result<(), JsValue> {
+    pub fn kill_all(&mut self)  {
         self.universe.kill_all();
         self.renderer.render(&self.universe)
     }
@@ -69,20 +57,19 @@ impl UniverseController {
         self.universe.toggle_cell(x, y)
     }
 
-    pub fn insert_pulsar(&mut self, x: u32, y: u32) -> Result<(), JsValue> {
+    pub fn insert_pulsar(&mut self, x: u32, y: u32)  {
         let (x, y) = self.renderer.get_cell_index(x, y);
         self.universe.insert_pulsar(x, y);
         self.renderer.render(&self.universe)
     }
 
-    pub fn insert_glider(&mut self, x: u32, y: u32) -> Result<(), JsValue> {
+    pub fn insert_glider(&mut self, x: u32, y: u32)  {
         let (x, y) = self.renderer.get_cell_index(x, y);
         self.universe.insert_glider(x, y);
         self.renderer.render(&self.universe)
     }
 }
 
-#[wasm_bindgen]
 #[derive(Default)]
 pub struct Universe {
     width: u32,
@@ -91,7 +78,6 @@ pub struct Universe {
     _next: FixedBitSet,
 }
 
-#[wasm_bindgen]
 impl Universe {
     pub fn new(width: u32, height: u32) -> Universe {
         Universe {
@@ -206,12 +192,12 @@ impl Universe {
     }
 
     pub fn reset(&mut self) {
-        log!("Resetting Universe");
+        log::info!("Resetting Universe");
         self.cells = Universe::create_cells(self.width, self.height);
     }
 
     pub fn kill_all(&mut self) {
-        log!("Clearing Universe");
+        log::info!("Clearing Universe");
         self.cells.clear();
     }
 
@@ -232,7 +218,7 @@ impl Universe {
     }
 
     pub fn toggle_cell(&mut self, row: u32, column: u32) {
-        log!("Toggling Cell at: ({}, {})", row, column);
+        log::info!("Toggling Cell at: ({}, {})", row, column);
         let idx = self.get_index(row, column);
         self.cells.toggle(idx);
     }
@@ -242,7 +228,7 @@ impl Universe {
     }
 
     pub fn insert_pulsar(&mut self, row: u32, column: u32) {
-        log!("Inserting Pulsar at: ({}, {})", row, column);
+        log::info!("Inserting Pulsar at: ({}, {})", row, column);
         for (delta_row, delta_col, value) in [
             (self.height - 4, 1, true),
             (self.height - 3, 1, true),
@@ -283,7 +269,7 @@ impl Universe {
     }
 
     pub fn insert_glider(&mut self, row: u32, column: u32) {
-        log!("Inserting Glider at: ({}, {})", row, column);
+        log::info!("Inserting Glider at: ({}, {})", row, column);
         for (delta_row, delta_col, value) in [
             (self.height - 1, 1, true),
             (0, 1, true),
@@ -306,7 +292,6 @@ impl Universe {
     }
 }
 
-// debug print
 impl fmt::Display for Universe {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for i in 0..self.width * self.height {
