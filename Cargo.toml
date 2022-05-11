@@ -2,58 +2,43 @@
 name = "wasm-game-of-life"
 version = "0.1.0"
 authors = ["Brennan Tracy <brennantracy4@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[features]
-default = ["console_error_panic_hook"]
-
 [dependencies]
-wasm-bindgen = "0.2.63"
-rand = "0.8.3"
+fixedbitset = "0.4"
 getrandom = { version = "0.2", features = ["js"] }
-fixedbitset = "0.3.2"
-js-sys = "0.3.50"
-
-# The `console_error_panic_hook` crate provides better debugging of panics by
-# logging them with `console.error`. This is great for development, but requires
-# all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
-# code size when deploying.
-console_error_panic_hook = { version = "0.1.6", optional = true }
-
-# `wee_alloc` is a tiny allocator for wasm that is only ~1K in code size
-# compared to the default allocator's ~10K. It is slower than the default
-# allocator, however.
-#
-# Unfortunately, `wee_alloc` requires nightly Rust when targeting wasm for now.
-wee_alloc = { version = "0.4.5", optional = true }
+gloo-render = "0.1"
+js-sys = "0.3"
+log = "0.4"
+rand = "0.8"
+wasm-bindgen = "0.2"
+wasm-logger = "0.2"
+yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
 
 [dev-dependencies]
-wasm-bindgen-test = "0.3.13"
-pprof = { version = "0.3", features = ["flamegraph"] }
-criterion = "0.3"
+criterion = "^0.3"
+pprof = { version = "^0.3", features = ["flamegraph"] }
 
 [profile.release]
-# Tell `rustc` to optimize for small code size.
-opt-level = "s"
-# gimme those unstripped binaries
-debug = true
-
+debug = true # gimme those unstripped binaries
+opt-level = "s" # Tell `rustc` to optimize for small code size.
 
 [dependencies.web-sys]
-version = "0.3.50"
+version = "0.3"
 features = [
   "console",
   'Document',
+  'DomRect',
   'Element',
   'HtmlCanvasElement',
   'WebGlBuffer',
-  'WebGlRenderingContext',
   'WebGlProgram',
+  'WebGlRenderingContext',
   'WebGlShader',
-  'WebGlUniformLocation',
   'WebGlTexture',
+  'WebGlUniformLocation',
   'Window',
 ]

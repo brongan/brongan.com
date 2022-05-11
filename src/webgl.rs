@@ -1,8 +1,6 @@
-use crate::utils::Timer;
-use crate::Universe;
-use crate::{log, UniverseRenderer};
+use crate::Timer;
+use crate::{UniverseRenderer, Universe};
 
-use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{HtmlCanvasElement, WebGlProgram, WebGlRenderingContext, WebGlShader};
 
@@ -32,12 +30,12 @@ impl UniverseRenderer for WebGLRenderer {
         (self.height - 1 - row as u32, col as u32)
     }
 
-    fn render(&mut self, universe: &Universe) -> Result<(), JsValue> {
+    fn render(&mut self, universe: &Universe) {
         let context = self
             .canvas
-            .get_context("webgl")?
+            .get_context("webgl").unwrap()
             .unwrap()
-            .dyn_into::<WebGlRenderingContext>()?;
+            .dyn_into::<WebGlRenderingContext>().unwrap();
 
         let _timer = Timer::new("Rendering Frame");
         self.update_texture(&context, universe);
@@ -46,7 +44,7 @@ impl UniverseRenderer for WebGLRenderer {
             1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0,
         ];
 
-        let buffer = context.create_buffer().ok_or("failed to create buffer")?;
+        let buffer = context.create_buffer().ok_or("failed to create buffer").unwrap();
         context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
 
         context.use_program(Some(&self.program));
@@ -80,8 +78,6 @@ impl UniverseRenderer for WebGLRenderer {
             0,
             (vertices.len() / 3) as i32,
         );
-
-        Ok(())
     }
 }
 
@@ -159,7 +155,7 @@ impl WebGLRenderer {
         canvas: HtmlCanvasElement,
         width: u32,
         height: u32,
-    ) -> Result<WebGLRenderer, JsValue> {
+    ) -> Option<WebGLRenderer> {
         canvas.set_height((WebGLRenderer::CELL_SIZE + 1) * height + 1);
         canvas.set_width((WebGLRenderer::CELL_SIZE + 1) * width + 1);
 
@@ -167,9 +163,9 @@ impl WebGLRenderer {
         let texture: Vec<u8> = vec![0; size * 4];
 
         let context = canvas
-            .get_context("webgl")?
+            .get_context("webgl").unwrap()
             .unwrap()
-            .dyn_into::<WebGlRenderingContext>()?;
+            .dyn_into::<WebGlRenderingContext>().unwrap();
 
         let vert_shader = compile_shader(
             &context,
@@ -181,7 +177,7 @@ impl WebGLRenderer {
               gl_Position = aVertexPosition;
             }
     "#,
-        )?;
+        ).unwrap();
 
         let frag_shader = compile_shader(
             &context,
@@ -207,9 +203,9 @@ impl WebGLRenderer {
               }
             }
     "#,
-        )?;
+        ).unwrap();
 
-        let program = link_program(&context, &vert_shader, &frag_shader)?;
+        let program = link_program(&context, &vert_shader, &frag_shader).unwrap();
         context.use_program(Some(&program));
         let pitch_loc = context.get_uniform_location(&program, "pitch");
         context.uniform2fv_with_f32_array(
@@ -237,7 +233,7 @@ impl WebGLRenderer {
         let webgl_texture = context.create_texture();
         context.bind_texture(WebGlRenderingContext::TEXTURE_2D, webgl_texture.as_ref());
 
-        Ok(WebGLRenderer {
+        Some(WebGLRenderer {
             canvas,
             program,
             width,
@@ -252,7 +248,7 @@ pub fn compile_shader(
     shader_type: u32,
     source: &str,
 ) -> Result<WebGlShader, String> {
-    log!("Compiling Shader");
+    log::info!("Compiling Shader");
     let shader = context
         .create_shader(shader_type)
         .ok_or_else(|| String::from("Unable to create shader object"))?;
