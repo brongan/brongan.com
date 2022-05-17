@@ -1,64 +1,156 @@
-use gloo_render::{request_animation_frame, AnimationFrame};
+use gloo_timers::callback::Interval;
 use web_sys::HtmlCanvasElement;
-use yew::html::Scope;
+use wasm_bindgen::JsCast;
+use wasm_bindgen::UnwrapThrowExt;
+use yew::events::Event;
 use yew::{html, Component, Context, Html, NodeRef};
+use gloo_events::EventListener;
+use wasm_game_of_life::{Universe, UniverseRenderer, WebGLRenderer};
 
-use crate::UniverseController;
 pub enum Msg {
-    Render(f64)
+    Reset,
+    Tick,
+    Start,
+    Stop,
+    KillAll,
+    ToggleCell(u32, u32),
+    InsertGlider(u32, u32),
+    InsertPulsar(u32, u32),
 }
 
 pub struct GameOfLifeModel {
-    controller: Option<UniverseController>,
+    renderer: Option<Box<dyn UniverseRenderer>>,
+    universe: Universe,
+    width: u32,
+    height: u32,
     node_ref: NodeRef,
-    _render_loop: Option<AnimationFrame>,
+    _interval: Option<Interval>,
+    _listener: Option<EventListener>,
 }
 
-impl Component for GameOfLifeModel{
+impl Component for GameOfLifeModel {
     type Message = Msg;
     type Properties = ();
 
     fn create(_ctx: &Context<Self>) -> Self {
         log::info!("GameOfLifeModel::create");
+        let node_ref = NodeRef::default();
+        let width = 128;
+        let height = 64;
+
         Self {
-            controller: None,
-            node_ref: NodeRef::default(),
-            _render_loop: None,
-        }
-    }
-
-    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
-        let canvas = self.node_ref.cast::<HtmlCanvasElement>().unwrap();
-        self.controller = Some(UniverseController::new(canvas, 64, 64));
-
-        if first_render {
-            log::info!("GameOfLifeModel::first_render");
-            // The callback to request animation frame is passed a time value which can be used for
-            // rendering motion independent of the framerate which may vary.
-            let handle = {
-                let link = ctx.link().clone();
-                request_animation_frame(move |time| link.send_message(Msg::Render(time)))
-            };
-
-            // A reference to the handle must be stored, otherwise it is dropped and the render
-            // won't occur.
-            self._render_loop = Some(handle);
+            renderer: None,
+            universe: Universe::new(width, height),
+            width, 
+            height,
+            node_ref,
+            _interval: None,
+            _listener: None,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Msg::Render(timestamp) => {
-                self.controller.unwrap().render();
-                // self.render_framerate(timestap);
+            Msg::Reset => {
+                self.universe.reset();
+                log::info!("Reset");
+            }
+            Msg::Tick => {
+                self.universe.tick();
+            }
+            Msg::Start => {
+                let callback = ctx.link().callback(|_| Msg::Tick);
+                self._interval = Some(Interval::new(16, move || callback.emit(())));
+            }
+            Msg::Stop => {
+                self._interval = None;
+            }
+            Msg::KillAll => {
+                self.universe.kill_all();
+            }
+            Msg::ToggleCell(x, y) => {
+                if let Some(renderer) = &mut self.renderer {
+                    let (x, y) = renderer.get_cell_index(x, y);
+                    self.universe.toggle_cell(x, y);
+                }
+            }
+            Msg::InsertGlider(x, y) => {
+                if let Some(renderer) = &mut self.renderer {
+                    let (x, y) = renderer.get_cell_index(x, y);
+                    self.universe.insert_glider(x, y);
+                }
+            }
+            Msg::InsertPulsar(x, y) => {
+                if let Some(renderer) = &mut self.renderer {
+                    let (x, y) = renderer.get_cell_index(x, y);
+                    self.universe.insert_pulsar(x, y);
+                }
             }
         }
-        false
+        true
+    }
+        
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        html! {
+            <div>
+                <section class="game-container">
+                <header class="app-header">
+                <img alt="The app logo" src="favicon.ico" class="app-logo"/>
+                <h1 class="app-title">{ "Game of Life" }</h1>
+                </header>
+                    <section class="game-area">
+                        <div class="game-of-life">
+                            <canvas ref={self.node_ref.clone()} />
+                        </div>
+                        <div class="game-buttons">
+                            <button class="game-button" onclick={ctx.link().callback(|_| Msg::Start)}>{ "Start" }</button>
+                            <button class="game-button" onclick={ctx.link().callback(|_| Msg::Stop)}>{ "Stop" }</button>
+                            <button class="game-button" onclick={ctx.link().callback(|_| Msg::Tick)}>{ "Tick" }</button>
+                            <button class="game-button" onclick={ctx.link().callback(|_| Msg::Reset)}>{ "Reset" }</button>
+                            <button class="game-button" onclick={ctx.link().callback(|_| Msg::KillAll)}>{ "Kill" }</button>
+                        </div>
+                        <div class="instructions">
+                            <ul>
+                            {["Click => Toggle the State of a Cell", "Shift + Click => Insert a Pulsar", "Ctrl + Click => Insert a Glider"].iter().collect::<Html>()}
+                            </ul> 
+                        </div>
+                    </section>
+                </section>
+                <footer class="app-footer">
+                <strong class="footer-text">
+                    { "Game of Life - a yew experiment " }
+                </strong>
+                <a href="https://github.com/HBBrennan/wasm-game-of-life" target="_blank">{ "source" }</a>
+                </footer>
+            </div>
+        }
     }
 
-    fn view(&self, _ctx: &Context<Self>) -> Html {
-        html! {
-            <canvas ref={self.node_ref.clone()} />
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) { 
+        if first_render {
+            let canvas = self.node_ref.cast::<HtmlCanvasElement>().unwrap();
+            let insert_pulsar = ctx.link().callback(|e: Event| {
+                let event = e.dyn_ref::<web_sys::MouseEvent>().unwrap_throw();
+                if event.shift_key() {
+                    Msg::InsertPulsar(event.x() as u32, event.y() as u32)
+                } else if event.ctrl_key() {
+                    Msg::InsertGlider(event.x() as u32, event.y() as u32)
+                } else {
+                    Msg::ToggleCell(event.x() as u32, event.y() as u32)
+                }
+            });
+            let listener = EventListener::new(
+                &canvas,
+                "click",
+                move |e| insert_pulsar.emit(e.clone())
+                );
+
+            self._listener = Some(listener);
+            self.renderer = Some(Box::new(WebGLRenderer::new(canvas, self.width, self.height).unwrap()));
+            
+        }
+        if let Some(renderer) = &mut self.renderer {
+            renderer.render(&self.universe);
         }
     }
 }

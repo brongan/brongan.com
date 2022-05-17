@@ -10,64 +10,13 @@ use rand::distributions::{Bernoulli, Distribution};
 use rand::thread_rng;
 use std::default::Default;
 use std::fmt;
-use web_sys::HtmlCanvasElement;
 
-use crate::utils::Timer;
-use crate::webgl::WebGLRenderer;
+use crate::util::Timer;
+pub use crate::webgl::WebGLRenderer;
 
 pub trait UniverseRenderer {
     fn render(&mut self, universe: &Universe);
     fn get_cell_index(&self, x: u32, y: u32) -> (u32, u32);
-}
-
-pub struct UniverseController {
-    universe: Universe,
-    renderer: Box<dyn UniverseRenderer>,
-}
-
-impl UniverseController {
-    pub fn new(canvas: HtmlCanvasElement, width: u32, height: u32) -> UniverseController {
-        let renderer = WebGLRenderer::new(canvas, width, height).unwrap();
-        UniverseController {
-            universe: Universe::new(width, height),
-            renderer: Box::new(renderer),
-        }
-    }
-
-    pub fn render(&mut self)  {
-        self.renderer.render(&self.universe)
-    }
-
-    pub fn tick(&mut self) {
-        self.universe.tick();
-    }
-
-    pub fn reset(&mut self)  {
-        self.universe.reset();
-        self.renderer.render(&self.universe)
-    }
-
-    pub fn kill_all(&mut self)  {
-        self.universe.kill_all();
-        self.renderer.render(&self.universe)
-    }
-
-    pub fn toggle_cell(&mut self, x: u32, y: u32) {
-        let (x, y) = self.renderer.get_cell_index(x, y);
-        self.universe.toggle_cell(x, y)
-    }
-
-    pub fn insert_pulsar(&mut self, x: u32, y: u32)  {
-        let (x, y) = self.renderer.get_cell_index(x, y);
-        self.universe.insert_pulsar(x, y);
-        self.renderer.render(&self.universe)
-    }
-
-    pub fn insert_glider(&mut self, x: u32, y: u32)  {
-        let (x, y) = self.renderer.get_cell_index(x, y);
-        self.universe.insert_glider(x, y);
-        self.renderer.render(&self.universe)
-    }
 }
 
 #[derive(Default)]
