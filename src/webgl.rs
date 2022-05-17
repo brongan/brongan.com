@@ -1,8 +1,10 @@
+
 use crate::Timer;
 use crate::{UniverseRenderer, Universe};
 
 use wasm_bindgen::JsCast;
 use web_sys::{HtmlCanvasElement, WebGlProgram, WebGlRenderingContext, WebGlShader};
+
 
 pub struct WebGLRenderer {
     canvas: HtmlCanvasElement,
@@ -293,3 +295,4 @@ pub fn link_program(
             .unwrap_or_else(|| String::from("Unknown error creating program object")))
     }
 }
+
