@@ -149,6 +149,13 @@ impl WebGLRenderer {
                 GL::LINEAR as i32,
             );
         }
+
+        // Change magnification filter to nearest neighbor to prevent fuzzies
+        gl.tex_parameteri(
+            GL::TEXTURE_2D,
+            GL::TEXTURE_MAG_FILTER,
+            GL::NEAREST as i32,
+        );
     }
 }
 
