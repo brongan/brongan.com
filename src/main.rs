@@ -38,6 +38,8 @@ pub fn render_plate() -> Html {
             </div>
             <div class="entry">
                 <input ref={input_ref} placeholder="Text to Encrypt" type="string" />
+            </div>
+            <div class="entry">
                 <button {onclick}>{ "Encrypt" }</button>
             </div>
             <div class="readout">
