@@ -28,11 +28,25 @@ pub fn render_plate() -> Html {
         }
     };
     html! {
-        <div>
-            <input ref={input_ref} type="string" />
-            <button {onclick}/>
-            <canvas ref={canvas_ref} />
-        </div>
+        <main>
+            <header class="header">
+                <h1> { "Colorblind Message Encrypter" } </h1>
+            </header>
+            <div class="description">
+                <p style="display:inline"> { "Randomly Generates a Colorblindness Test Image in your browser! See: "} </p>
+                <a href="https://en.wikipedia.org/wiki/Ishihara_test"> {"Wikipedia"} </a>
+            </div>
+            <div class="entry">
+                <input ref={input_ref} placeholder="Text to Encrypt" type="string" />
+                <button {onclick}>{ "Encrypt" }</button>
+            </div>
+            <div class="readout">
+                <canvas ref={canvas_ref} />
+            </div>
+            <div class="footnote">
+                {"Rust is love rust is life"}
+            </div>
+        </main>
     }
 }
 

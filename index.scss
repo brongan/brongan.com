@@ -1,0 +1,85 @@
+html,
+body {
+	height: 100%;
+	margin: 0;
+}
+
+header {
+	text-align: center;
+	font: normal normal bold 36px/72px Open Sans;
+	letter-spacing: 0px;
+	color: #FFFFFF;
+	opacity: 0.75;
+}
+
+ .description {
+	text-align: center;
+	font: normal normal 300 22px/30px Open Sans;
+	letter-spacing: 0px;
+	color: #FFFCFC;
+	opacity: 1;
+}
+
+body {
+	align-items: center;
+	display: flex;
+	justify-content: center;
+
+	background: url(img/background.png);
+}
+
+main {
+	width: 60em;
+}
+
+.entry,
+.readout {
+	margin: 0 auto;
+	padding: 8px;
+	// border: 1px solid black;
+	// background-color: rgba(0, 0, 0, 0.25);
+}
+
+.entry {
+	display: flex;
+	justify-content: center;
+}
+
+.entry input {
+	width: 478px;
+	height: 49px;
+	background: #FFFFFF 0% 0% no-repeat padding-box;
+	border-radius: 11px;
+	opacity: 0.75;
+}
+
+.entry input:focus {
+	outline: 0;
+	border-color: #550096;
+}
+
+.entry button {	
+	background: #F03E3E 0% 0% no-repeat padding-box;
+	border-radius: 11px;
+	text-align: left;
+	font: normal normal bold 17px/23px Open Sans;
+	letter-spacing: 0px;
+	color: #EDEDED;
+	opacity: 1;
+}
+
+.readout {
+	margin-top: 16px;
+	justify-content: center;
+	display: flex;
+}
+
+
+
+.footnote {
+	font-size: 0.9rem;
+	margin-top: 16px;
+	display: flex;
+	justify-content: center;
+}
+
