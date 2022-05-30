@@ -1,8 +1,13 @@
 use wasm_bindgen::{Clamped, JsCast};
-use web_sys::{HtmlCanvasElement, HtmlInputElement, CanvasRenderingContext2d, ImageData};
+use web_sys::{HtmlCanvasElement, HtmlInputElement, CanvasRenderingContext2d, ImageData, FocusEvent};
+use stdweb::web::FormData;
 use yew::{function_component, html, use_node_ref, Html};
 
 use ishihara::generate_plate;
+
+pub enum Msg {
+    Submit(FormData),
+}
 
 #[function_component(IshiharaPlate)]
 pub fn render_plate() -> Html {
@@ -27,21 +32,28 @@ pub fn render_plate() -> Html {
             }
         }
     };
+
+    let onsubmit = {|e: FocusEvent|
+        move |e: FocusEvent| {
+            e.prevent_default();
+        }
+    };
+
     html! {
         <main>
             <header class="header">
-                <h1> { "Colorblind Message Encrypter" } </h1>
+                <h1> { "Color Blind Message Encrypter" } </h1>
             </header>
             <div class="description">
                 <p style="display:inline"> { "Randomly Generates a Colorblindness Test Image in your browser! See: "} </p>
                 <a href="https://en.wikipedia.org/wiki/Ishihara_test"> {"Wikipedia"} </a>
             </div>
-            <div class="entry">
+            <form class="entry" onsubmit=|e| { e.prevent_default(); FormData::new(&e.target().unwrap().try_into().unwrap()) }>
+                <div class="plague_type">
+                </div>
                 <input ref={input_ref} placeholder="Text to Encrypt" type="string" />
-            </div>
-            <div class="entry">
-                <button {onclick}>{ "Encrypt" }</button>
-            </div>
+                <button type="button" onclick={onclick}>{ "Encrypt" }</button>
+            </form>
             <div class="readout">
                 <canvas ref={canvas_ref} />
             </div>
