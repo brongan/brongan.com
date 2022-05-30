@@ -1,11 +1,10 @@
+use gloo_events::EventListener;
 use gloo_timers::callback::Interval;
+use wasm_bindgen::{UnwrapThrowExt, JsCast};
+use wasm_game_of_life::{Universe, UniverseRenderer, WebGLRenderer};
 use web_sys::HtmlCanvasElement;
-use wasm_bindgen::JsCast;
-use wasm_bindgen::UnwrapThrowExt;
 use yew::events::Event;
 use yew::{html, Component, Context, Html, NodeRef};
-use gloo_events::EventListener;
-use wasm_game_of_life::{Universe, UniverseRenderer, WebGLRenderer};
 
 pub enum Msg {
     Reset,
