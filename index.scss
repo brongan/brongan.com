@@ -50,22 +50,27 @@ form {
 }
 
 .entry input {
-	width: 100%;
-	height: 3em;
 	background: #FFFFFF 0% 0% no-repeat padding-box;
 	border-radius: 11px;
-	opacity: 0.75;
-	padding-left: 1em;
 	border: none;
+	color: black;
 	box-shadow: -4px 7px 7px -3px rgba(0,0,0,.36) inset;
-	color: #C7C7C7;
 	font: normal normal normal 16px/22px Open Sans;
+	height: 3em;
+	opacity: 1.0;
+	padding-left: 1em;
+	width: 100%;
 }
 
 .entry input:focus {
 	outline: 0;
 	border-color: #550096;
 	opacity: 1.0;
+}
+
+::placeholder {
+	opacity: .75;
+	color: #C7C7C7;
 }
 
 .entry button {	
@@ -89,8 +94,6 @@ form {
 	display: flex;
 	align-items: center;
 }
-
-
 
 .footnote {
 	font-size: 0.9rem;
