@@ -7,3 +7,4 @@ wasm-pack.log
 .txt
 callgrind.out.*
 perf.*
+dist/
