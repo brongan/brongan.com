@@ -1,3 +1,6 @@
 [submodule "www"]
 	path = www
 	url = ./www
+[submodule "ishihara"]
+	path = ishihara
+	url = ./ishihara

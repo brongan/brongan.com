@@ -1,10 +1,8 @@
-
 use crate::Timer;
-use crate::{UniverseRenderer, Universe};
+use crate::{Universe, UniverseRenderer};
 
 use wasm_bindgen::JsCast;
 use web_sys::{HtmlCanvasElement, WebGlProgram, WebGlRenderingContext as GL, WebGlShader};
-
 
 pub struct WebGLRenderer {
     canvas: HtmlCanvasElement,
@@ -35,9 +33,11 @@ impl UniverseRenderer for WebGLRenderer {
     fn render(&mut self, universe: &Universe) {
         let gl = self
             .canvas
-            .get_context("webgl").unwrap()
+            .get_context("webgl")
             .unwrap()
-            .dyn_into::<GL>().unwrap();
+            .unwrap()
+            .dyn_into::<GL>()
+            .unwrap();
 
         let _timer = Timer::new("Rendering Frame");
         self.update_texture(&gl, universe);
@@ -62,11 +62,7 @@ impl UniverseRenderer for WebGLRenderer {
         unsafe {
             let vert_array = js_sys::Float32Array::view(&vertices);
 
-            gl.buffer_data_with_array_buffer_view(
-                GL::ARRAY_BUFFER,
-                &vert_array,
-                GL::STATIC_DRAW,
-            );
+            gl.buffer_data_with_array_buffer_view(GL::ARRAY_BUFFER, &vert_array, GL::STATIC_DRAW);
         }
 
         gl.vertex_attrib_pointer_with_i32(0, 3, GL::FLOAT, false, 0, 0);
@@ -75,11 +71,7 @@ impl UniverseRenderer for WebGLRenderer {
         gl.clear_color(0.0, 0.0, 0.0, 1.0);
         gl.clear(GL::COLOR_BUFFER_BIT);
 
-        gl.draw_arrays(
-            GL::TRIANGLE_STRIP,
-            0,
-            (vertices.len() / 3) as i32,
-        );
+        gl.draw_arrays(GL::TRIANGLE_STRIP, 0, (vertices.len() / 3) as i32);
     }
 }
 
@@ -88,7 +80,7 @@ fn update_universe_image<'a>(image: &'a mut Vec<u8>, universe: &'_ &Universe) ->
         *elem = 0;
     }
 
-    for i in 0..((universe.width * universe.height) as usize) {
+    for i in 0..((universe.width() * universe.height()) as usize) {
         if universe.is_alive(i) {
         } else {
             image[4 * i] = 255;
@@ -116,55 +108,34 @@ impl WebGLRenderer {
         let height = self.height;
         let pixel = update_universe_image(&mut self.texture, &universe);
         assert!(pixel.len() == (width * height * 4) as usize);
-        gl
-            .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-                GL::TEXTURE_2D,
-                level,
-                internal_format as i32,
-                width as i32,
-                height as i32,
-                border,
-                src_format,
-                src_type,
-                Some(pixel),
-            )
-            .ok();
+        gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+            GL::TEXTURE_2D,
+            level,
+            internal_format as i32,
+            width as i32,
+            height as i32,
+            border,
+            src_format,
+            src_type,
+            Some(pixel),
+        )
+        .ok();
 
         if (self.width & (self.width - 1)) == 0 && (self.height & (self.height - 1)) == 0 {
             gl.generate_mipmap(GL::TEXTURE_2D);
         } else {
-            gl.tex_parameteri(
-                GL::TEXTURE_2D,
-                GL::TEXTURE_WRAP_S,
-                GL::CLAMP_TO_EDGE as i32,
-            );
-            gl.tex_parameteri(
-                GL::TEXTURE_2D,
-                GL::TEXTURE_WRAP_T,
-                GL::CLAMP_TO_EDGE as i32,
-            );
-            gl.tex_parameteri(
-                GL::TEXTURE_2D,
-                GL::TEXTURE_MIN_FILTER,
-                GL::LINEAR as i32,
-            );
+            gl.tex_parameteri(GL::TEXTURE_2D, GL::TEXTURE_WRAP_S, GL::CLAMP_TO_EDGE as i32);
+            gl.tex_parameteri(GL::TEXTURE_2D, GL::TEXTURE_WRAP_T, GL::CLAMP_TO_EDGE as i32);
+            gl.tex_parameteri(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR as i32);
         }
 
         // Change magnification filter to nearest neighbor to prevent fuzzies
-        gl.tex_parameteri(
-            GL::TEXTURE_2D,
-            GL::TEXTURE_MAG_FILTER,
-            GL::NEAREST as i32,
-        );
+        gl.tex_parameteri(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::NEAREST as i32);
     }
 }
 
 impl WebGLRenderer {
-    pub fn new(
-        canvas: HtmlCanvasElement,
-        width: u32,
-        height: u32,
-    ) -> Option<WebGLRenderer> {
+    pub fn new(canvas: HtmlCanvasElement, width: u32, height: u32) -> Option<WebGLRenderer> {
         canvas.set_height((WebGLRenderer::CELL_SIZE + 1) * height + 1);
         canvas.set_width((WebGLRenderer::CELL_SIZE + 1) * width + 1);
 
@@ -172,22 +143,18 @@ impl WebGLRenderer {
         let texture: Vec<u8> = vec![0; size * 4];
 
         let gl = canvas
-            .get_context("webgl").unwrap()
+            .get_context("webgl")
             .unwrap()
-            .dyn_into::<GL>().unwrap();
+            .unwrap()
+            .dyn_into::<GL>()
+            .unwrap();
 
         let vert_code = include_str!("./basic.vert");
         let frag_code = include_str!("./basic.frag");
 
-        let vert_shader = compile_shader(
-            &gl,
-            GL::VERTEX_SHADER,
-            vert_code).unwrap();
+        let vert_shader = compile_shader(&gl, GL::VERTEX_SHADER, vert_code).unwrap();
 
-        let frag_shader = compile_shader(
-            &gl,
-            GL::FRAGMENT_SHADER,
-            frag_code).unwrap();
+        let frag_shader = compile_shader(&gl, GL::FRAGMENT_SHADER, frag_code).unwrap();
 
         let program = link_program(&gl, &vert_shader, &frag_shader).unwrap();
         gl.use_program(Some(&program));
@@ -227,11 +194,7 @@ impl WebGLRenderer {
     }
 }
 
-pub fn compile_shader(
-    gl: &GL,
-    shader_type: u32,
-    source: &str,
-) -> Result<WebGlShader, String> {
+pub fn compile_shader(gl: &GL, shader_type: u32, source: &str) -> Result<WebGlShader, String> {
     log::info!("Compiling Shader");
     let shader = gl
         .create_shader(shader_type)
@@ -277,4 +240,3 @@ pub fn link_program(
             .unwrap_or_else(|| String::from("Unknown error creating program object")))
     }
 }
-
