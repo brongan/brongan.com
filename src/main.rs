@@ -1,5 +1,5 @@
-use yew::{function_component, html, Html};
 use root::Root;
+use yew::{function_component, html, Html};
 
 #[function_component(Workspace)]
 fn main() -> Html {

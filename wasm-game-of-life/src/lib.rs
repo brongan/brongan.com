@@ -2,9 +2,9 @@ extern crate fixedbitset;
 extern crate rand;
 extern crate web_sys;
 
+mod universe;
 mod util;
 mod webgl;
-mod universe;
 
 use gloo_events::EventListener;
 use gloo_timers::callback::Interval;
@@ -14,8 +14,8 @@ use web_sys::HtmlCanvasElement;
 use yew::events::Event;
 use yew::{html, Component, Context, Html, NodeRef};
 
+use crate::universe::{Universe, UniverseRenderer};
 use crate::util::Timer;
-use crate::universe::{UniverseRenderer, Universe};
 pub use crate::webgl::WebGLRenderer;
 
 pub enum Msg {

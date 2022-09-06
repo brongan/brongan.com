@@ -7,7 +7,6 @@ use rand::distributions::{Bernoulli, Distribution};
 use rand::thread_rng;
 use std::fmt;
 
-
 pub trait UniverseRenderer {
     fn render(&mut self, universe: &Universe);
     fn get_cell_index(&self, x: u32, y: u32) -> (u32, u32);
