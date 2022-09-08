@@ -104,22 +104,22 @@ impl Component for GameOfLifeModel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
             <div>
-                <section class="game-container">
-                <header class="app-header">
-                <h1 class="app-title">{ "Game of Life" }</h1>
+                <section class="life-container">
+                <header class="life-header">
+                <h1 class="life-title">{ "Game of Life" }</h1>
                 </header>
-                    <section class="game-area">
+                    <section class="life-area">
                         <div class="game-of-life">
                             <canvas ref={self.node_ref.clone()} />
                         </div>
-                        <div class="game-buttons">
+                        <div class="life-buttons">
                             <button class="game-button" onclick={ctx.link().callback(|_| Msg::Start)}>{ "Start" }</button>
                             <button class="game-button" onclick={ctx.link().callback(|_| Msg::Stop)}>{ "Stop" }</button>
                             <button class="game-button" onclick={ctx.link().callback(|_| Msg::Tick)}>{ "Tick" }</button>
                             <button class="game-button" onclick={ctx.link().callback(|_| Msg::Reset)}>{ "Reset" }</button>
                             <button class="game-button" onclick={ctx.link().callback(|_| Msg::KillAll)}>{ "Kill" }</button>
                         </div>
-                        <div class="instructions">
+                        <div class="life-instructions">
                             <ul>
                             {["Click => Toggle the State of a Cell", "Shift + Click => Insert a Pulsar", "Ctrl + Click => Insert a Glider"].iter().collect::<Html>()}
                             </ul>
@@ -127,6 +127,7 @@ impl Component for GameOfLifeModel {
                     </section>
                 </section>
                 <footer class="app-footer">
+                <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
                 <strong class="footer-text">
                     { "Game of Life - a yew experiment " }
                 </strong>

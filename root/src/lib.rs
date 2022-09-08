@@ -16,25 +16,7 @@ enum Route {
     NotFound,
 }
 
-#[function_component(Home)]
-fn secure() -> Html {
-    let nav1 = use_navigator().unwrap();
-    let nav2 = nav1.clone();
-
-    let game_of_life = Callback::from(move |_| nav1.push(&Route::GameofLife));
-    let ishihara = Callback::from(move |_| nav2.push(&Route::Ishihara));
-    html! {
-        <div>
-            <h1>{ "Ishihara Plate Generator" }</h1>
-            <button onclick={ishihara}>{ "Ishihara Plate Generator" }</button>
-            <h1>{ "Game of Life" }</h1>
-            <button onclick={game_of_life}>{ "Game of Life" }</button>
-
-        </div>
-    }
-}
-
-fn switch(routes: Route) -> Html {
+fn main_panel(routes: Route) -> Html {
     match routes {
         Route::Home => html! { <Home/> },
         Route::Ishihara => html! { <IshiharaPlate/> },
@@ -43,16 +25,42 @@ fn switch(routes: Route) -> Html {
     }
 }
 
+#[function_component(Nav)]
+fn nav() -> Html {
+    let nav1 = use_navigator().unwrap();
+    let nav2 = nav1.clone();
+    let nav3 = nav1.clone();
+
+    let home = Callback::from(move |_| nav1.push(&Route::Home));
+    let game_of_life = Callback::from(move |_| nav2.push(&Route::GameofLife));
+    let ishihara = Callback::from(move |_| nav3.push(&Route::Ishihara));
+    html! {
+        <div>
+            <h1>{ "Home" }</h1>
+            <button onclick={home}>{ "Home" }</button>
+            <h1>{ "Ishihara Plate Generator" }</h1>
+            <button onclick={ishihara}>{ "Ishihara Plate Generator" }</button>
+            <h1>{ "Game of Life" }</h1>
+            <button onclick={game_of_life}>{ "Game of Life" }</button>
+        </div>
+    }
+}
+
+#[function_component(Home)]
+fn home() -> Html {
+    html! {
+        <p>{"Hello my name is Brennan I like Rust"}</p>
+    }
+}
+
 #[function_component(Root)]
 pub fn root() -> Html {
     html! {
-        <div>
+        <div class="Root">
             <BrowserRouter>
-                <Switch<Route> render={switch} />
+                <Nav/>
+                <Switch<Route> render={main_panel} />
             </BrowserRouter>
-            <footer class="app-footer">
-                <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
-            </footer>
         </div>
     }
 }
