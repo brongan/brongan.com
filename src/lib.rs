@@ -229,26 +229,24 @@ pub fn render_plate() -> Html {
     };
 
     html! {
-        <main>
-            <header class="header">
+        <main class="ishihara-main">
+            <header class="ishihara-header">
                 <h1> { "Color Blind Message Encrypter" } </h1>
             </header>
             <div class="description">
                 <p style="display:inline"> { "Randomly Generates a Colorblindness Test Image in your browser! See: "} </p>
-                <a href="https://en.wikipedia.org/wiki/Ishihara_test"> {"Wikipedia"} </a>
+                <a href="https://en.wikipedia.org/wiki/Ishihara_test"> {"wikipedia.org/wiki/Ishihara_test"} </a>
             </div>
-            <form class="entry">
-                <div class="plague_type">
-                </div>
+            <form class="ishihara-entry">
                 <input ref={input_ref} placeholder="Text to Encrypt" type="string" />
                 <button type="button" onclick={onclick}>{ "Encrypt" }</button>
             </form>
-            <div class="readout">
+            <div class="ishihara-readout">
                 <canvas ref={canvas_ref} />
             </div>
-            <div class="footnote">
-                {"Rust is love rust is life"}
-            </div>
+            <footer class="ishihara-footnote">
+                <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
+            </footer>
         </main>
     }
 }
