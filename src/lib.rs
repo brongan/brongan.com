@@ -237,7 +237,17 @@ pub fn render_plate() -> Html {
                 <p style="display:inline"> { "Randomly Generates a Colorblindness Test Image in your browser! See: "} </p>
                 <a href="https://en.wikipedia.org/wiki/Ishihara_test"> {"wikipedia.org/wiki/Ishihara_test"} </a>
             </div>
-            <form class="ishihara-entry">
+            <div class="ishihara-blindness">
+                <input type="radio" id="blindnessChoice1" name="blindness" value="protanopia" checked=true />
+                <label for="blindnessChoice1"> {"Protanopia"} </label>
+
+                <input type="radio" id="blindnessChoice2" name="blindness" value="deuteranopia" />
+                <label for="blindnessChoice2"> {"Deuteranopia"} </label>
+                
+                <input type="radio" id="blindnessChoice3" name="blindness" value="tritanopia" />
+                <label for="blindnessChoice3"> {"Tritanopia"} </label>
+            </div>
+            <form class="ishihara-entry" action="">
                 <input ref={input_ref} placeholder="Text to Encrypt" type="string" />
                 <button type="button" onclick={onclick}>{ "Encrypt" }</button>
             </form>
