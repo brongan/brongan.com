@@ -8,9 +8,7 @@ use rand::rngs::ThreadRng;
 use rand::seq::SliceRandom;
 use rusttype::{point, Font, Scale};
 use std::fmt;
-use wasm_bindgen::{Clamped, JsCast};
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, HtmlInputElement, ImageData};
-use yew::{function_component, html, use_node_ref, Html};
+use strum_macros::EnumIter;
 
 mod color;
 use color::{hex_color, Color};
@@ -18,6 +16,7 @@ use color::{hex_color, Color};
 mod point2d;
 use point2d::Point2D;
 
+#[derive(Clone, Copy)]
 enum IshiharaColor {
     Inside,
     Outside,
@@ -35,15 +34,40 @@ impl fmt::Display for Circle {
     }
 }
 
-//Red, Red, Orange, Yellow, Light Red, Light Red, Tan
-const RED_GREEN_INSIDE: &[&str] = &[
-    "#cf5f47", "#cf5f47", "#fd9500", "#ffd500", "#ee8568", "#ee8568", "#eebd7a",
-];
-
-//Dark Green, Green, Light Green
-const RED_GREEN_OUTSIDE: &[&str] = &["#5a8a50", "#a2ab5a", "#c9cc7d"];
-
 const FONT_SCALE: f32 = 256.0;
+
+fn get_color(color: IshiharaColor, blindness: Blindness, rng: &mut ThreadRng) -> Color {
+    match (color, blindness) {
+        (IshiharaColor::Inside, Blindness::Demonstration) => hex_color("#f0712a").unwrap().1,
+        (IshiharaColor::Outside, Blindness::Demonstration) => hex_color("#2aa790").unwrap().1,
+        //Red, Red, Orange, Yellow, Light Red, Light Red, Tan
+        (IshiharaColor::Inside, Blindness::RedGreen) => {
+            hex_color(
+                [
+                    "#cf5f47", "#cf5f47", "#fd9500", "#ffd500", "#ee8568", "#ee8568", "#eebd7a",
+                ]
+                .choose(rng)
+                .unwrap(),
+            )
+            .unwrap()
+            .1
+        }
+        //Dark Green, Green, Light Green
+        (IshiharaColor::Outside, Blindness::RedGreen) => {
+            hex_color(["#5a8a50", "#a2ab5a", "#c9cc7d"].choose(rng).unwrap())
+                .unwrap()
+                .1
+        }
+        _ => panic!("unimplemented"),
+    }
+}
+
+#[derive(EnumIter, Clone, Copy, strum_macros::Display, Eq, PartialEq)]
+pub enum Blindness {
+    Demonstration,
+    RedGreen,
+    BlueYellow,
+}
 
 impl Circle {
     const MAX_RADIUS: f64 = 6.9;
@@ -86,13 +110,11 @@ impl Circle {
         }
     }
 
-    fn draw(&self, image: &mut RgbaImage, rng: &mut rand::rngs::ThreadRng) {
-        let (_remainder, color) = match self.ishihara_color {
-            Some(IshiharaColor::Inside) => hex_color(RED_GREEN_INSIDE.choose(rng).unwrap()),
-            Some(IshiharaColor::Outside) => hex_color(RED_GREEN_OUTSIDE.choose(rng).unwrap()),
-            None => hex_color("#ffffff"),
-        }
-        .unwrap();
+    fn draw(&self, image: &mut RgbaImage, rng: &mut rand::rngs::ThreadRng, blindness: Blindness) {
+        let color = match &self.ishihara_color {
+            Some(color) => get_color(*color, blindness, rng),
+            None => hex_color("#ffffff").unwrap().1,
+        };
 
         draw_filled_circle_mut(
             image,
@@ -166,7 +188,7 @@ fn render_text(text: &str) -> RgbaImage {
     image
 }
 
-pub fn generate_plate(text: &str) -> RgbaImage {
+pub fn generate_plate(text: &str, blindness: Blindness) -> RgbaImage {
     log::info!("Generating Plate: {}", text);
     // Get an image buffer from rendering the text
     let mut image = render_text(&text);
@@ -191,72 +213,6 @@ pub fn generate_plate(text: &str) -> RgbaImage {
     // Draw Circles
     circles
         .iter()
-        .for_each(|circle| circle.draw(&mut image, &mut rng));
+        .for_each(|circle| circle.draw(&mut image, &mut rng, blindness));
     image
-}
-
-#[function_component(IshiharaPlate)]
-pub fn render_plate() -> Html {
-    let canvas_ref = use_node_ref();
-    let input_ref = use_node_ref();
-
-    let onclick = {
-        let canvas_ref = canvas_ref.clone();
-        let input_ref = input_ref.clone();
-        move |_| {
-            if let (Some(input), Some(canvas)) = (
-                input_ref.cast::<HtmlInputElement>(),
-                canvas_ref.cast::<HtmlCanvasElement>(),
-            ) {
-                let plate = generate_plate(&input.value());
-                let new_img_data = ImageData::new_with_u8_clamped_array_and_sh(
-                    Clamped(plate.as_raw()),
-                    plate.width(),
-                    plate.height(),
-                );
-                canvas.set_width(plate.width());
-                canvas.set_height(plate.height());
-                let ctx = canvas
-                    .get_context("2d")
-                    .unwrap()
-                    .unwrap()
-                    .dyn_into::<CanvasRenderingContext2d>()
-                    .unwrap();
-                ctx.put_image_data(&new_img_data.unwrap(), 0.0, 0.0)
-                    .unwrap();
-            }
-        }
-    };
-
-    html! {
-        <main class="ishihara-main">
-            <header class="ishihara-header">
-                <h1> { "Color Blind Message Encrypter" } </h1>
-            </header>
-            <div class="description">
-                <p style="display:inline"> { "Randomly Generates a Colorblindness Test Image in your browser! See: "} </p>
-                <a href="https://en.wikipedia.org/wiki/Ishihara_test"> {"wikipedia.org/wiki/Ishihara_test"} </a>
-            </div>
-            <div class="ishihara-blindness">
-                <input type="radio" id="blindnessChoice1" name="blindness" value="protanopia" checked=true />
-                <label for="blindnessChoice1"> {"Protanopia"} </label>
-
-                <input type="radio" id="blindnessChoice2" name="blindness" value="deuteranopia" />
-                <label for="blindnessChoice2"> {"Deuteranopia"} </label>
-                
-                <input type="radio" id="blindnessChoice3" name="blindness" value="tritanopia" />
-                <label for="blindnessChoice3"> {"Tritanopia"} </label>
-            </div>
-            <form class="ishihara-entry" action="">
-                <input ref={input_ref} placeholder="Text to Encrypt" type="string" />
-                <button type="button" onclick={onclick}>{ "Encrypt" }</button>
-            </form>
-            <div class="ishihara-readout">
-                <canvas ref={canvas_ref} />
-            </div>
-            <footer class="ishihara-footnote">
-                <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
-            </footer>
-        </main>
-    }
 }
