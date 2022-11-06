@@ -714,6 +714,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 
 [[package]]
+name = "heck"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2540771e65fc8cb83cd6e8a237f70c319bd5c29f78ed1084ba5d50eeac86f7f9"
+
+[[package]]
 name = "hermit-abi"
 version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -810,19 +816,14 @@ version = "0.1.0"
 dependencies = [
  "getrandom 0.2.7",
  "gloo-events",
- "gloo-render",
- "gloo-timers",
  "image",
  "imageproc",
- "js-sys",
  "log",
  "nom",
  "rand 0.8.5",
  "rusttype",
- "wasm-bindgen",
- "wasm-logger",
- "web-sys",
- "yew",
+ "strum",
+ "strum_macros",
 ]
 
 [[package]]
@@ -1496,8 +1497,16 @@ dependencies = [
 name = "root"
 version = "0.1.0"
 dependencies = [
+ "gloo-render",
+ "gloo-timers",
  "ishihara",
+ "js-sys",
+ "strum",
+ "strum_macros",
+ "wasm-bindgen",
  "wasm-game-of-life",
+ "wasm-logger",
+ "web-sys",
  "yew",
  "yew-router",
 ]
@@ -1533,6 +1542,12 @@ dependencies = [
  "ab_glyph_rasterizer",
  "owned_ttf_parser",
 ]
+
+[[package]]
+name = "rustversion"
+version = "1.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97477e48b4cf8603ad5f7aaf897467cf42ab4218a38ef76fb14c2d6773a6d6a8"
 
 [[package]]
 name = "ryu"
@@ -1668,6 +1683,25 @@ name = "str_stack"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9091b6114800a5f2141aee1d1b9d6ca3592ac062dc5decb3764ec5895a47b4eb"
+
+[[package]]
+name = "strum"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
+
+[[package]]
+name = "strum_macros"
+version = "0.24.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e385be0d24f186b4ce2f9982191e7101bb737312ad61c1f2f984f34bcf85d59"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn",
+]
 
 [[package]]
 name = "symbolic-common"

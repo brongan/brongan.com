@@ -1,7 +1,9 @@
-use ishihara::IshiharaPlate;
+use crate::ishihara::IshiharaPlate;
 use wasm_game_of_life::GameOfLifeModel;
 use yew::{function_component, html, Callback, Html};
 use yew_router::prelude::*;
+
+mod ishihara;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
@@ -16,6 +18,12 @@ enum Route {
     NotFound,
 }
 
+struct Page {
+    id: usize,
+    title: String,
+    route: Route,
+}
+
 fn main_panel(routes: Route) -> Html {
     match routes {
         Route::Home => html! { <Home/> },
@@ -27,21 +35,44 @@ fn main_panel(routes: Route) -> Html {
 
 #[function_component(Nav)]
 fn nav() -> Html {
-    let nav1 = use_navigator().unwrap();
-    let nav2 = nav1.clone();
-    let nav3 = nav1.clone();
+    let nav_buttons = vec![
+        Page {
+            id: 1,
+            title: "Home".to_string(),
+            route: Route::Home,
+        },
+        Page {
+            id: 2,
+            title: "Colorblind Message Encrypter".to_string(),
+            route: Route::Ishihara,
+        },
+        Page {
+            id: 3,
+            title: "Game of Life".to_string(),
+            route: Route::GameofLife,
+        },
+    ];
 
-    let home = Callback::from(move |_| nav1.push(&Route::Home));
-    let game_of_life = Callback::from(move |_| nav2.push(&Route::GameofLife));
-    let ishihara = Callback::from(move |_| nav3.push(&Route::Ishihara));
+    let nav = use_navigator().unwrap();
+
+    let nav_buttons = nav_buttons
+        .iter()
+        .map(|nav_button| {
+            let nav = nav.clone();
+            let route = nav_button.route.clone();
+            let callback = Callback::from(move |_| nav.push(&route));
+            html! {
+                <div>
+                    <button onclick={callback}>{ nav_button.title.clone() }</button>
+                    <h1>{ nav_button.title.clone() }</h1>
+                </div>
+            }
+        })
+        .collect::<Html>();
+
     html! {
         <div>
-            <h1>{ "Home" }</h1>
-            <button onclick={home}>{ "Home" }</button>
-            <h1>{ "Ishihara Plate Generator" }</h1>
-            <button onclick={ishihara}>{ "Ishihara Plate Generator" }</button>
-            <h1>{ "Game of Life" }</h1>
-            <button onclick={game_of_life}>{ "Game of Life" }</button>
+        { nav_buttons }
         </div>
     }
 }
