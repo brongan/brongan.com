@@ -9,6 +9,7 @@ use rand::seq::SliceRandom;
 use rusttype::{point, Font, Scale};
 use std::fmt;
 use strum_macros::EnumIter;
+use strum_macros::EnumString;
 
 mod color;
 use color::{hex_color, Color};
@@ -58,13 +59,17 @@ fn get_color(color: IshiharaColor, blindness: Blindness, rng: &mut ThreadRng) ->
                 .unwrap()
                 .1
         }
-        _ => panic!("unimplemented"),
+        (IshiharaColor::Inside, Blindness::BlueYellow) => hex_color(["#0f3179", "#0270bf", "#696983"].choose(rng).unwrap()).unwrap().1,
+        (IshiharaColor::Outside, Blindness::BlueYellow) => hex_color(["#9e6e0c", "#cb850c", "#cb850c", "#ad8b10"].choose(rng).unwrap()).unwrap().1,
     }
 }
 
-#[derive(EnumIter, Clone, Copy, strum_macros::Display, Eq, PartialEq)]
+#[derive(
+    EnumIter, Clone, Copy, strum_macros::Display, Eq, PartialEq, EnumString, Default, Debug,
+)]
 pub enum Blindness {
     Demonstration,
+    #[default]
     RedGreen,
     BlueYellow,
 }
