@@ -20,7 +20,6 @@ enum Route {
 }
 
 struct Page {
-    id: usize,
     title: String,
     route: Route,
 }
@@ -38,17 +37,14 @@ fn main_panel(routes: Route) -> Html {
 fn nav() -> Html {
     let nav_buttons = vec![
         Page {
-            id: 1,
             title: "Home".to_string(),
             route: Route::Home,
         },
         Page {
-            id: 2,
             title: "Colorblind Message Encrypter".to_string(),
             route: Route::Ishihara,
         },
         Page {
-            id: 3,
             title: "Game of Life".to_string(),
             route: Route::GameofLife,
         },
@@ -91,7 +87,9 @@ pub fn root() -> Html {
         <div class="Root">
             <BrowserRouter>
                 <Nav/>
-                <Switch<Route> render={main_panel} />
+                <div class="main">
+                    <Switch<Route> render={main_panel} />
+                </div>
             </BrowserRouter>
         </div>
     }

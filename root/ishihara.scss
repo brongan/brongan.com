@@ -1,24 +1,3 @@
-body {
-	background: url(img/background.png) no-repeat fixed;
-	-webkit-background-size: cover;
-	-moz-background-size: cover;
-	-o-background-size: cover;
-	background-size: cover;
-}
-
-.ishihara-main {
-	align-items: center;
-	-webkit-background-size: cover;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	height: 100%;
-	margin: 0;
-	width: 100%;
-	position: absolute;
-	left: 50;
-}
-
 .ishihara-header {
 	color: #FFFFFF;
 	font: normal normal bold 36px/72px Open Sans;
@@ -28,7 +7,7 @@ body {
 	width: 20em;
 }
 
- .description {
+ .ishihara-description {
 	width: 30em;
 	text-align: center;
 	font: normal normal 300 22px/30px Open Sans;

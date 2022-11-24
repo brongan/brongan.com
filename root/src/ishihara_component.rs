@@ -33,12 +33,12 @@ pub fn render_plate() -> Html {
     };
 
     html! {
-        <main class="ishihara-main">
+        <>
             <header class="ishihara-header">
                 <h1> { "Color Blind Message Encrypter" } </h1>
                 <h1> { "Ishihara Plate Generator" } </h1>
             </header>
-            <div class="description">
+            <div class="ishihara-description">
                 <p style="display:inline"> { "Randomly Generates a Colorblindness Test Image in your browser! See: "} </p>
                 <a href="https://en.wikipedia.org/wiki/Ishihara_test"> {"wikipedia.org/wiki/Ishihara_test"} </a>
             </div>
@@ -49,6 +49,6 @@ pub fn render_plate() -> Html {
             <footer class="ishihara-footnote">
                 <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
             </footer>
-        </main>
+        </>
     }
 }
