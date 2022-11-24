@@ -25,7 +25,11 @@ features = [
   'CanvasRenderingContext2d',
   'Document',
   'Element',
+  'EventTarget',
+  'FormData',
+  'HtmlFormElement',
   'HtmlCanvasElement',
   'ImageData',
+  'SubmitEvent'
 ]
 

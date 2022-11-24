@@ -1,9 +1,10 @@
-use crate::ishihara::IshiharaPlate;
+use crate::ishihara_component::IshiharaPlate;
 use wasm_game_of_life::GameOfLifeModel;
 use yew::{function_component, html, Callback, Html};
 use yew_router::prelude::*;
 
-mod ishihara;
+mod ishihara_component;
+mod ishihara_form;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {

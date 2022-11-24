@@ -15,6 +15,8 @@ body {
 	height: 100%;
 	margin: 0;
 	width: 100%;
+	position: absolute;
+	left: 50;
 }
 
 .ishihara-header {
@@ -36,7 +38,7 @@ body {
 	margin-bottom: 3em;
 }
 
-.ishihara-blindness {
+.blindness-selector {
 	margin: 0 10px 0 10px;
 	input {
 		visibility: hidden;
