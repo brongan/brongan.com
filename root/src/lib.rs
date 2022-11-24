@@ -91,7 +91,7 @@ pub fn root() -> Html {
         <div class="root">
             <BrowserRouter>
                 <Nav/>
-                <div class="main">
+                <div class="main-panel">
                     <Switch<Route> render={main_panel} />
                 </div>
             </BrowserRouter>
