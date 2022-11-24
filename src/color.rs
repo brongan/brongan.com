@@ -20,7 +20,7 @@ fn from_hex(input: &str) -> Result<u8, std::num::ParseIntError> {
 }
 
 fn is_hex_digit(c: char) -> bool {
-    c.is_digit(16)
+    c.is_ascii_hexdigit()
 }
 
 fn hex_primary(input: &str) -> IResult<&str, u8> {
