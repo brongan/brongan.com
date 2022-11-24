@@ -3,8 +3,8 @@ use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 use yew::prelude::*;
 
-use ishihara::generate_plate;
 use crate::ishihara_form::{Data, IshiharaInput};
+use ishihara::generate_plate;
 
 #[function_component(IshiharaPlate)]
 pub fn render_plate() -> Html {
@@ -12,30 +12,29 @@ pub fn render_plate() -> Html {
     let canvas_ref_callback = canvas_ref.clone();
 
     let onsubmit_func = move |form_data: Data| {
-            if let Some(canvas) = canvas_ref_callback.cast::<HtmlCanvasElement>() {
-                let plate = generate_plate(&form_data.text, form_data.blindness);
-                let new_img_data = ImageData::new_with_u8_clamped_array_and_sh(
-                    Clamped(plate.as_raw()),
-                    plate.width(),
-                    plate.height(),
-                );
-                canvas.set_width(plate.width());
-                canvas.set_height(plate.height());
-                let ctx = canvas
-                    .get_context("2d")
-                    .unwrap()
-                    .unwrap()
-                    .dyn_into::<CanvasRenderingContext2d>()
-                    .unwrap();
-                ctx.put_image_data(&new_img_data.unwrap(), 0.0, 0.0)
-                    .unwrap();
-            }
+        if let Some(canvas) = canvas_ref_callback.cast::<HtmlCanvasElement>() {
+            let plate = generate_plate(&form_data.text, form_data.blindness);
+            let new_img_data = ImageData::new_with_u8_clamped_array_and_sh(
+                Clamped(plate.as_raw()),
+                plate.width(),
+                plate.height(),
+            );
+            canvas.set_width(plate.width());
+            canvas.set_height(plate.height());
+            let ctx = canvas
+                .get_context("2d")
+                .unwrap()
+                .unwrap()
+                .dyn_into::<CanvasRenderingContext2d>()
+                .unwrap();
+            ctx.put_image_data(&new_img_data.unwrap(), 0.0, 0.0)
+                .unwrap();
+        }
     };
 
     html! {
         <>
             <header class="ishihara-header">
-                <h1> { "Color Blind Message Encrypter" } </h1>
                 <h1> { "Ishihara Plate Generator" } </h1>
             </header>
             <div class="ishihara-description">

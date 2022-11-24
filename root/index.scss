@@ -1,3 +1,14 @@
-.Root {
+.root {
 	display: flex;
+}
+
+.nav {
+	width: 200px;
+	text-align: center;
+	input {
+		width: 125px;
+		height: 125px;
+		object-fit: cover;
+		border-radius: 50%;
+	}
 }

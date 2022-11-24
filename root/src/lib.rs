@@ -22,6 +22,7 @@ enum Route {
 struct Page {
     title: String,
     route: Route,
+    thumbnail: String,
 }
 
 fn main_panel(routes: Route) -> Html {
@@ -39,14 +40,17 @@ fn nav() -> Html {
         Page {
             title: "Home".to_string(),
             route: Route::Home,
+            thumbnail: "/img/brongan.jpg".to_string(),
         },
         Page {
-            title: "Colorblind Message Encrypter".to_string(),
+            title: "Ishihara Plate Generator".to_string(),
             route: Route::Ishihara,
+            thumbnail: "img/color-blind-test.png".to_string(),
         },
         Page {
             title: "Game of Life".to_string(),
             route: Route::GameofLife,
+            thumbnail: "img/game-of-life.png".to_string(),
         },
     ];
 
@@ -59,16 +63,16 @@ fn nav() -> Html {
             let route = nav_button.route.clone();
             let callback = Callback::from(move |_| nav.push(&route));
             html! {
-                <div>
-                    <button onclick={callback}>{ nav_button.title.clone() }</button>
-                    <h1>{ nav_button.title.clone() }</h1>
-                </div>
+                <>
+                    <input type="image" onclick={callback} src={nav_button.thumbnail.clone()} />
+                    <h3>{ nav_button.title.clone() }</h3>
+                </>
             }
         })
         .collect::<Html>();
 
     html! {
-        <div>
+        <div class="nav">
         { nav_buttons }
         </div>
     }
@@ -84,7 +88,7 @@ fn home() -> Html {
 #[function_component(Root)]
 pub fn root() -> Html {
     html! {
-        <div class="Root">
+        <div class="root">
             <BrowserRouter>
                 <Nav/>
                 <div class="main">
