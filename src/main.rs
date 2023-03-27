@@ -1,8 +1,106 @@
+use anyhow::{Context, Result};
 use image::codecs::png::PngEncoder;
 use image::{ColorType, ImageEncoder};
 use num::Complex;
+use std::fmt;
+use std::fmt::Display;
 use std::fs::File;
 use std::str::FromStr;
+
+#[derive(Clone, Copy)]
+struct Bounds {
+    width: usize,
+    height: usize,
+}
+
+#[derive(Clone, Copy)]
+struct Point2d {
+    x: usize,
+    y: usize,
+}
+
+impl Display for Point2d {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
+#[derive(Clone)]
+struct ImageBuffer {
+    pixels: Vec<u8>,
+    width: usize,
+    height: usize,
+}
+
+struct PixelIterator<I> {
+    iter: I,
+    count: usize,
+    width: usize,
+}
+
+impl<I> PixelIterator<I> {
+    fn new(iter: I, width: usize) -> PixelIterator<I> {
+        PixelIterator {
+            iter,
+            count: 0,
+            width,
+        }
+    }
+}
+
+impl<I> Iterator for PixelIterator<I>
+where
+    I: Iterator,
+{
+    type Item = (Point2d, <I as Iterator>::Item);
+    fn next(&mut self) -> Option<(Point2d, <I as Iterator>::Item)> {
+        let a = self.iter.next()?;
+        let i = self.count;
+        self.count += 1;
+        Some((
+            Point2d {
+                x: i / self.width,
+                y: i % self.width,
+            },
+            a,
+        ))
+    }
+}
+
+impl ImageBuffer {
+    fn new(width: usize, height: usize) -> ImageBuffer {
+        ImageBuffer {
+            pixels: vec![0; width * height],
+            width,
+            height,
+        }
+    }
+
+    fn iter_pixels(&mut self) -> PixelIterator<std::slice::IterMut<'_, u8>> {
+        PixelIterator::new(self.pixels.iter_mut(), self.width)
+    }
+
+    fn write_image(&self, filename: &str) -> Result<()> {
+        let output = File::create(filename)?;
+        let encoder = PngEncoder::new(output);
+        encoder
+            .write_image(
+                &self.pixels,
+                self.width as u32,
+                self.height as u32,
+                ColorType::L8,
+            )
+            .context("Failed to write image to {}, filename")?;
+        Ok(())
+    }
+
+    fn bounds(&self) -> Bounds {
+        Bounds {
+            width: self.width,
+            height: self.height,
+        }
+    }
+}
 
 fn escape_time(c: Complex<f64>, limit: usize) -> Option<usize> {
     let mut z = Complex { re: 0.0, im: 0.0 };
@@ -26,15 +124,12 @@ fn parse_pair<T: FromStr>(s: &str, separator: char) -> Option<(T, T)> {
 }
 
 fn parse_complex(s: &str) -> Option<Complex<f64>> {
-    match parse_pair(s, ',') {
-        Some((re, im)) => Some(Complex { re, im }),
-        None => None,
-    }
+    parse_pair(s, ',').map(|(re, im)| Complex { re, im })
 }
 
 fn pixel_to_point(
-    bounds: (usize, usize),
-    pixel: (usize, usize),
+    bounds: Bounds,
+    pixel: Point2d,
     upper_left: Complex<f64>,
     lower_right: Complex<f64>,
 ) -> Complex<f64> {
@@ -43,40 +138,20 @@ fn pixel_to_point(
         upper_left.im - lower_right.im,
     );
     Complex {
-        re: upper_left.re + pixel.0 as f64 * width / bounds.0 as f64,
-        im: upper_left.im - pixel.1 as f64 * height / bounds.1 as f64,
+        re: upper_left.re + pixel.x as f64 * width / bounds.width as f64,
+        im: upper_left.im - pixel.y as f64 * height / bounds.height as f64,
     }
 }
 
-fn render(
-    pixels: &mut [u8],
-    bounds: (usize, usize),
-    upper_left: Complex<f64>,
-    lower_right: Complex<f64>,
-) {
-    assert!(pixels.len() == bounds.0 * bounds.1);
-    for row in 0..bounds.1 {
-        for col in 0..bounds.0 {
-            let point = pixel_to_point(bounds, (col, row), upper_left, lower_right);
-            pixels[row * bounds.0 + col] = match escape_time(point, 255) {
-                None => 0,
-                Some(count) => 255 - count as u8,
-            }
-        }
+fn render(image: &mut ImageBuffer, upper_left: Complex<f64>, lower_right: Complex<f64>) {
+    let bounds = image.bounds();
+    for (point, pixel) in image.iter_pixels() {
+        let point = pixel_to_point(bounds, point, upper_left, lower_right);
+        *pixel = match escape_time(point, 255) {
+            None => 0,
+            Some(count) => 255 - count as u8,
+        };
     }
-}
-
-fn write_image(
-    filename: &str,
-    pixels: &[u8],
-    bounds: (usize, usize),
-) -> Result<(), std::io::Error> {
-    let output = File::create(filename)?;
-    let encoder = PngEncoder::new(output);
-    encoder
-        .write_image(pixels, bounds.0 as u32, bounds.1 as u32, ColorType::L8)
-        .expect("you work");
-    Ok(())
 }
 
 fn main() {
@@ -91,12 +166,11 @@ fn main() {
         std::process::exit(1);
     }
 
-    let bounds = parse_pair(&args[2], 'x').expect("error parsing image dimensions");
+    let (width, height) = parse_pair(&args[2], 'x').expect("error parsing image dimensions");
     let upper_left = parse_complex(&args[3]).expect("error parsing upper left corner point");
     let lower_right = parse_complex(&args[4]).expect("error parsing lower right corner point");
-    let mut pixels = vec![0; bounds.0 * bounds.1];
 
-    render(&mut pixels, bounds, upper_left, lower_right);
-
-    write_image(&args[1], &pixels, bounds).expect("error writing PNG file");
+    let mut image = ImageBuffer::new(width, height);
+    render(&mut image, upper_left, lower_right);
+    image.write_image(&args[1]).expect("error writing PNG file");
 }
