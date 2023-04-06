@@ -1,5 +1,7 @@
 #![allow(dead_code)]
+use anyhow::anyhow;
 use anyhow::{Context, Result};
+use clap::Parser;
 use image::codecs::png::PngEncoder;
 use image::{ColorType, ImageEncoder};
 use num::Complex;
@@ -9,10 +11,39 @@ use std::fmt::Display;
 use std::fs::File;
 use std::str::FromStr;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, Default)]
 struct Bounds {
     width: usize,
     height: usize,
+}
+
+impl Display for Bounds {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({},{})", self.width, self.height)
+    }
+}
+
+fn parse_pair<T: FromStr>(s: &str, separator: char) -> Option<(T, T)> {
+    match s.find(separator) {
+        None => None,
+        Some(index) => match (T::from_str(&s[..index]), T::from_str(&s[index + 1..])) {
+            (Ok(l), Ok(r)) => Some((l, r)),
+            _ => None,
+        },
+    }
+}
+
+fn parse_complex(s: &str) -> Option<Complex<f64>> {
+    parse_pair(s, ',').map(|(re, im)| Complex { re, im })
+}
+
+impl FromStr for Bounds {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        parse_pair(s, 'x')
+            .map(|(width, height)| Bounds { width, height })
+            .ok_or_else(|| anyhow!("Failed to parse bounds."))
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -115,20 +146,6 @@ fn escape_time(c: Complex<f64>, limit: usize) -> Option<usize> {
     None
 }
 
-fn parse_pair<T: FromStr>(s: &str, separator: char) -> Option<(T, T)> {
-    match s.find(separator) {
-        None => None,
-        Some(index) => match (T::from_str(&s[..index]), T::from_str(&s[index + 1..])) {
-            (Ok(l), Ok(r)) => Some((l, r)),
-            _ => None,
-        },
-    }
-}
-
-fn parse_complex(s: &str) -> Option<Complex<f64>> {
-    parse_pair(s, ',').map(|(re, im)| Complex { re, im })
-}
-
 fn pixel_to_point(
     bounds: Bounds,
     pixel: Point2d,
@@ -176,23 +193,37 @@ fn render_multithreaded(
     })
 }
 
-fn main() {
-    let args: Vec<String> = std::env::args().collect();
+#[derive(Parser, Default, Debug)]
+#[clap(
+    author = "Brennan",
+    version,
+    about = "multithreaded mandelbrot printer"
+)]
+struct Args {
+    bounds: Bounds,
+    #[arg(allow_hyphen_values = true)]
+    upper_left: Complex<f64>,
+    #[arg(allow_hyphen_values = true)]
+    lower_right: Complex<f64>,
+    #[arg(value_name = "FILE", default_value = "/dev/stdout")]
+    path: String,
+}
 
-    if args.len() != 5 {
-        eprintln!("Usage: {} FILE PIXELS UPPERLEFT LOWERRIGHT", args[0]);
-        eprintln!(
-            "Example: {} mandel.png 1920x1080 -1.20,0.35 -1,0.20",
-            args[0]
-        );
-        std::process::exit(1);
+impl Display for Args {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} {} {} {}",
+            self.bounds, self.upper_left, self.lower_right, self.path
+        )
     }
+}
 
-    let (width, height) = parse_pair(&args[2], 'x').expect("error parsing image dimensions");
-    let upper_left = parse_complex(&args[3]).expect("error parsing upper left corner point");
-    let lower_right = parse_complex(&args[4]).expect("error parsing lower right corner point");
-
-    let mut image = ImageBuffer::new(width, height);
-    render_multithreaded(&mut image, upper_left, lower_right);
-    image.write_image(&args[1]).expect("error writing PNG file");
+fn main() {
+    let args = Args::parse();
+    let mut image = ImageBuffer::new(args.bounds.width, args.bounds.height);
+    render_multithreaded(&mut image, args.upper_left, args.lower_right);
+    image
+        .write_image(&args.path)
+        .expect("error writing PNG file");
 }
