@@ -61,8 +61,8 @@ where
         self.count += 1;
         Some((
             Point2d {
-                x: i / self.width,
-                y: i % self.width,
+                x: i % self.width,
+                y: i / self.width,
             },
             a,
         ))
@@ -165,8 +165,8 @@ fn render_multithreaded(
     let mut pixels: Vec<&mut [u8]> = image.pixels.chunks_mut(1).collect();
     pixels.par_iter_mut().enumerate().for_each(|(i, pixel)| {
         let point = Point2d {
-            x: i / image.width,
-            y: i % image.width,
+            x: i % image.width,
+            y: i / image.width,
         };
         let point = pixel_to_point(bounds, point, upper_left, lower_right);
         pixel[0] = match escape_time(point, 255) {
