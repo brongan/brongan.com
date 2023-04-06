@@ -1,7 +1,9 @@
+#![allow(dead_code)]
 use anyhow::{Context, Result};
 use image::codecs::png::PngEncoder;
 use image::{ColorType, ImageEncoder};
 use num::Complex;
+use rayon::prelude::*;
 use std::fmt;
 use std::fmt::Display;
 use std::fs::File;
@@ -154,6 +156,26 @@ fn render(image: &mut ImageBuffer, upper_left: Complex<f64>, lower_right: Comple
     }
 }
 
+fn render_multithreaded(
+    image: &mut ImageBuffer,
+    upper_left: Complex<f64>,
+    lower_right: Complex<f64>,
+) {
+    let bounds = image.bounds();
+    let mut pixels: Vec<&mut [u8]> = image.pixels.chunks_mut(1).collect();
+    pixels.par_iter_mut().enumerate().for_each(|(i, pixel)| {
+        let point = Point2d {
+            x: i / image.width,
+            y: i % image.width,
+        };
+        let point = pixel_to_point(bounds, point, upper_left, lower_right);
+        pixel[0] = match escape_time(point, 255) {
+            None => 0,
+            Some(count) => 255 - count as u8,
+        };
+    })
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
@@ -171,6 +193,6 @@ fn main() {
     let lower_right = parse_complex(&args[4]).expect("error parsing lower right corner point");
 
     let mut image = ImageBuffer::new(width, height);
-    render(&mut image, upper_left, lower_right);
+    render_multithreaded(&mut image, upper_left, lower_right);
     image.write_image(&args[1]).expect("error writing PNG file");
 }
