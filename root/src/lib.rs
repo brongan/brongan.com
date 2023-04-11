@@ -1,10 +1,12 @@
 use crate::ishihara_component::IshiharaPlate;
+use crate::mandelbrot_component::MandelbrotModel;
 use wasm_game_of_life::GameOfLifeModel;
 use yew::{function_component, html, Callback, Html};
 use yew_router::prelude::*;
 
 mod ishihara_component;
 mod ishihara_form;
+mod mandelbrot_component;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
@@ -14,6 +16,8 @@ enum Route {
     Ishihara,
     #[at("/game-of-life")]
     GameofLife,
+    #[at("/mandelbrot")]
+    Mandelbrot,
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -30,6 +34,7 @@ fn main_panel(routes: Route) -> Html {
         Route::Home => html! { <Home/> },
         Route::Ishihara => html! { <IshiharaPlate/> },
         Route::GameofLife => html! { <GameOfLifeModel/> },
+        Route::Mandelbrot => html! { <MandelbrotModel/> },
         Route::NotFound => html! { <h1>{ "404" }</h1> },
     }
 }
@@ -52,6 +57,11 @@ fn nav() -> Html {
             route: Route::GameofLife,
             thumbnail: "img/game-of-life.png".to_string(),
         },
+        Page {
+            title: "Mandelbrot".to_string(),
+            route: Route::Mandelbrot,
+            thumbnail: "img/mandelbrot.png".to_string(),
+        }
     ];
 
     let nav = use_navigator().unwrap();

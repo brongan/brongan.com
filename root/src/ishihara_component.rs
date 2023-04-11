@@ -1,5 +1,4 @@
-use wasm_bindgen::Clamped;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{Clamped, JsCast};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 use yew::prelude::*;
 

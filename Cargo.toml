@@ -4,6 +4,7 @@ members = [
     "ishihara",
 	"wasm-game-of-life",
 	"root",
+	"mandelbrot",
 ]
 
 [package]
