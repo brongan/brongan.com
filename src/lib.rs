@@ -1,8 +1,8 @@
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use image::codecs::png::PngEncoder;
-use std::fmt::{self, Display};
 use image::{ColorType, ImageEncoder};
 use num::Complex;
+use std::fmt::{self, Display};
 use std::fs::File;
 use std::str::FromStr;
 
@@ -83,8 +83,8 @@ where
         self.count += 1;
         Some((
             Point2d {
-                x: i % self.width as u32,
-                y: i / self.width as u32,
+                x: i % self.width,
+                y: i / self.width,
             },
             a,
         ))
@@ -94,7 +94,7 @@ where
 impl ImageBuffer {
     pub fn new(width: u32, height: u32) -> ImageBuffer {
         ImageBuffer {
-            pixels: vec![0; width as usize* height as usize],
+            pixels: vec![0; width as usize * height as usize],
             width,
             height,
         }
@@ -108,12 +108,7 @@ impl ImageBuffer {
         let output = File::create(filename)?;
         let encoder = PngEncoder::new(output);
         encoder
-            .write_image(
-                &self.pixels,
-                self.width as u32,
-                self.height as u32,
-                ColorType::L8,
-            )
+            .write_image(&self.pixels, self.width, self.height, ColorType::L8)
             .context("Failed to write image to {}, filename")?;
         Ok(())
     }
@@ -164,11 +159,12 @@ fn render(image: &mut ImageBuffer, upper_left: Complex<f64>, lower_right: Comple
     }
 }
 
-pub fn generate_mandelbrot(bounds: Bounds, upper_left: Complex<f64>,
-    lower_right: Complex<f64>) -> ImageBuffer {
+pub fn generate_mandelbrot(
+    bounds: Bounds,
+    upper_left: Complex<f64>,
+    lower_right: Complex<f64>,
+) -> ImageBuffer {
     let mut image = ImageBuffer::new(bounds.width, bounds.height);
     render(&mut image, upper_left, lower_right);
     image
 }
-
-
