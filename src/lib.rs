@@ -94,7 +94,7 @@ impl Circle {
         while area < goal_area {
             let candidate_point = uniform.sample(rng);
             if let Some(radius) = max_allowed_radius(&candidate_point, &circles) {
-                area += std::f64::consts::PI * radius.powi(2) as f64;
+                area += std::f64::consts::PI * radius.powi(2);
                 let new_circle = Circle {
                     center: candidate_point,
                     radius,
@@ -123,7 +123,7 @@ impl Circle {
 
         draw_filled_circle_mut(
             image,
-            (self.center.x as i32, self.center.y as i32),
+            (self.center.x, self.center.y),
             self.radius as i32,
             Rgba([color.red, color.green, color.blue, 255]),
         );
@@ -196,7 +196,7 @@ fn render_text(text: &str) -> RgbaImage {
 pub fn generate_plate(text: &str, blindness: Blindness) -> RgbaImage {
     log::info!("Generating Plate: {}", text);
     // Get an image buffer from rendering the text
-    let mut image = render_text(&text);
+    let mut image = render_text(text);
     let mut rng = rand::thread_rng();
 
     // Create circles based based on the image buffer's dimensions
