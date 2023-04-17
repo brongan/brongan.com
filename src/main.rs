@@ -1,24 +1,25 @@
 #![allow(dead_code)]
 use clap::Parser;
+use image::{ImageBuffer, GrayImage};
 use num::Complex;
 use std::fmt::{self, Display, Formatter};
 use rayon::prelude::*;
-use mandelbrot::{ImageBuffer, Bounds, Point2d, pixel_to_point, escape_time};
+use mandelbrot::{Bounds, Point2d, pixel_to_point, escape_time};
 
 fn render_multithreaded(
-    image: &mut ImageBuffer,
+    image: &mut GrayImage,
     upper_left: Complex<f64>,
     lower_right: Complex<f64>,
 ) {
-    let bounds = image.bounds();
-    let mut pixels: Vec<&mut [u8]> = image.pixels.chunks_mut(1).collect();
-    pixels.par_iter_mut().enumerate().for_each(|(i, pixel)| {
+    let bounds =  Bounds  {width: image.width(), height: image.height()};
+    image.par_iter_mut().enumerate().for_each(|(i, pixel)| {
+        let i = i as u32;
         let point = Point2d {
-            x: i % image.width,
-            y: i / image.width,
+            x: i % image.width(),
+            y: i / image.width(),
         };
         let point = pixel_to_point(bounds, point, upper_left, lower_right);
-        pixel[0] = match escape_time(point, 255) {
+        *pixel = match escape_time(point, 255) {
             None => 0,
             Some(count) => 255 - count as u8,
         };
