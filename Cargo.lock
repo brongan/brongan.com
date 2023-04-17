@@ -1866,6 +1866,7 @@ version = "0.1.0"
 dependencies = [
  "gloo-render",
  "gloo-timers",
+ "image 0.23.14",
  "ishihara",
  "js-sys",
  "mandelbrot",

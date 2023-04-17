@@ -13,7 +13,7 @@ pub fn render_plate() -> Html {
     let onsubmit_func = move |form_data: Data| {
         if let Some(canvas) = canvas_ref_callback.cast::<HtmlCanvasElement>() {
             let plate = generate_plate(&form_data.text, form_data.blindness);
-            let new_img_data = ImageData::new_with_u8_clamped_array_and_sh(
+            let image = ImageData::new_with_u8_clamped_array_and_sh(
                 Clamped(plate.as_raw()),
                 plate.width(),
                 plate.height(),
@@ -26,7 +26,7 @@ pub fn render_plate() -> Html {
                 .unwrap()
                 .dyn_into::<CanvasRenderingContext2d>()
                 .unwrap();
-            ctx.put_image_data(&new_img_data.unwrap(), 0.0, 0.0)
+            ctx.put_image_data(&image.unwrap(), 0.0, 0.0)
                 .unwrap();
         }
     };
