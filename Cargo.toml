@@ -12,6 +12,7 @@ color-eyre = "0.6.2"
 image = "0.24.6"
 pretty-hex = "0.3.0"
 reqwest = { version = "0.11.17", features = ["json"] }
+sentry = "0.31.0"
 serde = { version = "1.0.163", features = ["derive"] }
 tokio = { version = "1.28.1", features = ["full"] }
 tracing = "0.1.37"
