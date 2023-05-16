@@ -96,7 +96,7 @@ async fn root_get_inner(state: ServerState) -> Response<BoxBody> {
                     description: format!("{e}").into(),
                 })
             });
-            (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong!").into_response()
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Something went wrong: {e}!")).into_response()
         }
     }
 }
@@ -157,7 +157,7 @@ async fn main() {
         warn!("Initiating graceful shutdown");
     };
 
-    let addr = &"127.0.0.1:8080".parse().unwrap();
+    let addr = &"0.0.0.0:8080".parse().unwrap();
     info!("Listening on {addr}");
     axum::Server::bind(addr)
         .serve(app.into_make_service())

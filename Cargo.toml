@@ -19,3 +19,9 @@ serde = { version = "1.0.163", features = ["derive"] }
 tokio = { version = "1.28.1", features = ["full"] }
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["json"] }
+
+[profile.release]
+debug = 1 # Include enough debug info for sentry to be useful
+opt-level = "z"  # Optimize for size.
+lto = true # Enable link-time optimization
+
