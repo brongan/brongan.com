@@ -30,5 +30,8 @@ COPY --from=builder /usr/src/app/catscii /app/catscii
 
 EXPOSE 8080
 
+RUN mkdir db 
+COPY ./db/GeoLite2-Country.mmdb ./db/GeoLite2-Country.mmdb 
+
 # Run the app
 CMD ./catscii

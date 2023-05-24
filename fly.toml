@@ -7,6 +7,12 @@ mounts = []
 primary_region = "sea"
 processes = []
 
+[restart]
+policy = "no"
+
+[env]
+GEOLITE2_COUNTRY_DB = "db/GeoLite2-Country.mmdb"
+
 [[services]]
   internal_port = 8080
   processes = ["app"]

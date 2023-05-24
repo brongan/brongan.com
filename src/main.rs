@@ -1,3 +1,5 @@
+mod locat;
+use anyhow::anyhow;
 use artem::options::{OptionBuilder, TargetType::HtmlFile};
 use axum::{
     body::BoxBody,
@@ -8,6 +10,7 @@ use axum::{
     Router,
 };
 use color_eyre::{eyre::eyre, Result};
+use locat::Locat;
 use opentelemetry::{
     global,
     trace::{get_active_span, FutureExt, Span, Status, TraceContextExt, Tracer},
@@ -15,13 +18,22 @@ use opentelemetry::{
 };
 use reqwest::{header, StatusCode};
 use serde::Deserialize;
-use std::str::FromStr;
+use std::{net::IpAddr, str::FromStr, sync::Arc};
 use tracing::{info, warn, Level};
 use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Clone, Debug)]
 struct ServerState {
     client: reqwest::Client,
+    locat: Arc<Locat>,
+}
+
+fn get_client_addr(headers: &HeaderMap) -> anyhow::Result<IpAddr> {
+    let header = headers
+        .get("fly-client-ip")
+        .ok_or(anyhow!("Missing fly-client-ip"))?;
+    let header = header.to_str()?;
+    Ok(header.parse::<IpAddr>()?)
 }
 
 async fn get_cat_url(client: &reqwest::Client) -> Result<String> {
@@ -96,7 +108,11 @@ async fn root_get_inner(state: ServerState) -> Response<BoxBody> {
                     description: format!("{e}").into(),
                 })
             });
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("Something went wrong: {e}!")).into_response()
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Something went wrong: {e}!"),
+            )
+                .into_response()
         }
     }
 }
@@ -111,6 +127,16 @@ async fn root_get(headers: HeaderMap, State(state): State<ServerState>) -> Respo
             .map(|h| h.to_str().unwrap_or_default().to_owned())
             .unwrap_or_default(),
     ));
+
+    if let Ok(addr) = get_client_addr(&headers) {
+        match state.locat.ip_to_iso_code(addr).await {
+            Ok(country) => {
+                info!("Got request from {country}");
+                span.set_attribute(KeyValue::new("country", country.to_string()));
+            }
+            Err(err) => warn!("Could not determine country for IP address: {err}"),
+        }
+    }
 
     root_get_inner(state)
         .with_context(Context::current_with_span(span))
@@ -143,7 +169,12 @@ async fn main() {
         .with(filter)
         .init();
 
+    let country_db_env_var = "GEOLITE2_COUNTRY_DB";
+    let country_db_path = std::env::var(country_db_env_var)
+        .unwrap_or_else(|_| panic!("${country_db_env_var} must be set"));
+
     let state = ServerState {
+        locat: Arc::new(Locat::new(&country_db_path, "todo_analytics.db").unwrap()),
         client: Default::default(),
     };
 

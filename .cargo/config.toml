@@ -1,0 +1,5 @@
+[registries.catscii]
+index = "ssh://git@ssh.shipyard.rs/catscii/crate-index.git"
+
+[unstable]
+registry-auth = true
