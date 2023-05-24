@@ -1,0 +1,24 @@
+# fly.toml file generated for still-lake-5553 on 2023-05-05T18:35:34-07:00
+
+app = "still-lake-5553"
+kill_signal = "SIGINT"
+kill_timeout = 5
+primary_region = "sea"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 8043
+  processes = ["app"]
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
