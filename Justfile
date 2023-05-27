@@ -2,7 +2,7 @@ _default:
   just --list
 
 run:
-  podman run catscii:latest --env SENTRY_DSN --env SENTRY_DSN -p 8080:8080/tcp --rm catscii
+	podman run --env SENTRY_DSN --env HONEYCOMB_API_KEY --env GEOLITE2_COUNTRY_DB -p 8080:8080/tcp --rm catscii
 
 deploy:
   buildah build -f Dockerfile -t catscii .

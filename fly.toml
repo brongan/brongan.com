@@ -12,6 +12,7 @@ policy = "no"
 
 [env]
 GEOLITE2_COUNTRY_DB = "db/GeoLite2-Country.mmdb"
+ANALYTICS_DB = "analytics.db"
 
 [[services]]
   internal_port = 8080

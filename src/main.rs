@@ -143,6 +143,17 @@ async fn root_get(headers: HeaderMap, State(state): State<ServerState>) -> Respo
         .await
 }
 
+async fn analytics_get(State(state): State<ServerState>) -> Response<BoxBody> {
+    let analytics = state.locat.get_analytics().await.unwrap();
+    info!("Received analytics: {:?}", analytics);
+    let mut response = String::new();
+    use std::fmt::Write;
+    for (country, count) in analytics {
+        _ = writeln!(&mut response, "{country}: {count}");
+    }
+    response.into_response()
+}
+
 #[tokio::main]
 async fn main() {
     let _guard = sentry::init((
@@ -173,13 +184,18 @@ async fn main() {
     let country_db_path = std::env::var(country_db_env_var)
         .unwrap_or_else(|_| panic!("${country_db_env_var} must be set"));
 
+    let analytics_db_env_var = "ANALYTICS_DB";
+    let analytics_db_path = std::env::var(analytics_db_env_var)
+        .unwrap_or_else(|_| panic!("${analytics_db_env_var} must be set"));
+
     let state = ServerState {
-        locat: Arc::new(Locat::new(&country_db_path, "todo_analytics.db").unwrap()),
+        locat: Arc::new(Locat::new(&country_db_path, &analytics_db_path).unwrap()),
         client: Default::default(),
     };
 
     let app = Router::new()
         .route("/", get(root_get))
+        .route("/analytics", get(analytics_get))
         .route("/panic", get(|| async { panic!("This is a test panic") }))
         .with_state(state);
 
