@@ -136,6 +136,8 @@ async fn root_get(headers: HeaderMap, State(state): State<ServerState>) -> Respo
             }
             Err(err) => warn!("Could not determine country for IP address: {err}"),
         }
+    } else {
+        info!("Failed to get client ip. Are we running locally?");
     }
 
     root_get_inner(state)

@@ -14,6 +14,7 @@ RUN set -eux; \
 		apt update; \
 		apt install -y --no-install-recommends \
 			ca-certificates \
+			libsqlite3-0 \
 			; \
 		apt clean autoclean; \
 		apt autoremove --yes; \
