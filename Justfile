@@ -2,12 +2,14 @@ _default:
   just --list
 
 build:
-	buildah build -f Dockerfile -t catscii .
+	nix build .#dockerImage
+	./result | docker load
 
 run:
-	podman run --env SENTRY_DSN --env HONEYCOMB_API_KEY --env GEOLITE2_COUNTRY_DB --env ANALYTICS_DB -p 8080:8080/tcp --rm catscii
+  nix run
 
 deploy:
-  buildah build -f Dockerfile -t catscii .
+  just build
   podman push catscii docker://registry.fly.io/late-wood-6224:latest
   flyctl deploy -i registry.fly.io/late-wood-6224:latest
+
