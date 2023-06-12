@@ -39,7 +39,7 @@ impl Locat {
             .iso_code
             .context("MaxMindDB missing ISO code")?;
 
-        if let Err(e) = self.analytics.increment(iso_code) {
+        if let Err(e) = self.analytics.increment(&addr, iso_code) {
             eprintln!("Could not increment analytics: {e}");
         }
 
@@ -61,7 +61,8 @@ impl Db {
     fn migrate(&self, conn: &rusqlite::Connection) -> Result<(), rusqlite::Error> {
         conn.execute(
             "CREATE TABLE IF NOT EXISTS analytics (
-                iso_code TEXT PRIMARY KEY,
+                ip_address TEXT PRIMARY KEY,
+                iso_code TEXT,
                 count INTEGER NOT NULL
             )",
             [],
@@ -77,7 +78,8 @@ impl Db {
 
     fn list(&self) -> Result<Vec<(String, u64)>, rusqlite::Error> {
         let connection = self.get_connection()?;
-        let mut statement = connection.prepare("SELECT iso_code, count FROM analytics")?;
+        let mut statement =
+            connection.prepare("SELECT ip_address, iso_code, count FROM analytics")?;
         let mut rows = statement.query([])?;
         let mut analytics = Vec::new();
         while let Some(row) = rows.next()? {
@@ -88,15 +90,16 @@ impl Db {
         Ok(analytics)
     }
 
-    fn increment(&self, iso_code: &str) -> Result<()> {
+    fn increment(&self, ip_address: &IpAddr, iso_code: &str) -> Result<()> {
+        let ip_address = ip_address.to_string();
         let connection = self.get_connection()?;
         let mut statement = connection.prepare(
-            "INSERT INTO analytics (iso_code, count)
-             VALUES (?, 1)
-             ON CONFLICT (iso_code)
+            "INSERT INTO analytics (ip_address, iso_code, count)
+             VALUES (?, ?, 1)
+             ON CONFLICT (ip_address)
              DO UPDATE SET count = count + 1",
         )?;
-        statement.execute([iso_code])?;
+        statement.execute([&ip_address, iso_code])?;
         Ok(())
     }
 }
