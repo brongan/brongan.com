@@ -10,9 +10,6 @@ processes = []
 [restart]
 policy = "no"
 
-[env]
-ANALYTICS_DB = "analytics.db"
-
 [[services]]
   internal_port = 8080
   processes = ["app"]

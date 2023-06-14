@@ -12,11 +12,11 @@ axum = "0.6.18"
 color-eyre = "0.6.2"
 image = "0.24.6"
 maxminddb = "0.23.0"
+mysql = "24.0.0"
 opentelemetry = { version = "0.18.0", features = ["rt-tokio"] }
 opentelemetry-honeycomb = { git = "https://github.com/fasterthanlime/opentelemetry-honeycomb-rs", branch = "simplified", version = "0.1.0" }
 pretty-hex = "0.3.0"
 reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls-webpki-roots"] }
-rusqlite = "0.29.0"
 sentry = { version = "0.31", default-features = false, features = ["reqwest", "rustls", "backtrace", "contexts", "panic"] }
 serde = { version = "1.0.163", features = ["derive"] }
 thiserror = "1.0.40"

@@ -11,6 +11,7 @@ use axum::{
 };
 use color_eyre::{eyre::eyre, Result};
 use locat::Locat;
+use mysql::{Opts, OptsBuilder, Pool, SslOpts};
 use opentelemetry::{
     global,
     trace::{get_active_span, FutureExt, Span, Status, TraceContextExt, Tracer},
@@ -150,8 +151,8 @@ async fn analytics_get(State(state): State<ServerState>) -> Response<BoxBody> {
     info!("Received analytics: {:?}", analytics);
     let mut response = String::new();
     use std::fmt::Write;
-    for (country, count) in analytics {
-        _ = writeln!(&mut response, "{country}: {count}");
+    for analytic in analytics {
+        _ = writeln!(&mut response, "{analytic}")
     }
     response.into_response()
 }
@@ -186,12 +187,13 @@ async fn main() {
     let country_db_path = std::env::var(country_db_env_var)
         .unwrap_or_else(|_| panic!("${country_db_env_var} must be set"));
 
-    let analytics_db_env_var = "ANALYTICS_DB";
-    let analytics_db_path = std::env::var(analytics_db_env_var)
-        .unwrap_or_else(|_| panic!("${analytics_db_env_var} must be set"));
+    let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL not found");
+    let builder = OptsBuilder::from_opts(Opts::from_url(&db_url).unwrap());
+    let pool = Pool::new(builder.ssl_opts(SslOpts::default())).unwrap();
+    let _conn = pool.get_conn().unwrap();
 
     let state = ServerState {
-        locat: Arc::new(Locat::new(&country_db_path, &analytics_db_path).unwrap()),
+        locat: Arc::new(Locat::new(&country_db_path, &db_url).unwrap()),
         client: Default::default(),
     };
 

@@ -1,7 +1,10 @@
+use std::fmt::Display;
 use std::net::IpAddr;
 
 use anyhow::Context;
 use anyhow::Result;
+use mysql::params;
+use mysql::prelude::Queryable;
 
 /// Allows geo-locating IPs and keeps analytics
 #[derive(Debug)]
@@ -15,8 +18,21 @@ pub enum Error {
     #[error("maxminddb error: {0}")]
     MaxMindDb(#[from] maxminddb::MaxMindDBError),
 
-    #[error("rusqlite error: {0}")]
-    Rusqlite(#[from] rusqlite::Error),
+    #[error("mysql error: {0}")]
+    MySql(#[from] mysql::Error),
+}
+
+#[derive(Debug)]
+pub struct Analytics {
+    ip_address: String,
+    iso_code: String,
+    count: usize,
+}
+
+impl Display for Analytics {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}-{}: {}", self.ip_address, self.iso_code, self.count)
+    }
 }
 
 impl Locat {
@@ -47,7 +63,7 @@ impl Locat {
     }
 
     /// Returns a map of country codes to number of requests
-    pub async fn get_analytics(&self) -> Result<Vec<(String, u64)>> {
+    pub async fn get_analytics(&self) -> Result<Vec<Analytics>> {
         Ok(self.analytics.list()?)
     }
 }
@@ -58,48 +74,46 @@ struct Db {
 }
 
 impl Db {
-    fn migrate(&self, conn: &rusqlite::Connection) -> Result<(), rusqlite::Error> {
-        conn.execute(
+    fn migrate(&self, conn: &mut mysql::PooledConn) -> Result<(), mysql::Error> {
+        conn.query_drop(
             "CREATE TABLE IF NOT EXISTS analytics (
-                ip_address TEXT PRIMARY KEY,
-                iso_code TEXT,
+                ip_address VARCHAR(255) PRIMARY KEY,
+                iso_code VARCHAR(255),
                 count INTEGER NOT NULL
             )",
-            [],
         )?;
         Ok(())
     }
 
-    fn get_connection(&self) -> Result<rusqlite::Connection, rusqlite::Error> {
-        let connection = rusqlite::Connection::open(&self.path)?;
-        self.migrate(&connection)?;
+    fn get_connection(&self) -> Result<mysql::PooledConn, mysql::Error> {
+        let builder = mysql::OptsBuilder::from_opts(mysql::Opts::from_url(&self.path)?);
+        let pool = mysql::Pool::new(builder.ssl_opts(mysql::SslOpts::default()))?;
+        let mut connection = pool.get_conn()?;
+        self.migrate(&mut connection)?;
         Ok(connection)
     }
 
-    fn list(&self) -> Result<Vec<(String, u64)>, rusqlite::Error> {
-        let connection = self.get_connection()?;
-        let mut statement =
-            connection.prepare("SELECT ip_address, iso_code, count FROM analytics")?;
-        let mut rows = statement.query([])?;
-        let mut analytics = Vec::new();
-        while let Some(row) = rows.next()? {
-            let iso_code = row.get(0)?;
-            let count = row.get(1)?;
-            analytics.push((iso_code, count))
-        }
-        Ok(analytics)
+    fn list(&self) -> Result<Vec<Analytics>, mysql::Error> {
+        let mut connection = self.get_connection()?;
+        connection.query_map(
+            "SELECT ip_address, iso_code, count FROM analytics",
+            |(ip_address, iso_code, count)| Analytics {
+                ip_address,
+                iso_code,
+                count,
+            },
+        )
     }
 
     fn increment(&self, ip_address: &IpAddr, iso_code: &str) -> Result<()> {
         let ip_address = ip_address.to_string();
-        let connection = self.get_connection()?;
-        let mut statement = connection.prepare(
+        let mut connection = self.get_connection()?;
+        connection.exec_drop(
             "INSERT INTO analytics (ip_address, iso_code, count)
-             VALUES (?, ?, 1)
-             ON CONFLICT (ip_address)
-             DO UPDATE SET count = count + 1",
+             VALUES (:ip_address, :iso_code, 1)
+             ON DUPLICATE KEY UPDATE count = count + 1",
+            params! {ip_address, iso_code},
         )?;
-        statement.execute([&ip_address, iso_code])?;
         Ok(())
     }
 }
