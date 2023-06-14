@@ -30,7 +30,7 @@
 		  craneLib = (crane.mkLib pkgs);
           src = craneLib.cleanCargoSource ./.;
           nativeBuildInputs = with pkgs; [ pkg-config ];
-          buildInputs = with pkgs; [ openssl sqlite ];
+          buildInputs = with pkgs; [ sqlite ];
           commonArgs = {
             inherit src buildInputs nativeBuildInputs;
           };
@@ -41,7 +41,7 @@
 		  dockerImage = pkgs.dockerTools.streamLayeredImage {
 			  name = "catscii";
 			  tag = "latest";
-			  contents = [ bin pkgs.cacert ];
+			  contents = [ bin ];
 			  config = {
 				  Cmd = [ "${bin}/bin/catscii" ];
 				  Env = with pkgs; [ "GEOLITE2_COUNTRY_DB=${clash-geoip}/etc/clash/Country.mmdb" ];
