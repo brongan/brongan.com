@@ -17,6 +17,7 @@ use opentelemetry::{
     trace::{get_active_span, FutureExt, Span, Status, TraceContextExt, Tracer},
     Context, KeyValue,
 };
+use opentelemetry_honeycomb::new_pipeline;
 use reqwest::{header, StatusCode};
 use serde::Deserialize;
 use std::{net::IpAddr, str::FromStr, sync::Arc};
@@ -130,7 +131,8 @@ async fn root_get(headers: HeaderMap, State(state): State<ServerState>) -> Respo
     ));
 
     if let Ok(addr) = get_client_addr(&headers) {
-        match state.locat.ip_to_iso_code(addr).await {
+        let iso_code = state.locat.ip_to_iso_code(addr).await;
+        match iso_code {
             Ok(country) => {
                 info!("Got request from {country}");
                 span.set_attribute(KeyValue::new("country", country.to_string()));
@@ -168,7 +170,7 @@ async fn main() {
         },
     ));
 
-    let (_honeyguard, _tracer) = opentelemetry_honeycomb::new_pipeline(
+    let (_honeyguard, _tracer) = new_pipeline(
         std::env::var("HONEYCOMB_API_KEY").expect("$HONEYCOMB_API_KEY should be set"),
         "catscii".into(),
     )

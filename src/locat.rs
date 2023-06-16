@@ -5,6 +5,8 @@ use anyhow::Context;
 use anyhow::Result;
 use mysql::params;
 use mysql::prelude::Queryable;
+use opentelemetry::global;
+use opentelemetry::trace::Tracer;
 
 /// Allows geo-locating IPs and keeps analytics
 #[derive(Debug)]
@@ -47,15 +49,19 @@ impl Locat {
 
     /// Converts an address to an ISO 3166-1 alpha-2 country code
     pub async fn ip_to_iso_code(&self, addr: IpAddr) -> anyhow::Result<&str> {
-        let iso_code = self
-            .geoip
-            .lookup::<maxminddb::geoip2::Country>(addr)?
-            .country
-            .context("MaxMindDB missing country for ip")?
-            .iso_code
-            .context("MaxMindDB missing ISO code")?;
+        let tracer = global::tracer("");
+        let iso_code = tracer.in_span("maxminddb::geoip2::Country::lookup", |_| {
+            self.geoip
+                .lookup::<maxminddb::geoip2::Country>(addr)?
+                .country
+                .context("MaxMindDB missing country for ip")?
+                .iso_code
+                .context("MaxMindDB missing ISO code")
+        })?;
 
-        if let Err(e) = self.analytics.increment(&addr, iso_code) {
+        if let Err(e) = tracer.in_span("analytics.increment", |_| {
+            self.analytics.increment(&addr, iso_code)
+        }) {
             eprintln!("Could not increment analytics: {e}");
         }
 
@@ -106,8 +112,9 @@ impl Db {
     }
 
     fn increment(&self, ip_address: &IpAddr, iso_code: &str) -> Result<()> {
+        let tracer = global::tracer("");
         let ip_address = ip_address.to_string();
-        let mut connection = self.get_connection()?;
+        let mut connection = tracer.in_span("get_connection", |_| self.get_connection())?;
         connection.exec_drop(
             "INSERT INTO analytics (ip_address, iso_code, count)
              VALUES (:ip_address, :iso_code, 1)
