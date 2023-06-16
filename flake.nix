@@ -19,24 +19,26 @@
     };
   };
   outputs = { self, nixpkgs, flake-utils, rust-overlay, crane }:
-    flake-utils.lib.eachDefaultSystem
-      (system:
+    flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
         let
-          overlays = [ (import rust-overlay) ];
           pkgs = import nixpkgs {
             inherit system overlays;
 			config.allowUnfree = true;
           };
-		  craneLib = (crane.mkLib pkgs);
-          src = craneLib.cleanCargoSource ./.;
-          nativeBuildInputs = with pkgs; [ pkg-config ];
-          buildInputs = with pkgs; [ sqlite ];
+          overlays = [ (import rust-overlay) ];
+		  rustToolchain = pkgs.rust-bin.stable.latest.default.override {
+			  targets = [ "x86_64-unknown-linux-musl" ];
+		  };
+		  craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
+		  src = craneLib.cleanCargoSource (craneLib.path ./.);
           commonArgs = {
-            inherit src buildInputs nativeBuildInputs;
+            inherit src;
           };
-          cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+		  cargoArtifacts = craneLib.buildDepsOnly commonArgs;
           bin = craneLib.buildPackage (commonArgs // {
             inherit cargoArtifacts;
+			CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
+			CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
           });
 		  dockerImage = pkgs.dockerTools.streamLayeredImage {
 			  name = "catscii";
@@ -55,9 +57,6 @@
               inherit bin dockerImage;
               default = bin;
             };
-		  devShells.default = mkShell {
-            inputsFrom = [ bin ];
-          };
-        }
-      );
+		}
+	);
 }
