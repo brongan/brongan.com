@@ -151,6 +151,7 @@ async fn analytics_get(State(state): State<ServerState>) -> Response<BoxBody> {
     info!("Received analytics: {:?}", analytics);
     let mut response = String::new();
     use std::fmt::Write;
+    _ = writeln!(&mut response, "Analytics:");
     for analytic in analytics {
         _ = writeln!(&mut response, "{analytic}")
     }
