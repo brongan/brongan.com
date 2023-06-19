@@ -11,7 +11,6 @@ use axum::{
 };
 use color_eyre::{eyre::eyre, Result};
 use locat::Locat;
-use mysql::{Opts, OptsBuilder, Pool, SslOpts};
 use opentelemetry::{
     global,
     trace::{get_active_span, FutureExt, Span, Status, TraceContextExt, Tracer},
@@ -131,7 +130,11 @@ async fn root_get(headers: HeaderMap, State(state): State<ServerState>) -> Respo
     ));
 
     if let Ok(addr) = get_client_addr(&headers) {
-        let iso_code = state.locat.ip_to_iso_code(addr).await;
+        let iso_code = state
+            .locat
+            .ip_to_iso_code(addr)
+            .with_current_context()
+            .await;
         match iso_code {
             Ok(country) => {
                 info!("Got request from {country}");
@@ -143,13 +146,18 @@ async fn root_get(headers: HeaderMap, State(state): State<ServerState>) -> Respo
         info!("Failed to get client ip. Are we running locally?");
     }
 
-    root_get_inner(state)
-        .with_context(Context::current_with_span(span))
-        .await
+    root_get_inner(state).with_current_context().await
 }
 
 async fn analytics_get(State(state): State<ServerState>) -> Response<BoxBody> {
-    let analytics = state.locat.get_analytics().await.unwrap();
+    let tracer = global::tracer("");
+    let span = tracer.start("analytics_get");
+    let analytics = state
+        .locat
+        .get_analytics()
+        .with_context(Context::current_with_span(span))
+        .await
+        .unwrap();
     info!("Received analytics: {:?}", analytics);
     let mut response = String::new();
     use std::fmt::Write;
@@ -193,7 +201,7 @@ async fn main() {
     let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL not found");
 
     let state = ServerState {
-        locat: Arc::new(Locat::new(&country_db_path, &db_url).unwrap()),
+        locat: Arc::new(Locat::new(&country_db_path, &db_url).await.unwrap()),
         client: Default::default(),
     };
 

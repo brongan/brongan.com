@@ -1,13 +1,16 @@
 use std::fmt::Display;
 use std::net::IpAddr;
 
+use opentelemetry::{
+    global,
+    trace::{FutureExt, TraceContextExt, Tracer},
+};
+
 use anyhow::Context;
 use anyhow::Result;
-use mysql::params;
-use mysql::prelude::Queryable;
-use mysql::Pool;
-use opentelemetry::global;
-use opentelemetry::trace::Tracer;
+use mysql_async::params;
+use mysql_async::prelude::*;
+use mysql_async::Pool;
 
 /// Allows geo-locating IPs and keeps analytics
 #[derive(Debug)]
@@ -22,7 +25,7 @@ pub enum Error {
     MaxMindDb(#[from] maxminddb::MaxMindDBError),
 
     #[error("mysql error: {0}")]
-    MySql(#[from] mysql::Error),
+    MySql(#[from] mysql_async::Error),
 }
 
 #[derive(Debug)]
@@ -39,10 +42,10 @@ impl Display for Analytics {
 }
 
 impl Locat {
-    pub fn new(geoip_country_db_path: &str, analytics_db_path: &str) -> Result<Self, Error> {
+    pub async fn new(geoip_country_db_path: &str, analytics_db_path: &str) -> Result<Self, Error> {
         Ok(Self {
             geoip: maxminddb::Reader::open_readfile(geoip_country_db_path)?,
-            analytics: Db::create(analytics_db_path.to_string())?,
+            analytics: Db::create(analytics_db_path.to_string()).await?,
         })
     }
 
@@ -58,9 +61,14 @@ impl Locat {
                 .context("MaxMindDB missing ISO code")
         })?;
 
-        if let Err(e) = tracer.in_span("analytics.increment", |_| {
-            self.analytics.increment(&addr, iso_code)
-        }) {
+        if let Err(e) = self
+            .analytics
+            .increment(&addr, iso_code)
+            .with_context(opentelemetry::Context::current_with_span(
+                tracer.start("increment"),
+            ))
+            .await
+        {
             eprintln!("Could not increment analytics: {e}");
         }
 
@@ -69,7 +77,14 @@ impl Locat {
 
     /// Returns a map of country codes to number of requests
     pub async fn get_analytics(&self) -> Result<Vec<Analytics>> {
-        Ok(self.analytics.list()?)
+        let tracer = global::tracer("");
+        Ok(self
+            .analytics
+            .list()
+            .with_context(opentelemetry::Context::current_with_span(
+                tracer.start("list"),
+            ))
+            .await?)
     }
 }
 
@@ -79,41 +94,50 @@ struct Db {
 }
 
 impl Db {
-    pub fn create(path: String) -> Result<Db, mysql::Error> {
-        let builder = mysql::OptsBuilder::from_opts(mysql::Opts::from_url(&path)?);
-        let pool = mysql::Pool::new(builder.ssl_opts(mysql::SslOpts::default()))?;
+    pub async fn create(path: String) -> Result<Db, mysql_async::Error> {
+        let builder = mysql_async::OptsBuilder::from_opts(mysql_async::Opts::from_url(&path)?);
+        let pool = mysql_async::Pool::new(builder.ssl_opts(mysql_async::SslOpts::default()));
         let db = Db { pool };
-        db.pool.get_conn()?.query_drop(
-            "CREATE TABLE IF NOT EXISTS analytics (
+        let mut connection = db.pool.get_conn().await?;
+
+        "CREATE TABLE IF NOT EXISTS analytics (
                 ip_address VARCHAR(255) PRIMARY KEY,
                 iso_code VARCHAR(255),
                 count INTEGER NOT NULL
-            )",
-        )?;
+            )"
+        .ignore(&mut connection)
+        .await?;
         Ok(db)
     }
 
-    fn list(&self) -> Result<Vec<Analytics>, mysql::Error> {
-        self.pool.get_conn()?.query_map(
-            "SELECT ip_address, iso_code, count FROM analytics",
-            |(ip_address, iso_code, count)| Analytics {
+    async fn list(&self) -> Result<Vec<Analytics>, mysql_async::Error> {
+        let mut connection = self.pool.get_conn().await?;
+
+        "SELECT ip_address, iso_code, count FROM analytics"
+            .with(())
+            .map(&mut connection, |(ip_address, iso_code, count)| Analytics {
                 ip_address,
                 iso_code,
                 count,
-            },
-        )
+            })
+            .await
     }
 
-    fn increment(&self, ip_address: &IpAddr, iso_code: &str) -> Result<()> {
+    async fn increment(&self, ip_address: &IpAddr, iso_code: &str) -> Result<()> {
         let tracer = global::tracer("");
         let ip_address = ip_address.to_string();
-        let mut connection = tracer.in_span("get_connection", |_| self.pool.get_conn())?;
-        connection.exec_drop(
-            "INSERT INTO analytics (ip_address, iso_code, count)
+        let mut connection = self
+            .pool
+            .get_conn()
+            .with_context(opentelemetry::Context::current_with_span(
+                tracer.start("get_connection"),
+            ))
+            .await?;
+        Ok("INSERT INTO analytics (ip_address, iso_code, count)
              VALUES (:ip_address, :iso_code, 1)
-             ON DUPLICATE KEY UPDATE count = count + 1",
-            params! {ip_address, iso_code},
-        )?;
-        Ok(())
+             ON DUPLICATE KEY UPDATE count = count + 1"
+            .with(params! {ip_address, iso_code})
+            .ignore(&mut connection)
+            .await?)
     }
 }
