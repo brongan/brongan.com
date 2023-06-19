@@ -93,7 +93,7 @@ async fn get_cat_ascii_art(client: &reqwest::Client) -> Result<String> {
         )
     });
 
-    Ok(ascii_art)
+    Ok(ascii_art.replace("<style>* {font-family: Courier;}</style>", ""))
 }
 
 async fn root_get_inner(state: ServerState) -> Response<BoxBody> {
