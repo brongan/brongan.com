@@ -5,6 +5,7 @@ use anyhow::Context;
 use anyhow::Result;
 use mysql::params;
 use mysql::prelude::Queryable;
+use mysql::Pool;
 use opentelemetry::global;
 use opentelemetry::trace::Tracer;
 
@@ -41,9 +42,7 @@ impl Locat {
     pub fn new(geoip_country_db_path: &str, analytics_db_path: &str) -> Result<Self, Error> {
         Ok(Self {
             geoip: maxminddb::Reader::open_readfile(geoip_country_db_path)?,
-            analytics: Db {
-                path: analytics_db_path.to_string(),
-            },
+            analytics: Db::create(analytics_db_path.to_string())?,
         })
     }
 
@@ -76,32 +75,26 @@ impl Locat {
 
 #[derive(Debug)]
 struct Db {
-    path: String,
+    pool: Pool,
 }
 
 impl Db {
-    fn migrate(&self, conn: &mut mysql::PooledConn) -> Result<(), mysql::Error> {
-        conn.query_drop(
+    pub fn create(path: String) -> Result<Db, mysql::Error> {
+        let builder = mysql::OptsBuilder::from_opts(mysql::Opts::from_url(&path)?);
+        let pool = mysql::Pool::new(builder.ssl_opts(mysql::SslOpts::default()))?;
+        let db = Db { pool };
+        db.pool.get_conn()?.query_drop(
             "CREATE TABLE IF NOT EXISTS analytics (
                 ip_address VARCHAR(255) PRIMARY KEY,
                 iso_code VARCHAR(255),
                 count INTEGER NOT NULL
             )",
         )?;
-        Ok(())
-    }
-
-    fn get_connection(&self) -> Result<mysql::PooledConn, mysql::Error> {
-        let builder = mysql::OptsBuilder::from_opts(mysql::Opts::from_url(&self.path)?);
-        let pool = mysql::Pool::new(builder.ssl_opts(mysql::SslOpts::default()))?;
-        let mut connection = pool.get_conn()?;
-        self.migrate(&mut connection)?;
-        Ok(connection)
+        Ok(db)
     }
 
     fn list(&self) -> Result<Vec<Analytics>, mysql::Error> {
-        let mut connection = self.get_connection()?;
-        connection.query_map(
+        self.pool.get_conn()?.query_map(
             "SELECT ip_address, iso_code, count FROM analytics",
             |(ip_address, iso_code, count)| Analytics {
                 ip_address,
@@ -114,7 +107,7 @@ impl Db {
     fn increment(&self, ip_address: &IpAddr, iso_code: &str) -> Result<()> {
         let tracer = global::tracer("");
         let ip_address = ip_address.to_string();
-        let mut connection = tracer.in_span("get_connection", |_| self.get_connection())?;
+        let mut connection = tracer.in_span("get_connection", |_| self.pool.get_conn())?;
         connection.exec_drop(
             "INSERT INTO analytics (ip_address, iso_code, count)
              VALUES (:ip_address, :iso_code, 1)

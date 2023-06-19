@@ -191,9 +191,6 @@ async fn main() {
         .unwrap_or_else(|_| panic!("${country_db_env_var} must be set"));
 
     let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL not found");
-    let builder = OptsBuilder::from_opts(Opts::from_url(&db_url).unwrap());
-    let pool = Pool::new(builder.ssl_opts(SslOpts::default())).unwrap();
-    let _conn = pool.get_conn().unwrap();
 
     let state = ServerState {
         locat: Arc::new(Locat::new(&country_db_path, &db_url).unwrap()),
