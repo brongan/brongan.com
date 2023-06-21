@@ -92,8 +92,7 @@ async fn get_cat_ascii_art(client: &reqwest::Client) -> Result<String> {
             OptionBuilder::new().target(HtmlFile(true, true)).build(),
         )
     });
-
-    Ok(ascii_art.replace("<style>* {font-family: Courier;}</style>", ""))
+    Ok(ascii_art)
 }
 
 async fn root_get_inner(client: &reqwest::Client) -> Response<BoxBody> {
