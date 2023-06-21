@@ -1,22 +1,25 @@
 #![allow(dead_code)]
 use clap::Parser;
-use image::{ImageBuffer, GrayImage};
+use image::{GrayImage, ImageBuffer};
+use mandelbrot::{escape_time, pixel_to_point, Bounds, Point2d};
 use num::Complex;
-use std::fmt::{self, Display, Formatter};
 use rayon::prelude::*;
-use mandelbrot::{Bounds, Point2d, pixel_to_point, escape_time};
+use std::fmt::{self, Display, Formatter};
 
 fn render_multithreaded(
     image: &mut GrayImage,
     upper_left: Complex<f64>,
     lower_right: Complex<f64>,
 ) {
-    let bounds =  Bounds  {width: image.width(), height: image.height()};
+    let bounds = Bounds {
+        width: image.width(),
+        height: image.height(),
+    };
     image.par_iter_mut().enumerate().for_each(|(i, pixel)| {
         let i = i as u32;
         let point = Point2d {
-            x: i % image.width(),
-            y: i / image.width(),
+            x: i % bounds.width,
+            y: i / bounds.width,
         };
         let point = pixel_to_point(bounds, point, upper_left, lower_right);
         *pixel = match escape_time(point, 255) {
@@ -56,7 +59,5 @@ fn main() {
     let args = Args::parse();
     let mut image = ImageBuffer::new(args.bounds.width, args.bounds.height);
     render_multithreaded(&mut image, args.upper_left, args.lower_right);
-    image
-        .write_image(&args.path)
-        .expect("error writing PNG file");
+    image.save(&args.path).expect("error writing PNG file");
 }
