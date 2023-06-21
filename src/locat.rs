@@ -124,15 +124,8 @@ impl Db {
     }
 
     async fn increment(&self, ip_address: &IpAddr, iso_code: &str) -> Result<()> {
-        let tracer = global::tracer("");
         let ip_address = ip_address.to_string();
-        let mut connection = self
-            .pool
-            .get_conn()
-            .with_context(opentelemetry::Context::current_with_span(
-                tracer.start("get_connection"),
-            ))
-            .await?;
+        let mut connection = self.pool.get_conn().await?;
         Ok("INSERT INTO analytics (ip_address, iso_code, count)
              VALUES (:ip_address, :iso_code, 1)
              ON DUPLICATE KEY UPDATE count = count + 1"

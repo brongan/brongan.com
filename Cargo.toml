@@ -10,6 +10,7 @@ anyhow = "1.0.71"
 artem = { version = "1.1.7", default-features = false }
 axum = "0.6.18"
 color-eyre = "0.6.2"
+futures = "0.3.28"
 image = "0.24.6"
 maxminddb = "0.23.0"
 mysql_async = { version = "0.32.2", default-features = false, features = ["default-rustls", "minimal", "tracing"] }

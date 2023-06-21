@@ -505,6 +505,7 @@ dependencies = [
  "artem",
  "axum",
  "color-eyre",
+ "futures",
  "image",
  "maxminddb",
  "mysql_async",

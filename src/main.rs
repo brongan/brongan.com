@@ -10,6 +10,7 @@ use axum::{
     Router,
 };
 use color_eyre::{eyre::eyre, Result};
+use futures::future::join;
 use locat::Locat;
 use opentelemetry::{
     global,
@@ -95,8 +96,8 @@ async fn get_cat_ascii_art(client: &reqwest::Client) -> Result<String> {
     Ok(ascii_art.replace("<style>* {font-family: Courier;}</style>", ""))
 }
 
-async fn root_get_inner(state: ServerState) -> Response<BoxBody> {
-    match get_cat_ascii_art(&state.client).await {
+async fn root_get_inner(client: &reqwest::Client) -> Response<BoxBody> {
+    match get_cat_ascii_art(client).await {
         Ok(art) => (
             StatusCode::OK,
             [(CONTENT_TYPE, "text/html; charset=utf-8")],
@@ -118,6 +119,23 @@ async fn root_get_inner(state: ServerState) -> Response<BoxBody> {
     }
 }
 
+async fn get_iso_code(headers: &HeaderMap, locat: &Locat) {
+    if let Ok(addr) = get_client_addr(&headers) {
+        let iso_code = locat.ip_to_iso_code(addr).await;
+        match iso_code {
+            Ok(country) => {
+                info!("Got request from {country}");
+                get_active_span(|span| {
+                    span.set_attribute(KeyValue::new("country", country.to_string()))
+                });
+            }
+            Err(err) => warn!("Could not determine country for IP address: {err}"),
+        }
+    } else {
+        info!("Failed to get client ip. Are we running locally?");
+    }
+}
+
 async fn root_get(headers: HeaderMap, State(state): State<ServerState>) -> Response<BoxBody> {
     let tracer = global::tracer("");
     let mut span = tracer.start("root_get");
@@ -129,24 +147,13 @@ async fn root_get(headers: HeaderMap, State(state): State<ServerState>) -> Respo
             .unwrap_or_default(),
     ));
 
-    if let Ok(addr) = get_client_addr(&headers) {
-        let iso_code = state
-            .locat
-            .ip_to_iso_code(addr)
-            .with_current_context()
-            .await;
-        match iso_code {
-            Ok(country) => {
-                info!("Got request from {country}");
-                span.set_attribute(KeyValue::new("country", country.to_string()));
-            }
-            Err(err) => warn!("Could not determine country for IP address: {err}"),
-        }
-    } else {
-        info!("Failed to get client ip. Are we running locally?");
-    }
-
-    root_get_inner(state).with_current_context().await
+    let (response, _) = join(
+        root_get_inner(&state.client),
+        get_iso_code(&headers, &state.locat),
+    )
+    .with_context(Context::current_with_span(span))
+    .await;
+    response
 }
 
 async fn analytics_get(State(state): State<ServerState>) -> Response<BoxBody> {
