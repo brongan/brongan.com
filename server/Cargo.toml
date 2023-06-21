@@ -1,0 +1,28 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.71"
+artem = { version = "1.2", default-features = false }
+axum = "0.6.18"
+clap = { version = "4.3.5", features = ["derive"] }
+color-eyre = "0.6.2"
+futures = "0.3.28"
+image = "0.24.6"
+maxminddb = "0.23.0"
+mysql_async = { version = "0.32.2", default-features = false, features = ["default-rustls", "minimal", "tracing"] }
+opentelemetry = { version = "0.18.0", features = ["rt-tokio"] }
+opentelemetry-honeycomb = { git = "https://github.com/fasterthanlime/opentelemetry-honeycomb-rs", branch = "simplified", version = "0.1.0" }
+pretty-hex = "0.3.0"
+reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls-webpki-roots"] }
+sentry = { version = "0.31", default-features = false, features = ["reqwest", "rustls", "backtrace", "contexts", "panic"] }
+serde = { version = "1.0.163", features = ["derive"] }
+thiserror = "1.0.40"
+tokio = { version = "1.28", features = ["full"] }
+tower = "0.4.13"
+tower-http = { version = "0.4.1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json"] }
+

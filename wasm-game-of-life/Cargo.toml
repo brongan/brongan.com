@@ -24,10 +24,6 @@ yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
 criterion = "^0.3"
 pprof = { version = "^0.3", features = ["flamegraph"] }
 
-[profile.release]
-debug = true # gimme those unstripped binaries
-opt-level = "s" # Tell `rustc` to optimize for small code size.
-
 [dependencies.web-sys]
 version = "0.3"
 features = [

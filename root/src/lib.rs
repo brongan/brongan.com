@@ -61,7 +61,7 @@ fn nav() -> Html {
             title: "Mandelbrot".to_string(),
             route: Route::Mandelbrot,
             thumbnail: "img/mandelbrot.png".to_string(),
-        }
+        },
     ];
 
     let nav = use_navigator().unwrap();

@@ -1,3 +1,6 @@
+@import "ishihara.scss";
+@import "wasm-game-of-life.scss";
+
 .root {
 	display: flex;
 }
@@ -12,7 +15,6 @@
 		border-radius: 50%;
 	}
 }
-
 
 .main-panel {
 	position: absolute; 
