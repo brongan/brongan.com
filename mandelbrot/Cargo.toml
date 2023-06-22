@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-num = "0.4"
-image = "0.24"
-anyhow = "1.0.70"
-rayon = "1.7.0"
-clap = { version = "4.2.1", features = ["derive"] }
+anyhow.workspace = true
+clap.workspace = true
+image.workspace = true
+num.workspace = true
+rayon.workspace = true

@@ -1,5 +1,4 @@
-use crate::locat;
-use crate::ServerState;
+use crate::{locat, ServerState};
 use anyhow::anyhow;
 use artem::options::{OptionBuilder, TargetType::HtmlFile};
 use axum::{
@@ -10,6 +9,7 @@ use axum::{
 };
 use color_eyre::{eyre::eyre, Result};
 use futures::future::join;
+use image::DynamicImage;
 use locat::Locat;
 use opentelemetry::{
     global,
@@ -68,7 +68,7 @@ async fn get_cat_ascii_art(client: &reqwest::Client) -> Result<String> {
         .with_context(Context::current_with_span(tracer.start("download_file")))
         .await?;
 
-    let image = tracer.in_span("image::load_from_memory", |cx| {
+    let image: DynamicImage = tracer.in_span("image::load_from_memory", |cx| {
         let img = image::load_from_memory(&image)?;
         cx.span()
             .set_attribute(KeyValue::new("width", img.width() as i64));

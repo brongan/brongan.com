@@ -9,16 +9,16 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 fixedbitset = "0.4"
-getrandom = { version = "0.2", features = ["js"] }
-gloo-render = "0.1"
-gloo-timers = "0.2"
-gloo-events = "0.1"
-js-sys = "0.3"
-log = "0.4"
-rand = "0.8"
-wasm-bindgen = "0.2"
-wasm-logger = "0.2"
-yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
+getrandom.workspace = true
+gloo-events.workspace = true
+gloo-render.workspace = true
+gloo-timers.workspace = true
+js-sys.workspace = true
+log.workspace = true
+rand.workspace = true
+wasm-bindgen.workspace = true
+wasm-logger.workspace = true
+yew.workspace = true
 
 [dev-dependencies]
 criterion = "^0.3"

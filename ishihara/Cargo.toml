@@ -5,14 +5,19 @@ authors = ["Brennan Tracy <brennantracy4@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-getrandom = { version = "0.2", features = ["js"] }
-gloo-events = "0.1"
-strum = "0.24"
-strum_macros = "0.24"
-image = "0.23"
-imageproc = "0.22"
-log = "0.4"
-nom = "6.0"
-rand = "0.8"
+anyhow.workspace = true
+clap.workspace = true
+getrandom.workspace = true
+gloo-events.workspace = true
+image.workspace = true
+imageproc.workspace = true
+log.workspace = true
+nom.workspace = true
+num.workspace = true
+rand.workspace = true
+rayon.workspace = true
 rusttype = "0.9"
-
+strum.workspace = true
+strum_macros.workspace = true
+wasm-logger.workspace = true
+yew.workspace = true
