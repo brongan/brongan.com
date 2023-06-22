@@ -1,6 +1,3 @@
 [submodule "ishihara"]
 	path = ishihara
 	url = ./ishihara
-[submodule "mandelbrot"]
-	path = mandelbrot
-	url = git@github.com:HBBrennan/mandelbrot.git
