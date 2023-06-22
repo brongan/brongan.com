@@ -45,7 +45,7 @@ fn nav() -> Html {
         Page {
             title: "Home".to_string(),
             route: Route::Home,
-            thumbnail: "/img/brongan.jpg".to_string(),
+            thumbnail: "img/brongan.jpg".to_string(),
         },
         Page {
             title: "Ishihara Plate Generator".to_string(),
