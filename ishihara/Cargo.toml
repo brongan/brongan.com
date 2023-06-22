@@ -1,0 +1,18 @@
+[package]
+name = "ishihara"
+version = "0.1.0"
+authors = ["Brennan Tracy <brennantracy4@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+gloo-events = "0.1"
+strum = "0.24"
+strum_macros = "0.24"
+image = "0.23"
+imageproc = "0.22"
+log = "0.4"
+nom = "6.0"
+rand = "0.8"
+rusttype = "0.9"
+
