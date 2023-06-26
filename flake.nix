@@ -19,55 +19,55 @@
       };
     };
   };
-  outputs = { self, nixpkgs, crane, flake-utils, rust-overlay, ...  }:
+  outputs = { self, nixpkgs, crane, flake-utils, rust-overlay, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
-          inherit system ;
+          inherit system;
           config.allowUnfree = true;
-		  overlays = [ (import rust-overlay) ];
+          overlays = [ (import rust-overlay) ];
         };
-		inherit (pkgs) lib;
-		rustToolchain = pkgs.rust-bin.stable.latest.default.override {
+        inherit (pkgs) lib;
+        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
           targets = [ "wasm32-unknown-unknown" ];
         };
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
-		src = lib.cleanSourceWith {
+        src = lib.cleanSourceWith {
           src = ./.;
           filter = path: type:
             (lib.hasSuffix "\.html" path) ||
             (lib.hasSuffix "\.scss" path) ||
             (lib.hasSuffix "\.frag" path) ||
             (lib.hasSuffix "\.vert" path) ||
-			(lib.hasInfix "/img/" path) ||
-			(lib.hasInfix "/resources/" path) ||
+            (lib.hasInfix "/img/" path) ||
+            (lib.hasInfix "/resources/" path) ||
             (craneLib.filterCargoSources path type)
           ;
         };
         commonArgs = {
           inherit src;
-		  pname = "brongan.com";
+          pname = "brongan.com";
           version = "0.1.0";
         };
-		nativeArgs = commonArgs // {
-			pname = "trunk-workspace-native";
-		};
+        nativeArgs = commonArgs // {
+          pname = "trunk-workspace-native";
+        };
         cargoArtifacts = craneLib.buildDepsOnly nativeArgs;
         server = craneLib.buildPackage (commonArgs // {
           inherit cargoArtifacts;
           CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
           CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
-		  CLIENT_DIST = myClient;
+          CLIENT_DIST = myClient;
         });
-		wasmArgs = commonArgs // {
+        wasmArgs = commonArgs // {
           pname = "trunk-workspace-wasm";
           cargoExtraArgs = "--package=root --package=wasm-game-of-life --package=ishihara";
           CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
         };
-		cargoArtifactsWasm = craneLib.buildDepsOnly (wasmArgs // {
+        cargoArtifactsWasm = craneLib.buildDepsOnly (wasmArgs // {
           doCheck = false;
         });
-		myClient = craneLib.buildTrunkPackage (wasmArgs // {
+        myClient = craneLib.buildTrunkPackage (wasmArgs // {
           pname = "trunk-workspace-client";
           cargoArtifacts = cargoArtifactsWasm;
           trunkIndexPath = "root/index.html";
@@ -82,7 +82,6 @@
           };
         };
       in
-      with pkgs;
       {
         packages =
           {
