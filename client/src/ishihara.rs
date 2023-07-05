@@ -1,5 +1,3 @@
-extern crate rand;
-
 use image::{DynamicImage, Rgba, RgbaImage};
 use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut};
 use rand::distributions::uniform::Uniform;
@@ -11,11 +9,8 @@ use std::fmt;
 use strum_macros::EnumIter;
 use strum_macros::EnumString;
 
-mod color;
-use color::{hex_color, Color};
-
-mod point2d;
-use point2d::Point2D;
+use crate::color::{hex_color, Color};
+use crate::point2d::Point2D;
 
 #[derive(Clone, Copy)]
 enum IshiharaColor {
@@ -59,8 +54,20 @@ fn get_color(color: IshiharaColor, blindness: Blindness, rng: &mut ThreadRng) ->
                 .unwrap()
                 .1
         }
-        (IshiharaColor::Inside, Blindness::BlueYellow) => hex_color(["#0f3179", "#0270bf", "#696983"].choose(rng).unwrap()).unwrap().1,
-        (IshiharaColor::Outside, Blindness::BlueYellow) => hex_color(["#9e6e0c", "#cb850c", "#cb850c", "#ad8b10"].choose(rng).unwrap()).unwrap().1,
+        (IshiharaColor::Inside, Blindness::BlueYellow) => {
+            hex_color(["#0f3179", "#0270bf", "#696983"].choose(rng).unwrap())
+                .unwrap()
+                .1
+        }
+        (IshiharaColor::Outside, Blindness::BlueYellow) => {
+            hex_color(
+                ["#9e6e0c", "#cb850c", "#cb850c", "#ad8b10"]
+                    .choose(rng)
+                    .unwrap(),
+            )
+            .unwrap()
+            .1
+        }
     }
 }
 

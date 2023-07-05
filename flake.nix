@@ -50,44 +50,41 @@
           version = "0.1.0";
         };
         nativeArgs = commonArgs // {
-          pname = "trunk-workspace-native";
+          pname = "server";
         };
         cargoArtifacts = craneLib.buildDepsOnly nativeArgs;
-        server = craneLib.buildPackage (commonArgs // {
+        myServer = craneLib.buildPackage (nativeArgs // {
           inherit cargoArtifacts;
-          CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
-          CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
           CLIENT_DIST = myClient;
         });
         wasmArgs = commonArgs // {
-          pname = "trunk-workspace-wasm";
-          cargoExtraArgs = "--package=root --package=wasm-game-of-life --package=ishihara";
+          pname = "client";
+          cargoExtraArgs = "--package=client";
           CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
         };
         cargoArtifactsWasm = craneLib.buildDepsOnly (wasmArgs // {
           doCheck = false;
         });
         myClient = craneLib.buildTrunkPackage (wasmArgs // {
-          pname = "trunk-workspace-client";
+          pname = "brongan-com-client";
           cargoArtifacts = cargoArtifactsWasm;
-          trunkIndexPath = "root/index.html";
+          trunkIndexPath = "client/index.html";
         });
         dockerImage = pkgs.dockerTools.streamLayeredImage {
           name = "brongan_com";
           tag = "latest";
-          contents = [ server ];
+          contents = [ myServer myClient ];
           config = {
-            Cmd = [ "${server}/bin/server" ];
+            Cmd = [ "${myServer}/bin/server" ];
             Env = with pkgs; [ "GEOLITE2_COUNTRY_DB=${clash-geoip}/etc/clash/Country.mmdb" ];
           };
         };
-      in
-      {
-        packages =
-          {
-            inherit server dockerImage;
-            default = server;
-          };
-      }
-    );
+		in
+		{
+			packages = {
+				inherit myServer dockerImage;
+				default = myServer;
+			};
+		}
+		);
 }

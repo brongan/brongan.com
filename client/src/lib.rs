@@ -1,12 +1,17 @@
+use crate::game_of_life::GameOfLifeModel;
 use crate::ishihara_component::IshiharaPlate;
 use crate::mandelbrot_component::MandelbrotModel;
-use wasm_game_of_life::GameOfLifeModel;
 use yew::{function_component, html, Callback, Html};
 use yew_router::prelude::*;
 
+mod color;
+mod game_of_life;
+mod ishihara;
 mod ishihara_component;
 mod ishihara_form;
+mod mandelbrot;
 mod mandelbrot_component;
+mod point2d;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {

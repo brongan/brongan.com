@@ -1,5 +1,6 @@
-use crate::Timer;
-use crate::{Universe, UniverseRenderer};
+use crate::game_of_life::universe::Universe;
+use crate::game_of_life::universe::UniverseRenderer;
+use crate::game_of_life::Timer;
 
 use wasm_bindgen::JsCast;
 use web_sys::{HtmlCanvasElement, WebGlProgram, WebGlRenderingContext as GL, WebGlShader};

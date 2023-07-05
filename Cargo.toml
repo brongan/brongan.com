@@ -1,36 +1,12 @@
 [workspace]
 members = [
-	"mandelbrot",
-	"root",
-	"server",
-	"wasm-game-of-life",
-    "ishihara",
+  "client",
+  "server",
 ]
 resolver = "2"
 
-[workspace.dependencies]
-getrandom = { version = "0.2", features = ["js"] }
-gloo-events = "0.1"
-js-sys = "0.3"
-wasm-bindgen = "0.2"
-wasm-logger = "0.2"
-yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
-gloo-render = "0.1"
-gloo-timers = "0.2"
-image = "0.24"
-imageproc = "0.23"
-log = "0.4"
-nom = "7.0"
-num = "0.4"
-clap = { version = "4.2", features = ["derive"] }
-anyhow = "1.0"
-rand = "0.8"
-strum = "0.24"
-rayon = "1.7.0"
-strum_macros = "0.24"
-
-[profile.release]
-debug = 1 # Include enough debug info for sentry to be useful
-opt-level = "z"  # Optimize for size.
-lto = true # Enable link-time optimization
+#[profile.release]
+#debug = 1 # Include enough debug info for sentry to be useful
+#opt-level = "z"  # Optimize for size.
+#lto = true # Enable link-time optimization
 

@@ -1,9 +1,8 @@
+use crate::mandelbrot::{generate_mandelbrot, Bounds};
 use num::Complex;
 use wasm_bindgen::{Clamped, JsCast};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 use yew::prelude::*;
-
-use mandelbrot::{generate_mandelbrot, Bounds};
 
 #[function_component(MandelbrotModel)]
 pub fn render_plate() -> Html {

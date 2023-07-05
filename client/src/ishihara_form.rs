@@ -1,9 +1,8 @@
-use yew::prelude::*;
+use crate::ishihara::Blindness;
+use std::str::FromStr;
 use strum::IntoEnumIterator;
 use web_sys::{FormData, HtmlFormElement};
-use std::str::FromStr;
-
-use ishihara::Blindness;
+use yew::prelude::*;
 
 #[derive(Debug, Default)]
 pub struct Data {
@@ -24,7 +23,7 @@ impl From<FormData> for Data {
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
-    pub onsubmit: Callback<Data>
+    pub onsubmit: Callback<Data>,
 }
 
 #[function_component(IshiharaInput)]
@@ -43,12 +42,11 @@ pub fn ishihara_input(props: &Props) -> Html {
 
     let form_callback = props.onsubmit.clone();
     let onsubmit = Callback::from(move |e: SubmitEvent| {
-        e.prevent_default(); 
+        e.prevent_default();
         if let Some(form) = form_callback_ref.cast::<HtmlFormElement>() {
-        let data = Data::from(FormData::new_with_form(&form).unwrap());
-        form_callback.emit(data);
+            let data = Data::from(FormData::new_with_form(&form).unwrap());
+            form_callback.emit(data);
         }
-        
     });
 
     html! {

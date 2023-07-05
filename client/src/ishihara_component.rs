@@ -1,9 +1,8 @@
+use crate::ishihara::generate_plate;
+use crate::ishihara_form::{Data, IshiharaInput};
 use wasm_bindgen::{Clamped, JsCast};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 use yew::prelude::*;
-
-use crate::ishihara_form::{Data, IshiharaInput};
-use ishihara::generate_plate;
 
 #[function_component(IshiharaPlate)]
 pub fn render_plate() -> Html {
@@ -26,8 +25,7 @@ pub fn render_plate() -> Html {
                 .unwrap()
                 .dyn_into::<CanvasRenderingContext2d>()
                 .unwrap();
-            ctx.put_image_data(&image.unwrap(), 0.0, 0.0)
-                .unwrap();
+            ctx.put_image_data(&image.unwrap(), 0.0, 0.0).unwrap();
         }
     };
 

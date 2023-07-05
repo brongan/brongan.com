@@ -1,6 +1,9 @@
 use anyhow::anyhow;
-use image::{DynamicImage, RgbaImage};
+use image::{DynamicImage, GrayImage, RgbaImage};
 use num::Complex;
+use rayon::iter::IndexedParallelIterator;
+use rayon::iter::IntoParallelRefMutIterator;
+use rayon::iter::ParallelIterator;
 use std::fmt::{self, Display};
 use std::str::FromStr;
 
@@ -95,6 +98,30 @@ fn render(image: &mut RgbaImage, upper_left: Complex<f64>, lower_right: Complex<
         pixel.0[2] = brightness;
         pixel.0[3] = 255;
     }
+}
+
+#[allow(dead_code)]
+fn render_multithreaded(
+    image: &mut GrayImage,
+    upper_left: Complex<f64>,
+    lower_right: Complex<f64>,
+) {
+    let bounds = Bounds {
+        width: image.width(),
+        height: image.height(),
+    };
+    image.par_iter_mut().enumerate().for_each(|(i, pixel)| {
+        let i = i as u32;
+        let point = Point2d {
+            x: i % bounds.width,
+            y: i / bounds.width,
+        };
+        let point = pixel_to_point(bounds, point, upper_left, lower_right);
+        *pixel = match escape_time(point, 255) {
+            None => 0,
+            Some(count) => 255 - count as u8,
+        };
+    })
 }
 
 pub fn generate_mandelbrot(

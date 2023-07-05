@@ -1,7 +1,4 @@
-extern crate fixedbitset;
-extern crate rand;
-
-use crate::Timer;
+use crate::game_of_life::util::Timer;
 use fixedbitset::FixedBitSet;
 use rand::distributions::{Bernoulli, Distribution};
 use rand::thread_rng;
@@ -81,6 +78,7 @@ impl Universe {
 
     /// Set cells to be alive in a universe by passing the row and column
     /// of each cell as an array.
+    #[allow(dead_code)]
     pub fn set_cells(&mut self, cells: &[(u32, u32)]) {
         self.cells.clear();
         for (row, col) in cells.iter().cloned() {
@@ -143,6 +141,7 @@ impl Universe {
         self.cells.clear();
     }
 
+    #[allow(dead_code)]
     pub fn render(&self) -> String {
         self.to_string()
     }
@@ -155,6 +154,7 @@ impl Universe {
         self.height
     }
 
+    #[allow(dead_code)]
     pub fn cells(&self) -> *const u32 {
         self.cells.as_slice().as_ptr()
     }

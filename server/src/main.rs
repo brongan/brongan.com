@@ -12,7 +12,7 @@ use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
-use tokio::fs;
+use tokio::fs::{self, read_to_string};
 use tower::ServiceExt;
 use tower_http::services::ServeDir;
 use tracing::{info, warn, Level};
@@ -21,12 +21,12 @@ use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::Subscriber
 #[derive(Parser, Debug)]
 #[clap(name = "server", about = "My server")]
 struct Opt {
-    #[clap(short = 'a', long = "addr", default_value = "::1")]
+    #[clap(short = 'a', long = "addr", default_value = "0.0.0.0")]
     addr: String,
     #[clap(short = 'p', long = "port", default_value = "8080")]
     port: u16,
-    #[clap(long = "static-dir", default_value = "./dist")]
-    static_dir: String,
+    #[clap(long = "CLIENT_DIST", default_value = "")]
+    client_dist: String,
 }
 
 #[derive(Clone, Debug)]
@@ -83,17 +83,20 @@ async fn main() {
         .route("/analytics", get(analytics_get))
         .with_state(state)
         .fallback(get(|req| async move {
-            match ServeDir::new(&opt.static_dir).oneshot(req).await {
+            match ServeDir::new(&opt.client_dist).oneshot(req).await {
                 Ok(res) => {
                     let status = res.status();
                     match status {
                         StatusCode::NOT_FOUND => {
-                            let index_path = PathBuf::from(&opt.static_dir).join("index.html");
-                            let index_content = match fs::read_to_string(index_path).await {
+                            let index_path = PathBuf::from(&opt.client_dist).join("index.html");
+                            let index_content = match read_to_string(index_path.clone()).await {
                                 Err(_) => {
                                     return Response::builder()
                                         .status(StatusCode::NOT_FOUND)
-                                        .body(boxed(Body::from("index file not found")))
+                                        .body(boxed(Body::from(format!(
+                                            "index file not found: {:?}",
+                                            index_path
+                                        ))))
                                         .unwrap()
                                 }
                                 Ok(index_content) => index_content,
