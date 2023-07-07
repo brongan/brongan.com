@@ -5,8 +5,12 @@ kill_signal = "SIGINT"
 kill_timeout = 5
 primary_region = "sea"
 
+[mounts]
+source = "catscii_db"
+destination = "/db"
+
 [env]
-ANALYTICS_DB = "analytics.db"
+ANALYTICS_DB = "/db/analytics.db"
 
 [[services]]
   protocol = "tcp"

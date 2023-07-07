@@ -62,13 +62,13 @@ async fn main() {
         .init();
 
     let country_db_env_var = "GEOLITE2_COUNTRY_DB";
-    let country_db_path = std::env::var(country_db_env_var)
-        .unwrap_or_else(|_| panic!("${country_db_env_var} must be set"));
+    let country_db_path =
+        std::env::var(country_db_env_var).unwrap_or("db/GeoLite2-Country.mmdb".to_string());
 
-    let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL not found");
+    let analytics_db = std::env::var("ANALYTICS_DB").unwrap_or("db/analytics.db".to_string());
 
     let state = ServerState {
-        locat: Arc::new(Locat::new(&country_db_path, &db_url).await.unwrap()),
+        locat: Arc::new(Locat::new(&country_db_path, analytics_db).await.unwrap()),
         client: Default::default(),
     };
 

@@ -15,7 +15,6 @@ futures-util = "0.3.28"
 hyper = "0.14.27"
 image = "0.24"
 maxminddb = "0.23.0"
-mysql_async = { version = "0.32.2", default-features = false, features = ["default-rustls", "minimal", "tracing"] }
 opentelemetry = { version = "0.18.0", features = ["rt-tokio"] }
 opentelemetry-honeycomb = { git = "https://github.com/fasterthanlime/opentelemetry-honeycomb-rs", branch = "simplified", version = "0.1.0" }
 pretty-hex = "0.3.0"

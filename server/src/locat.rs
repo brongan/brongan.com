@@ -8,7 +8,7 @@ use opentelemetry::{
 
 use anyhow::Context;
 use anyhow::Result;
-use rusqlite::Connection;
+use tokio_rusqlite::Connection;
 
 /// Allows geo-locating IPs and keeps analytics
 #[derive(Debug)]
@@ -22,8 +22,11 @@ pub enum Error {
     #[error("maxminddb error: {0}")]
     MaxMindDb(#[from] maxminddb::MaxMindDBError),
 
+    #[error("io error: {0}")]
+    Io(#[from] std::io::Error),
+
     #[error("rusqlite error: {0}")]
-    Rusqlite(#[from] rusqlite::Error),
+    Rusqlite(#[from] tokio_rusqlite::Error),
 }
 
 #[derive(Debug)]
@@ -40,10 +43,11 @@ impl Display for Analytics {
 }
 
 impl Locat {
-    pub async fn new(geoip_country_db_path: &str, analytics_db_path: &str) -> Result<Self, Error> {
+    pub async fn new(geoip_country_db_path: &str, analytics_db_path: String) -> Result<Self, Error> {
+        let geoip_data = tokio::fs::read(geoip_country_db_path).await?;
         Ok(Self {
-            geoip: maxminddb::Reader::open_readfile(geoip_country_db_path)?,
-            analytics: Db::create(analytics_db_path.to_string()).await?,
+            geoip: maxminddb::Reader::from_source(geoip_data)?,
+            analytics: Db::create(analytics_db_path).await?,
         })
     }
 
@@ -59,14 +63,9 @@ impl Locat {
                 .context("MaxMindDB missing ISO code")
         })?;
 
-        if let Err(e) = self
-            .analytics
-            .increment(&addr, iso_code)
-            .with_context(opentelemetry::Context::current_with_span(
-                tracer.start("increment"),
-            ))
-            .await
-        {
+        if let Err(e) = self.analytics.increment(&addr, iso_code).with_context(
+            opentelemetry::Context::current_with_span(tracer.start("increment"))).await
+         {
             eprintln!("Could not increment analytics: {e}");
         }
 
@@ -88,48 +87,61 @@ impl Locat {
 
 #[derive(Debug)]
 struct Db {
-    path: String,
+    connection: Connection,
 }
 
 impl Db {
-    fn create(&self, path: String) -> Result<Db, rusqlite::Error> {
-        let db = Db { path };
-        let connection = Connection::open(&self.path)?;
-        connection.execute(
-            "CREATE TABLE IF NOT EXISTS analytics (
-                ip_address TEXT PRIMARY KEY,
-                iso_code TEXT,
+    async fn create(path: String) -> Result<Self, tokio_rusqlite::Error> {
+        let connection = Connection::open(path).await?;
+         connection.call(|connection| {
+            // create analytics table
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS analytics (
+                iso_code TEXT PRIMARY KEY,
                 count INTEGER NOT NULL
             )",
-            [],
-        )?;
-        Ok((db))
+                [],
+            )?;
+
+            Ok::<_, rusqlite::Error>(())
+        })
+        .await?; 
+        Ok(Self { connection })
     }
 
-    async fn list(&self) -> Result<Vec<Analytics>, rusqlite::Error> {
-        let connection = self.get_connection()?;
-        let mut statement =
-            connection.prepare("SELECT ip_address, iso_code, count FROM analytics")?;
-        let mut rows = statement.query([])?;
-        let mut analytics = Vec::new();
-        while let Some(row) = rows.next()? {
-            let iso_code = row.get(0)?;
-            let count = row.get(1)?;
-            analytics.push((iso_code, count))
-        }
-        Ok(analytics)
+    async fn list(&self) -> Result<Vec<Analytics>, tokio_rusqlite::Error> {
+        self.connection.call(|connection| {
+            let mut statement =
+                connection.prepare("SELECT ip_address, iso_code, count FROM analytics")?;
+            let mut rows = statement.query([])?;
+            let mut analytics = Vec::new();
+            while let Some(row) = rows.next()? {
+                let ip_address = row.get(0)?;
+                let iso_code = row.get(1)?;
+                let count = row.get(2)?;
+                analytics.push(Analytics {
+                    ip_address,
+                    iso_code,
+                    count,
+                });
+            }
+            Ok(analytics)
+
+        }).await
     }
 
-    async fn increment(&self, ip_address: &IpAddr, iso_code: &str) -> Result<()> {
+    async fn increment(&self, ip_address: &IpAddr, iso_code: &str) -> Result<(), tokio_rusqlite::Error> {
         let ip_address = ip_address.to_string();
-        let connection = self.get_connection()?;
-        let mut statement = connection.prepare(
-            "INSERT INTO analytics (ip_address, iso_code, count)
-             VALUES (?, ?, 1)
-             ON CONFLICT (ip_address)
-             DO UPDATE SET count = count + 1",
-        )?;
-        statement.execute([&ip_address, iso_code])?;
-        Ok(())
+        let iso_code = iso_code.to_owned();
+        self.connection.call(move |connection| {
+            let mut statement = connection.prepare(
+                "INSERT INTO analytics (ip_address, iso_code, count)
+                VALUES (?, ?, 1)
+                ON CONFLICT (ip_address)
+                DO UPDATE SET count = count + 1",
+                )?;
+            statement.execute([&ip_address, &iso_code])?;
+            Ok(())
+        }).await
     }
 }
