@@ -12,7 +12,7 @@ use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
-use tokio::fs::{self, read_to_string};
+use tokio::fs::read_to_string;
 use tower::ServiceExt;
 use tower_http::services::ServeDir;
 use tracing::{info, warn, Level};
@@ -25,8 +25,8 @@ struct Opt {
     addr: String,
     #[clap(short = 'p', long = "port", default_value = "8080")]
     port: u16,
-    #[clap(long = "CLIENT_DIST", default_value = "")]
-    client_dist: String,
+    #[clap(long = "static-dir", default_value = "")]
+    static_dir: String,
 }
 
 #[derive(Clone, Debug)]
@@ -83,12 +83,12 @@ async fn main() {
         .route("/analytics", get(analytics_get))
         .with_state(state)
         .fallback(get(|req| async move {
-            match ServeDir::new(&opt.client_dist).oneshot(req).await {
+            match ServeDir::new(&opt.static_dir).oneshot(req).await {
                 Ok(res) => {
                     let status = res.status();
                     match status {
                         StatusCode::NOT_FOUND => {
-                            let index_path = PathBuf::from(&opt.client_dist).join("index.html");
+                            let index_path = PathBuf::from(&opt.static_dir).join("index.html");
                             let index_content = match read_to_string(index_path.clone()).await {
                                 Err(_) => {
                                     return Response::builder()
