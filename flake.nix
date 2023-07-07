@@ -20,7 +20,7 @@
     };
   };
   outputs = { self, nixpkgs, crane, flake-utils, rust-overlay, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
+    flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
         pkgs = import nixpkgs {
           inherit system;
@@ -28,10 +28,14 @@
           overlays = [ (import rust-overlay) ];
         };
         inherit (pkgs) lib;
-        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
+        wasmToolchain = pkgs.rust-bin.stable.latest.default.override {
           targets = [ "wasm32-unknown-unknown" ];
         };
-        craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
+        nativeToolchain = pkgs.rust-bin.stable.latest.default.override {
+          targets = [ "x86_64-unknown-linux-musl" ];
+        };
+        wasmCraneLib = (crane.mkLib pkgs).overrideToolchain wasmToolchain;
+        nativeCraneLib = (crane.mkLib pkgs).overrideToolchain nativeToolchain;
         src = lib.cleanSourceWith {
           src = ./.;
           filter = path: type:
@@ -41,7 +45,7 @@
             (lib.hasSuffix "\.vert" path) ||
             (lib.hasInfix "/img/" path) ||
             (lib.hasInfix "/resources/" path) ||
-            (craneLib.filterCargoSources path type)
+            (wasmCraneLib.filterCargoSources path type)
           ;
         };
         commonArgs = {
@@ -51,9 +55,11 @@
         };
         nativeArgs = commonArgs // {
           pname = "server";
+          CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
+          CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
         };
-        cargoArtifacts = craneLib.buildDepsOnly nativeArgs;
-        myServer = craneLib.buildPackage (nativeArgs // {
+        cargoArtifacts = nativeCraneLib.buildDepsOnly nativeArgs;
+        myServer = nativeCraneLib.buildPackage (nativeArgs // {
           inherit cargoArtifacts;
           CLIENT_DIST = myClient;
         });
@@ -62,10 +68,10 @@
           cargoExtraArgs = "--package=client";
           CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
         };
-        cargoArtifactsWasm = craneLib.buildDepsOnly (wasmArgs // {
+        cargoArtifactsWasm = wasmCraneLib.buildDepsOnly (wasmArgs // {
           doCheck = false;
         });
-        myClient = craneLib.buildTrunkPackage (wasmArgs // {
+        myClient = wasmCraneLib.buildTrunkPackage (wasmArgs // {
           pname = "brongan-com-client";
           cargoArtifacts = cargoArtifactsWasm;
           trunkIndexPath = "client/index.html";
@@ -79,12 +85,12 @@
             Env = with pkgs; [ "GEOLITE2_COUNTRY_DB=${clash-geoip}/etc/clash/Country.mmdb" ];
           };
         };
-		in
-		{
-			packages = {
-				inherit myServer dockerImage;
-				default = myServer;
-			};
-		}
-		);
+      in
+      {
+        packages = {
+          inherit myServer dockerImage;
+          default = myServer;
+        };
+      }
+    );
 }
