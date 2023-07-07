@@ -7,7 +7,7 @@ primary_region = "sea"
 
 [[services]]
   protocol = "tcp"
-  internal_port = 8080
+  internal_port = 8081
   processes = ["app"]
 
   [[services.ports]]

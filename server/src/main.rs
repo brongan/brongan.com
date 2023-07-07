@@ -23,9 +23,9 @@ use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::Subscriber
 struct Opt {
     #[clap(short = 'a', long = "addr", default_value = "0.0.0.0")]
     addr: String,
-    #[clap(short = 'p', long = "port", default_value = "8080")]
+    #[clap(short = 'p', long = "port", default_value = "8081")]
     port: u16,
-    #[clap(long = "static-dir", default_value = "")]
+    #[clap(long = "static-dir", default_value = "dist/")]
     static_dir: String,
 }
 

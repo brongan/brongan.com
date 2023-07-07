@@ -81,7 +81,7 @@
           tag = "latest";
           contents = [ myServer myClient ];
           config = {
-            Cmd = [ "${myServer}/bin/server" ];
+            Cmd = [ "${myServer}/bin/server" "--static-dir=\"\"" ];
             Env = with pkgs; [ "GEOLITE2_COUNTRY_DB=${clash-geoip}/etc/clash/Country.mmdb" ];
           };
         };
