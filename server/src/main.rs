@@ -78,6 +78,9 @@ async fn main() {
         opt.port,
     ));
 
+    let index_path = PathBuf::from(&opt.static_dir).join("index.html");
+    let index = read_to_string(index_path).await.unwrap();
+
     let app = Router::new()
         .route("/catscii", get(catscii_get))
         .route("/analytics", get(analytics_get))
@@ -87,26 +90,10 @@ async fn main() {
                 Ok(res) => {
                     let status = res.status();
                     match status {
-                        StatusCode::NOT_FOUND => {
-                            let index_path = PathBuf::from(&opt.static_dir).join("index.html");
-                            let index_content = match read_to_string(index_path.clone()).await {
-                                Err(_) => {
-                                    return Response::builder()
-                                        .status(StatusCode::NOT_FOUND)
-                                        .body(boxed(Body::from(format!(
-                                            "index file not found: {:?}",
-                                            index_path
-                                        ))))
-                                        .unwrap()
-                                }
-                                Ok(index_content) => index_content,
-                            };
-
-                            Response::builder()
-                                .status(StatusCode::OK)
-                                .body(boxed(Body::from(index_content)))
-                                .unwrap()
-                        }
+                        StatusCode::NOT_FOUND => Response::builder()
+                            .status(StatusCode::OK)
+                            .body(boxed(Body::from(index)))
+                            .unwrap(),
                         _ => res.map(boxed),
                     }
                 }
