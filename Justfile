@@ -13,3 +13,5 @@ deploy:
   podman push brongan_com docker://registry.fly.io/still-lake-5553:latest
   flyctl deploy -i registry.fly.io/still-lake-5553:latest
 
+develop:
+  ./develop.sh
