@@ -8,9 +8,7 @@ use opentelemetry::{
 
 use anyhow::Context;
 use anyhow::Result;
-use mysql_async::params;
-use mysql_async::prelude::*;
-use mysql_async::Pool;
+use rusqlite::Connection;
 
 /// Allows geo-locating IPs and keeps analytics
 #[derive(Debug)]
@@ -24,8 +22,8 @@ pub enum Error {
     #[error("maxminddb error: {0}")]
     MaxMindDb(#[from] maxminddb::MaxMindDBError),
 
-    #[error("mysql error: {0}")]
-    MySql(#[from] mysql_async::Error),
+    #[error("rusqlite error: {0}")]
+    Rusqlite(#[from] rusqlite::Error),
 }
 
 #[derive(Debug)]
@@ -90,47 +88,48 @@ impl Locat {
 
 #[derive(Debug)]
 struct Db {
-    pool: Pool,
+    path: String,
 }
 
 impl Db {
-    pub async fn create(path: String) -> Result<Db, mysql_async::Error> {
-        let builder = mysql_async::OptsBuilder::from_opts(mysql_async::Opts::from_url(&path)?);
-        let pool = mysql_async::Pool::new(builder.ssl_opts(mysql_async::SslOpts::default()));
-        let db = Db { pool };
-        let mut connection = db.pool.get_conn().await?;
-
-        "CREATE TABLE IF NOT EXISTS analytics (
-                ip_address VARCHAR(255) PRIMARY KEY,
-                iso_code VARCHAR(255),
+    fn create(&self, path: String) -> Result<Db, rusqlite::Error> {
+        let db = Db { path };
+        let connection = Connection::open(&self.path)?;
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS analytics (
+                ip_address TEXT PRIMARY KEY,
+                iso_code TEXT,
                 count INTEGER NOT NULL
-            )"
-        .ignore(&mut connection)
-        .await?;
-        Ok(db)
+            )",
+            [],
+        )?;
+        Ok((db))
     }
 
-    async fn list(&self) -> Result<Vec<Analytics>, mysql_async::Error> {
-        let mut connection = self.pool.get_conn().await?;
-
-        "SELECT ip_address, iso_code, count FROM analytics"
-            .with(())
-            .map(&mut connection, |(ip_address, iso_code, count)| Analytics {
-                ip_address,
-                iso_code,
-                count,
-            })
-            .await
+    async fn list(&self) -> Result<Vec<Analytics>, rusqlite::Error> {
+        let connection = self.get_connection()?;
+        let mut statement =
+            connection.prepare("SELECT ip_address, iso_code, count FROM analytics")?;
+        let mut rows = statement.query([])?;
+        let mut analytics = Vec::new();
+        while let Some(row) = rows.next()? {
+            let iso_code = row.get(0)?;
+            let count = row.get(1)?;
+            analytics.push((iso_code, count))
+        }
+        Ok(analytics)
     }
 
     async fn increment(&self, ip_address: &IpAddr, iso_code: &str) -> Result<()> {
         let ip_address = ip_address.to_string();
-        let mut connection = self.pool.get_conn().await?;
-        Ok("INSERT INTO analytics (ip_address, iso_code, count)
-             VALUES (:ip_address, :iso_code, 1)
-             ON DUPLICATE KEY UPDATE count = count + 1"
-            .with(params! {ip_address, iso_code})
-            .ignore(&mut connection)
-            .await?)
+        let connection = self.get_connection()?;
+        let mut statement = connection.prepare(
+            "INSERT INTO analytics (ip_address, iso_code, count)
+             VALUES (?, ?, 1)
+             ON CONFLICT (ip_address)
+             DO UPDATE SET count = count + 1",
+        )?;
+        statement.execute([&ip_address, iso_code])?;
+        Ok(())
     }
 }

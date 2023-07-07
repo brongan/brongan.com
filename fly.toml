@@ -5,6 +5,9 @@ kill_signal = "SIGINT"
 kill_timeout = 5
 primary_region = "sea"
 
+[env]
+ANALYTICS_DB = "analytics.db"
+
 [[services]]
   protocol = "tcp"
   internal_port = 8081

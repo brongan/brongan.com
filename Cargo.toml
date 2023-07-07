@@ -5,8 +5,8 @@ members = [
 ]
 resolver = "2"
 
-#[profile.release]
-#debug = 1 # Include enough debug info for sentry to be useful
-#opt-level = "z"  # Optimize for size.
-#lto = true # Enable link-time optimization
+[profile.release]
+debug = 1 # Include enough debug info for sentry to be useful
+opt-level = "z"  # Optimize for size.
+lto = true # Enable link-time optimization
 
