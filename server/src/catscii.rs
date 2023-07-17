@@ -1,9 +1,9 @@
 use crate::{locat, ServerState};
-use anyhow::anyhow;
+
 use artem::options::{OptionBuilder, TargetType::HtmlFile};
 use axum::{
     body::BoxBody,
-    extract::State,
+    extract::{ConnectInfo, State},
     http::{header::CONTENT_TYPE, HeaderMap},
     response::{IntoResponse, Response},
 };
@@ -18,16 +18,8 @@ use opentelemetry::{
 };
 use reqwest::{header, StatusCode};
 use serde::Deserialize;
-use std::net::IpAddr;
+use std::net::SocketAddr;
 use tracing::{info, warn};
-
-fn get_client_addr(headers: &HeaderMap) -> anyhow::Result<IpAddr> {
-    let header = headers
-        .get("fly-client-ip")
-        .ok_or(anyhow!("Missing fly-client-ip"))?;
-    let header = header.to_str()?;
-    Ok(header.parse::<IpAddr>()?)
-}
 
 async fn get_cat_url(client: &reqwest::Client) -> Result<String> {
     let api_url = "https://api.thecatapi.com/v1/images/search";
@@ -109,26 +101,24 @@ async fn root_get_inner(client: &reqwest::Client) -> Response<BoxBody> {
     }
 }
 
-async fn get_iso_code(headers: &HeaderMap, locat: &Locat) {
-    if let Ok(addr) = get_client_addr(&headers) {
-        let iso_code = locat.ip_to_iso_code(addr).await;
-        match iso_code {
-            Ok(country) => {
-                info!("Got request from {country}");
-                get_active_span(|span| {
-                    span.set_attribute(KeyValue::new("country", country.to_string()))
-                });
-            }
-            Err(err) => warn!("Could not determine country for IP address: {err}"),
+async fn get_iso_code(addr: &SocketAddr, locat: &Locat) {
+    let addr = addr.ip();
+    let iso_code = locat.ip_to_iso_code(addr).await;
+    match iso_code {
+        Ok(country) => {
+            info!("Got request from {country}");
+            get_active_span(|span| {
+                span.set_attribute(KeyValue::new("country", country.to_string()))
+            });
         }
-    } else {
-        info!("Failed to get client ip. Are we running locally?");
+        Err(err) => warn!("Could not determine country for IP address: {err}"),
     }
 }
 
 pub async fn catscii_get(
     headers: HeaderMap,
     State(state): State<ServerState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
 ) -> Response<BoxBody> {
     let tracer = global::tracer("");
     let mut span = tracer.start("root_get");
@@ -142,7 +132,7 @@ pub async fn catscii_get(
 
     let (response, _) = join(
         root_get_inner(&state.client),
-        get_iso_code(&headers, &state.locat),
+        get_iso_code(&addr, &state.locat),
     )
     .with_context(Context::current_with_span(span))
     .await;

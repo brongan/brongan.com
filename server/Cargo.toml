@@ -8,6 +8,7 @@ anyhow = "1.0"
 artem = { version = "1.2", default-features = false }
 async-rustls = "0.4.0"
 axum = "0.6.16"
+axum-server = { version = "0.5.1", features = ["tls-rustls"] }
 clap = { version = "4.2", features = ["derive"] }
 color-eyre = "0.6.2"
 futures = "0.3.28"
@@ -20,7 +21,6 @@ opentelemetry-honeycomb = { git = "https://github.com/fasterthanlime/opentelemet
 pretty-hex = "0.3.0"
 reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls-webpki-roots"] }
 rusqlite = "0.29.0"
-rustls-acme = "0.7.3"
 sentry = { version = "0.31", default-features = false, features = ["reqwest", "rustls", "backtrace", "contexts", "panic"] }
 serde = { version = "1.0.163", features = ["derive"] }
 thiserror = "1.0.40"
