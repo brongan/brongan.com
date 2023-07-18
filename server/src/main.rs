@@ -35,7 +35,7 @@ struct Opt {
     port: u16,
     #[clap(long, default_value = "8443")]
     ssl_port: u16,
-    #[clap(long = "static-dir", default_value = "dist/")]
+    #[clap(long = "static-dir", default_value = "target/dist/")]
     static_dir: String,
     #[clap(long, default_value = "cert/")]
     cert_dir: String,
@@ -75,9 +75,11 @@ async fn https_server(opt: Opt, server_state: ServerState, listen_address: Socke
     let index_path = static_dir.join("index.html");
     let index = read_to_string(index_path).await.unwrap();
 
-    let app = Router::new()
+    let api = Router::new()
         .route("/catscii", get(catscii_get))
-        .route("/analytics", get(analytics_get))
+        .route("/analytics", get(analytics_get));
+    let app = Router::new()
+        .nest("/api", api)
         .with_state(server_state)
         .fallback(get(|req| async move {
             match ServeDir::new(&opt.static_dir).oneshot(req).await {
