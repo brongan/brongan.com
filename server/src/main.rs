@@ -37,6 +37,8 @@ struct Opt {
     ssl_port: u16,
     #[clap(long = "static-dir", default_value = "dist/")]
     static_dir: String,
+    #[clap(long, default_value = "cert/")]
+    cert_dir: String,
     #[clap(long, short, action)]
     prod: bool,
 }
@@ -69,6 +71,7 @@ fn sentry_guard() -> Result<ClientInitGuard> {
 
 async fn https_server(opt: Opt, server_state: ServerState, listen_address: SocketAddr) {
     let static_dir = PathBuf::from(&opt.static_dir);
+    let cert_dir = PathBuf::from(&opt.cert_dir);
     let index_path = static_dir.join("index.html");
     let index = read_to_string(index_path).await.unwrap();
 
@@ -96,7 +99,7 @@ async fn https_server(opt: Opt, server_state: ServerState, listen_address: Socke
         }));
 
     let config =
-        RustlsConfig::from_pem_file(static_dir.join("cert.pem"), static_dir.join("key.pem"))
+        RustlsConfig::from_pem_file(cert_dir.join("fullchain.pem"), cert_dir.join("privkey.pem"))
             .await
             .unwrap();
 
