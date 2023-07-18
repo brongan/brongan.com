@@ -1,7 +1,7 @@
 use crate::game_of_life::GameOfLifeModel;
 use crate::ishihara_component::IshiharaPlate;
 use crate::mandelbrot_component::MandelbrotModel;
-use yew::{function_component, html, Callback, Html};
+use yew::{function_component, html, Callback, Html, Suspense};
 use yew_router::prelude::*;
 
 mod color;
@@ -23,15 +23,22 @@ enum Route {
     GameofLife,
     #[at("/mandelbrot")]
     Mandelbrot,
+    #[at("/catscii/")]
+    Catscii,
     #[not_found]
     #[at("/404")]
     NotFound,
 }
 
 struct Page {
-    title: String,
+    title: &'static str,
     route: Route,
-    thumbnail: String,
+    thumbnail: &'static str,
+}
+
+#[function_component(Catscii)]
+fn catscii() -> Html {
+    html! {<div>{"Loading..."}</div>}
 }
 
 fn main_panel(routes: Route) -> Html {
@@ -40,6 +47,7 @@ fn main_panel(routes: Route) -> Html {
         Route::Ishihara => html! { <IshiharaPlate/> },
         Route::GameofLife => html! { <GameOfLifeModel/> },
         Route::Mandelbrot => html! { <MandelbrotModel/> },
+        Route::Catscii => html! { <Catscii/> },
         Route::NotFound => html! { <h1>{ "404" }</h1> },
     }
 }
@@ -48,29 +56,33 @@ fn main_panel(routes: Route) -> Html {
 fn nav() -> Html {
     let nav_buttons = vec![
         Page {
-            title: "Home".to_string(),
+            title: "Home",
             route: Route::Home,
-            thumbnail: "img/brongan.jpg".to_string(),
+            thumbnail: "img/brongan.jpg",
         },
         Page {
-            title: "Ishihara Plate Generator".to_string(),
+            title: "Ishihara Plate Generator",
             route: Route::Ishihara,
-            thumbnail: "img/color-blind-test.png".to_string(),
+            thumbnail: "img/color-blind-test.png",
         },
         Page {
-            title: "Game of Life".to_string(),
+            title: "Game of Life",
             route: Route::GameofLife,
-            thumbnail: "img/game-of-life.png".to_string(),
+            thumbnail: "img/game-of-life.png",
         },
         Page {
-            title: "Mandelbrot".to_string(),
+            title: "Mandelbrot",
             route: Route::Mandelbrot,
-            thumbnail: "img/mandelbrot.png".to_string(),
+            thumbnail: "img/mandelbrot.png",
+        },
+        Page {
+            title: "Catscii",
+            route: Route::Catscii,
+            thumbnail: "img/catscii.png",
         },
     ];
 
     let nav = use_navigator().unwrap();
-
     let nav_buttons = nav_buttons
         .iter()
         .map(|nav_button| {
