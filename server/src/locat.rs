@@ -43,7 +43,10 @@ impl Display for Analytics {
 }
 
 impl Locat {
-    pub async fn new(geoip_country_db_path: &str, analytics_db_path: String) -> Result<Self, Error> {
+    pub async fn new(
+        geoip_country_db_path: &str,
+        analytics_db_path: String,
+    ) -> Result<Self, Error> {
         let geoip_data = tokio::fs::read(geoip_country_db_path).await?;
         Ok(Self {
             geoip: maxminddb::Reader::from_source(geoip_data)?,
@@ -63,9 +66,14 @@ impl Locat {
                 .context("MaxMindDB missing ISO code")
         })?;
 
-        if let Err(e) = self.analytics.increment(&addr, iso_code).with_context(
-            opentelemetry::Context::current_with_span(tracer.start("increment"))).await
-         {
+        if let Err(e) = self
+            .analytics
+            .increment(&addr, iso_code)
+            .with_context(opentelemetry::Context::current_with_span(
+                tracer.start("increment"),
+            ))
+            .await
+        {
             eprintln!("Could not increment analytics: {e}");
         }
 
@@ -93,55 +101,64 @@ struct Db {
 impl Db {
     async fn create(path: String) -> Result<Self, tokio_rusqlite::Error> {
         let connection = Connection::open(path).await?;
-         connection.call(|connection| {
-            // create analytics table
-            connection.execute(
-                "CREATE TABLE IF NOT EXISTS analytics (
-                iso_code TEXT PRIMARY KEY,
+        connection
+            .call(|connection| {
+                // create analytics table
+                connection.execute(
+                    "CREATE TABLE IF NOT EXISTS analytics (
+                ip_address TEXT PRIMARY KEY,
+                iso_code TEXT,
                 count INTEGER NOT NULL
             )",
-                [],
-            )?;
+                    [],
+                )?;
 
-            Ok::<_, rusqlite::Error>(())
-        })
-        .await?; 
+                Ok::<_, rusqlite::Error>(())
+            })
+            .await?;
         Ok(Self { connection })
     }
 
     async fn list(&self) -> Result<Vec<Analytics>, tokio_rusqlite::Error> {
-        self.connection.call(|connection| {
-            let mut statement =
-                connection.prepare("SELECT ip_address, iso_code, count FROM analytics")?;
-            let mut rows = statement.query([])?;
-            let mut analytics = Vec::new();
-            while let Some(row) = rows.next()? {
-                let ip_address = row.get(0)?;
-                let iso_code = row.get(1)?;
-                let count = row.get(2)?;
-                analytics.push(Analytics {
-                    ip_address,
-                    iso_code,
-                    count,
-                });
-            }
-            Ok(analytics)
-
-        }).await
+        self.connection
+            .call(|connection| {
+                let mut statement =
+                    connection.prepare("SELECT ip_address, iso_code, count FROM analytics")?;
+                let mut rows = statement.query([])?;
+                let mut analytics = Vec::new();
+                while let Some(row) = rows.next()? {
+                    let ip_address = row.get(0)?;
+                    let iso_code = row.get(1)?;
+                    let count = row.get(2)?;
+                    analytics.push(Analytics {
+                        ip_address,
+                        iso_code,
+                        count,
+                    });
+                }
+                Ok(analytics)
+            })
+            .await
     }
 
-    async fn increment(&self, ip_address: &IpAddr, iso_code: &str) -> Result<(), tokio_rusqlite::Error> {
+    async fn increment(
+        &self,
+        ip_address: &IpAddr,
+        iso_code: &str,
+    ) -> Result<(), tokio_rusqlite::Error> {
         let ip_address = ip_address.to_string();
         let iso_code = iso_code.to_owned();
-        self.connection.call(move |connection| {
-            let mut statement = connection.prepare(
-                "INSERT INTO analytics (ip_address, iso_code, count)
+        self.connection
+            .call(move |connection| {
+                let mut statement = connection.prepare(
+                    "INSERT INTO analytics (ip_address, iso_code, count)
                 VALUES (?, ?, 1)
                 ON CONFLICT (ip_address)
                 DO UPDATE SET count = count + 1",
                 )?;
-            statement.execute([&ip_address, &iso_code])?;
-            Ok(())
-        }).await
+                statement.execute([&ip_address, &iso_code])?;
+                Ok(())
+            })
+            .await
     }
 }

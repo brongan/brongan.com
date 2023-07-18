@@ -52,9 +52,9 @@ pub struct ServerState {
 async fn get_server_state() -> Result<ServerState> {
     let country_db_dev_path = "db/GeoLite2-Country.mmdb".to_string();
     let country_db_path = std::env::var("GEOLITE2_COUNTRY_DB").unwrap_or(country_db_dev_path);
-    let analytics_db = std::env::var("ANALYTICS_DB").unwrap_or("db/analytics.db".to_string());
+    let db = std::env::var("DB").unwrap_or("db/sqlite.db".to_string());
     Ok(ServerState {
-        locat: Arc::new(Locat::new(&country_db_path, analytics_db).await?),
+        locat: Arc::new(Locat::new(&country_db_path, db).await?),
         client: Default::default(),
     })
 }
