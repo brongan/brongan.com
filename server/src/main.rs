@@ -3,26 +3,31 @@ mod locat;
 
 use anyhow::Result;
 use axum::body::{boxed, Body};
-use axum::extract::Host;
+use axum::extract::{ConnectInfo, Host, State};
 use axum::handler::HandlerWithoutStateExt;
-use axum::http::{Response, StatusCode};
-use axum::response::Redirect;
-use axum::{routing::get, Router};
+use axum::http::{Request, Response as HttpResponse, StatusCode};
+use axum::middleware::{self, Next};
+use axum::response::{Redirect, Response};
+use axum::routing::get;
+use axum::Router;
 use axum_server::tls_rustls::RustlsConfig;
 use catscii::{analytics_get, catscii_get};
 use clap::Parser;
 use hyper::http::uri::Scheme;
 use hyper::Uri;
 use locat::Locat;
+use opentelemetry::trace::get_active_span;
+use opentelemetry::KeyValue;
 use opentelemetry_honeycomb::new_pipeline;
 use sentry::ClientInitGuard;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::fs::read_to_string;
 use tower::ServiceExt;
 use tower_http::services::ServeDir;
+
 use tracing::{info, warn, Level};
 use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -69,6 +74,52 @@ fn sentry_guard() -> Result<ClientInitGuard> {
     )))
 }
 
+async fn my_middlware<B>(
+    State(state): State<ServerState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    request: Request<B>,
+    next: Next<B>,
+) -> Response {
+    let path = Path::new(request.uri().path());
+    match path.extension().map(|os_str| os_str.to_str()).flatten() {
+        Some("wasm" | "js" | "png" | "jpg" | "vert" | "scss" | "frag" | "css") => {
+            return next.run(request).await
+        }
+        _ => (),
+    }
+
+    let ip = addr.ip();
+    let iso_code = if ip.is_loopback() {
+        "DEV"
+    } else {
+        let iso_code = state.locat.get_iso_code(ip.clone()).await;
+        match &iso_code {
+            Ok(country) => {
+                info!("Received request from {country}");
+                get_active_span(|span| {
+                    span.set_attribute(KeyValue::new("country", country.to_string()))
+                });
+                country
+            }
+            Err(err) => {
+                warn!("Could not determine country for IP {addr}: {err}");
+                "N/A"
+            }
+        }
+    };
+
+    match state
+        .locat
+        .record_request(ip, iso_code.to_owned(), request.uri().path().to_owned())
+        .await
+    {
+        Ok(_) => info!("Recorded request from {ip} for {}", request.uri()),
+        Err(err) => warn!("Failed to record request from {ip}: {}", err),
+    }
+
+    next.run(request).await
+}
+
 async fn https_server(opt: Opt, server_state: ServerState, listen_address: SocketAddr) {
     let static_dir = PathBuf::from(&opt.static_dir);
     let cert_dir = PathBuf::from(&opt.cert_dir);
@@ -80,13 +131,13 @@ async fn https_server(opt: Opt, server_state: ServerState, listen_address: Socke
         .route("/analytics", get(analytics_get));
     let app = Router::new()
         .nest("/api", api)
-        .with_state(server_state)
+        .with_state(server_state.clone())
         .fallback(get(|req| async move {
             match ServeDir::new(&opt.static_dir).oneshot(req).await {
                 Ok(res) => {
                     let status = res.status();
                     match status {
-                        StatusCode::NOT_FOUND => Response::builder()
+                        StatusCode::NOT_FOUND => HttpResponse::builder()
                             .status(StatusCode::OK)
                             .body(boxed(Body::from(index)))
                             .unwrap(),
@@ -98,7 +149,8 @@ async fn https_server(opt: Opt, server_state: ServerState, listen_address: Socke
                     .body(boxed(Body::from(format!("error: {err}"))))
                     .unwrap(),
             }
-        }));
+        }))
+        .layer(middleware::from_fn_with_state(server_state, my_middlware));
 
     let config =
         RustlsConfig::from_pem_file(cert_dir.join("fullchain.pem"), cert_dir.join("privkey.pem"))
