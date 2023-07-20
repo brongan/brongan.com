@@ -1,13 +1,12 @@
+use crate::catscii_component::Catscii;
 use crate::game_of_life::GameOfLifeModel;
 use crate::ishihara_component::IshiharaPlate;
 use crate::mandelbrot_component::MandelbrotModel;
-use gloo_net::http::Request;
 use yew::html;
-use yew::html::HtmlResult;
-use yew::suspense::use_future;
-use yew::{function_component, AttrValue, Callback, Html, Suspense};
+use yew::{function_component, Callback, Html};
 use yew_router::prelude::*;
 
+mod catscii_component;
 mod color;
 mod game_of_life;
 mod ishihara;
@@ -38,25 +37,6 @@ struct Page {
     title: &'static str,
     route: Route,
     thumbnail: &'static str,
-}
-
-#[function_component(CatsciiContent)]
-fn catscii_content() -> HtmlResult {
-    let resp = use_future(|| async { Request::get("/api/catscii").send().await?.text().await })?;
-    match *resp {
-        Ok(ref res) => Ok(Html::from_html_unchecked(AttrValue::from(res.clone()))),
-        Err(ref failure) => Ok(failure.to_string().into()),
-    }
-}
-
-#[function_component(Catscii)]
-fn catscii() -> Html {
-    let fallback = html! {<div>{"Loading..."}</div>};
-    html! {
-        <Suspense {fallback}>
-            <CatsciiContent />
-        </Suspense>
-    }
 }
 
 fn main_panel(routes: Route) -> Html {
