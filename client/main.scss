@@ -1,5 +1,4 @@
 @import "ishihara.scss";
-@import "wasm-game-of-life.scss";
 
 .root {
 	display: flex;
@@ -37,3 +36,15 @@ body {
     background-color: #eee;
 }
 
+.title {
+	text-align: center;
+}
+
+.header {
+	color: #FFFFFF;
+	font: normal normal bold 36px/72px Open Sans;
+	letter-spacing: 0px;
+	opacity: 0.75;
+	text-align: center;
+	width: 20em;
+}

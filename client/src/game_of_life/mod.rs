@@ -100,8 +100,8 @@ impl Component for GameOfLifeModel {
         html! {
             <div>
                 <section class="life-container">
-                <header class="life-header">
-                    <h1 class="life-title">{ "Game of Life" }</h1>
+                <header class="header">
+                    <h1 class="title">{ "Game of Life" }</h1>
                 </header>
                     <section class="life-area">
                         <div class="game-of-life">

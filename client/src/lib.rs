@@ -1,3 +1,4 @@
+use crate::analytics_component::AnalyticsComponent;
 use crate::catscii_component::Catscii;
 use crate::game_of_life::GameOfLifeModel;
 use crate::ishihara_component::IshiharaPlate;
@@ -6,6 +7,7 @@ use yew::html;
 use yew::{function_component, Callback, Html};
 use yew_router::prelude::*;
 
+mod analytics_component;
 mod catscii_component;
 mod color;
 mod game_of_life;
@@ -28,6 +30,8 @@ enum Route {
     Mandelbrot,
     #[at("/catscii/")]
     Catscii,
+    #[at("/analytics/")]
+    Analytics,
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -46,6 +50,7 @@ fn main_panel(routes: Route) -> Html {
         Route::GameofLife => html! { <GameOfLifeModel/> },
         Route::Mandelbrot => html! { <MandelbrotModel/> },
         Route::Catscii => html! { <Catscii/> },
+        Route::Analytics => html! { <AnalyticsComponent/> },
         Route::NotFound => html! { <h1>{ "404" }</h1> },
     }
 }
@@ -78,6 +83,11 @@ fn nav() -> Html {
             route: Route::Catscii,
             thumbnail: "img/catscii.png",
         },
+        Page {
+            title: "Analytics",
+            route: Route::Analytics,
+            thumbnail: "img/analytics.png",
+        },
     ];
 
     let nav = use_navigator().unwrap();
@@ -106,7 +116,12 @@ fn nav() -> Html {
 #[function_component(Home)]
 fn home() -> Html {
     html! {
-        <p>{"Hello my name is Brennan I like Rust"}</p>
+        <>
+            <header class="header">
+                <h1 class="title">{ "Analytics" }</h1>
+            </header>
+            <p>{"Hello my name is Brennan I like Rust"}</p>
+        </>
     }
 }
 
