@@ -15,7 +15,6 @@ use opentelemetry::{
 };
 use reqwest::{header, StatusCode};
 use serde::Deserialize;
-use tracing::info;
 
 async fn get_cat_url(client: &reqwest::Client) -> Result<String> {
     let api_url = "https://api.thecatapi.com/v1/images/search";
@@ -114,23 +113,4 @@ pub async fn catscii_get(
     root_get_inner(&state.client)
         .with_context(Context::current_with_span(span))
         .await
-}
-
-pub async fn analytics_get(State(state): State<ServerState>) -> Response<BoxBody> {
-    let tracer = global::tracer("");
-    let span = tracer.start("analytics_get");
-    let analytics = state
-        .locat
-        .get_analytics()
-        .with_context(Context::current_with_span(span))
-        .await
-        .unwrap();
-    info!("Received analytics: {:?}", analytics);
-    let mut response = String::new();
-    use std::fmt::Write;
-    _ = writeln!(&mut response, "Analytics:");
-    for analytic in analytics {
-        _ = writeln!(&mut response, "{analytic}")
-    }
-    response.into_response()
 }
