@@ -8,6 +8,7 @@ anyhow = "1.0"
 fixedbitset = "0.4"
 gloo-events = "0.1"
 gloo-timers = "0.2"
+gloo-net = "0.2"
 image = "0.24"
 imageproc = "0.23"
 js-sys = "0.3"
@@ -19,13 +20,13 @@ rayon = "1.7.0"
 rusttype = "0.9"
 strum = "0.24"
 strum_macros = "0.24"
-wasm-bindgen = "=0.2.84"
+wasm-bindgen = "^0.2.84"
 wasm-logger = "0.2"
-yew = { version = "0.20.0", features = ["csr"] }
+yew = { version = "0.20", features = ["csr"] }
 yew-router = { version = "0.17.0" }
 
 [dependencies.web-sys]
-version = "0.3"
+version = "0.3.64"
 features = [
   'CanvasRenderingContext2d',
   'Document',
@@ -36,6 +37,7 @@ features = [
   'HtmlCanvasElement',
   'HtmlFormElement',
   'ImageData',
+  'Request',
   'SubmitEvent',
   'WebGlBuffer',
   'WebGlProgram',
