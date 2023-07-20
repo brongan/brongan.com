@@ -27,7 +27,6 @@ use std::sync::Arc;
 use tokio::fs::read_to_string;
 use tower::ServiceExt;
 use tower_http::services::ServeDir;
-
 use tracing::{info, warn, Level};
 use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::SubscriberInitExt};
 

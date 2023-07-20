@@ -6,6 +6,8 @@ use axum::{
     extract::{ConnectInfo, State},
     response::{IntoResponse, Response},
 };
+use hyper::header::ACCEPT;
+use hyper::HeaderMap;
 use opentelemetry::trace::get_active_span;
 use opentelemetry::KeyValue;
 use opentelemetry::{
@@ -13,30 +15,14 @@ use opentelemetry::{
     trace::{FutureExt, TraceContextExt, Tracer},
     Context,
 };
-use std::fmt::Display;
 use std::net::SocketAddr;
 use std::path::Path;
 use tracing::{info, warn};
 
-#[derive(Debug)]
-pub struct Analytics {
-    pub ip_address: String,
-    pub path: String,
-    pub iso_code: String,
-    pub count: usize,
-}
-
-impl Display for Analytics {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "({}, {}, {}, {})",
-            self.ip_address, self.iso_code, self.path, self.count
-        )
-    }
-}
-
-pub async fn analytics_get(State(state): State<ServerState>) -> Response<BoxBody> {
+pub async fn analytics_get(
+    headers: HeaderMap,
+    State(state): State<ServerState>,
+) -> Response<BoxBody> {
     let tracer = global::tracer("");
     let span = tracer.start("analytics_get");
     let analytics = state
@@ -45,14 +31,17 @@ pub async fn analytics_get(State(state): State<ServerState>) -> Response<BoxBody
         .with_context(Context::current_with_span(span))
         .await
         .unwrap();
-    info!("Received analytics: {:?}", analytics);
-    let mut response = String::new();
-    use std::fmt::Write;
-    _ = writeln!(&mut response, "Analytics:");
-    for analytic in analytics {
-        _ = writeln!(&mut response, "{analytic}")
+    if let Some(content_type) = headers.get(ACCEPT) {
+        if content_type == "*/*" {
+            return serde_json::to_string(&analytics).unwrap().into_response();
+        }
     }
-    response.into_response()
+    analytics
+        .iter()
+        .map(|analytics| analytics.to_string())
+        .collect::<Vec<String>>()
+        .join("\n")
+        .into_response()
 }
 
 pub async fn record_analytics<B>(
@@ -98,7 +87,7 @@ pub async fn record_analytics<B>(
         .record_request(ip, iso_code.to_owned(), request.uri().path().to_owned())
         .await
     {
-        Ok(_) => info!("Recorded request from {ip} for {}", request.uri()),
+        Ok(_) => info!("Recorded request from {ip} for {}", request.uri().path()),
         Err(err) => warn!("Failed to record request from {ip}: {}", err),
     }
 

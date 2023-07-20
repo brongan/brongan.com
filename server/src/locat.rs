@@ -1,10 +1,12 @@
-use crate::analytics::Analytics;
 use anyhow::Context;
 use anyhow::Result;
 use opentelemetry::{
     global,
     trace::{FutureExt, TraceContextExt, Tracer},
 };
+use serde::Deserialize;
+use serde::Serialize;
+use shared::Analytics;
 use std::net::IpAddr;
 use tokio_rusqlite::Connection;
 
@@ -13,6 +15,12 @@ use tokio_rusqlite::Connection;
 pub struct Locat {
     geoip: maxminddb::Reader<Vec<u8>>,
     analytics: Db,
+}
+
+#[derive(Deserialize, Serialize)]
+struct AnalyticsKey {
+    ip: String,
+    path: String,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -25,6 +33,9 @@ pub enum Error {
 
     #[error("rusqlite error: {0}")]
     Rusqlite(#[from] tokio_rusqlite::Error),
+
+    #[error("serde_json error: {0}")]
+    SerdeJson(#[from] serde_json::Error),
 }
 
 impl Locat {
@@ -53,13 +64,14 @@ impl Locat {
 
     pub async fn record_request(
         &self,
-        addr: IpAddr,
+        ip: IpAddr,
         iso_code: String,
         path: String,
     ) -> Result<(), Error> {
         let tracer = global::tracer("");
+        let ip = ip.to_string();
         self.analytics
-            .increment(&addr, iso_code, path)
+            .increment(serde_json::to_string(&AnalyticsKey { ip, path })?, iso_code)
             .with_context(opentelemetry::Context::current_with_span(
                 tracer.start("increment"),
             ))
@@ -93,8 +105,7 @@ impl Db {
                 // create analytics table
                 connection.execute(
                     "CREATE TABLE IF NOT EXISTS analytics (
-                ip_address TEXT PRIMARY KEY,
-                path TEXT KEY,
+                key TEXT PRIMARY KEY,
                 iso_code TEXT,
                 count INTEGER NOT NULL
             )",
@@ -110,18 +121,18 @@ impl Db {
     async fn list(&self) -> Result<Vec<Analytics>, tokio_rusqlite::Error> {
         self.connection
             .call(|connection| {
-                let mut statement = connection
-                    .prepare("SELECT ip_address, path, iso_code, count FROM analytics")?;
+                let mut statement =
+                    connection.prepare("SELECT key, iso_code, count FROM analytics")?;
                 let mut rows = statement.query([])?;
                 let mut analytics = Vec::new();
                 while let Some(row) = rows.next()? {
-                    let ip_address = row.get(0)?;
-                    let path = row.get(1)?;
-                    let iso_code = row.get(2)?;
-                    let count = row.get(3)?;
+                    let analytics_key: String = row.get(0)?;
+                    let analytics_key: AnalyticsKey = serde_json::from_str(&analytics_key).unwrap();
+                    let iso_code = row.get(1)?;
+                    let count = row.get(2)?;
                     analytics.push(Analytics {
-                        ip_address,
-                        path,
+                        ip_address: analytics_key.ip,
+                        path: analytics_key.path,
                         iso_code,
                         count,
                     });
@@ -131,22 +142,16 @@ impl Db {
             .await
     }
 
-    async fn increment(
-        &self,
-        ip_address: &IpAddr,
-        iso_code: String,
-        path: String,
-    ) -> Result<(), tokio_rusqlite::Error> {
-        let ip_address = ip_address.to_string();
+    async fn increment(&self, key: String, iso_code: String) -> Result<(), tokio_rusqlite::Error> {
         self.connection
             .call(move |connection| {
                 let mut statement = connection.prepare(
-                    "INSERT INTO analytics (ip_address, iso_code, path, count)
-                VALUES (?, ?, ?, 1)
-                ON CONFLICT (ip_address)
+                    "INSERT INTO analytics (key, iso_code, count)
+                VALUES (?, ?, 1)
+                ON CONFLICT (key)
                 DO UPDATE SET count = count + 1",
                 )?;
-                statement.execute([&ip_address, &iso_code, &path])?;
+                statement.execute([key, iso_code])?;
                 Ok(())
             })
             .await

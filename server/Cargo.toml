@@ -23,6 +23,8 @@ reqwest = { version = "0.11", default-features = false, features = ["json", "rus
 rusqlite = "0.29.0"
 sentry = { version = "0.31", default-features = false, features = ["reqwest", "rustls", "backtrace", "contexts", "panic"] }
 serde = { version = "1.0.163", features = ["derive"] }
+serde_json = { version = "1.0"}
+shared = { path = "../shared/" }
 thiserror = "1.0.40"
 tokio = { version = "1.28", features = ["full", "fs", "test-util"] }
 tokio-rusqlite = "0.4.0"

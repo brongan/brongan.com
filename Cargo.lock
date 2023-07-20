@@ -671,6 +671,8 @@ dependencies = [
  "rand 0.8.5",
  "rayon",
  "rusttype",
+ "serde",
+ "shared",
  "strum",
  "strum_macros",
  "wasm-bindgen",
@@ -2926,6 +2928,8 @@ dependencies = [
  "rusqlite",
  "sentry",
  "serde",
+ "serde_json",
+ "shared",
  "thiserror",
  "tokio",
  "tokio-rusqlite",
@@ -2944,6 +2948,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "900fba806f70c630b0a382d0d825e17a0f19fcd059a2ade1ff237bcddf446b31"
 dependencies = [
  "lazy_static",
+]
+
+[[package]]
+name = "shared"
+version = "0.1.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
