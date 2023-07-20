@@ -42,7 +42,11 @@ pub async fn record_analytics<B>(
     request: Request<B>,
     next: Next<B>,
 ) -> Response {
+    if request.uri().path() == "/_trunk/ws" {
+        return next.run(request).await;
+    }
     let path = Path::new(request.uri().path());
+
     match path.extension().map(|os_str| os_str.to_str()).flatten() {
         Some("wasm" | "js" | "png" | "jpg" | "vert" | "scss" | "frag" | "css") => {
             return next.run(request).await
