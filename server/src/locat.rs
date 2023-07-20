@@ -1,13 +1,11 @@
-use std::fmt::Display;
-use std::net::IpAddr;
-
+use crate::analytics::Analytics;
+use anyhow::Context;
+use anyhow::Result;
 use opentelemetry::{
     global,
     trace::{FutureExt, TraceContextExt, Tracer},
 };
-
-use anyhow::Context;
-use anyhow::Result;
+use std::net::IpAddr;
 use tokio_rusqlite::Connection;
 
 /// Allows geo-locating IPs and keeps analytics
@@ -27,24 +25,6 @@ pub enum Error {
 
     #[error("rusqlite error: {0}")]
     Rusqlite(#[from] tokio_rusqlite::Error),
-}
-
-#[derive(Debug)]
-pub struct Analytics {
-    ip_address: String,
-    path: String,
-    iso_code: String,
-    count: usize,
-}
-
-impl Display for Analytics {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}-{}/{}: {}",
-            self.ip_address, self.iso_code, self.path, self.count
-        )
-    }
 }
 
 impl Locat {

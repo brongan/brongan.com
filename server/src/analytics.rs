@@ -13,9 +13,28 @@ use opentelemetry::{
     trace::{FutureExt, TraceContextExt, Tracer},
     Context,
 };
+use std::fmt::Display;
 use std::net::SocketAddr;
 use std::path::Path;
 use tracing::{info, warn};
+
+#[derive(Debug)]
+pub struct Analytics {
+    pub ip_address: String,
+    pub path: String,
+    pub iso_code: String,
+    pub count: usize,
+}
+
+impl Display for Analytics {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "({}, {}, {}, {})",
+            self.ip_address, self.iso_code, self.path, self.count
+        )
+    }
+}
 
 pub async fn analytics_get(State(state): State<ServerState>) -> Response<BoxBody> {
     let tracer = global::tracer("");
