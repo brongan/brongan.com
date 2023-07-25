@@ -18,8 +18,13 @@ fn catscii_content() -> HtmlResult {
 pub fn catscii() -> Html {
     let fallback = html! {<div>{"Loading..."}</div>};
     html! {
-        <Suspense {fallback}>
-            <CatsciiContent />
-        </Suspense>
+        <>
+            <header class="header">
+                <h1 class="title">{ "Catscii" }</h1>
+            </header>
+            <Suspense {fallback}>
+                <CatsciiContent />
+            </Suspense>
+        </>
     }
 }

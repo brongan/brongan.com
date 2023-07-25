@@ -44,14 +44,14 @@ pub fn render_plate() -> Html {
 
     html! {
         <>
-            <header class="mandelbrot-header">
-            <h1> { "Mandelbrot" } </h1>
+            <header class="header">
+                <h1> { "Mandelbrot" } </h1>
             </header>
             <div class="mandelbrot-readout">
-            <canvas ref={canvas_ref} />
+                <canvas ref={canvas_ref} />
             </div>
             <footer class="mandelbrot-footnote">
-            <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
+                <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
             </footer>
         </>
     }

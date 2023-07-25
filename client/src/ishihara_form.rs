@@ -54,7 +54,7 @@ pub fn ishihara_input(props: &Props) -> Html {
             <div class="blindness-selector">
                 {blindness_choices}
             </div>
-            <div class="ishihara-entry">
+            <div class="entry">
                 <input name={TEXT_INPUT} placeholder="Text to Encrypt" type="string" />
                 <button type="submit"> {"Encrypt"} </button>
             </div>

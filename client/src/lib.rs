@@ -64,7 +64,7 @@ fn nav() -> Html {
             thumbnail: "img/brongan.jpg",
         },
         Page {
-            title: "Ishihara Plate Generator",
+            title: "Ishihara",
             route: Route::Ishihara,
             thumbnail: "img/color-blind-test.png",
         },
@@ -98,17 +98,17 @@ fn nav() -> Html {
             let route = nav_button.route.clone();
             let callback = Callback::from(move |_| nav.push(&route));
             html! {
-                <>
+                <div class="nav-item">
                     <input type="image" onclick={callback} src={nav_button.thumbnail.clone()} />
                     <h3>{ nav_button.title.clone() }</h3>
-                </>
+                </div>
             }
         })
         .collect::<Html>();
 
     html! {
         <div class="nav">
-        { nav_buttons }
+            { nav_buttons }
         </div>
     }
 }
@@ -118,9 +118,10 @@ fn home() -> Html {
     html! {
         <>
             <header class="header">
-                <h1 class="title">{ "Analytics" }</h1>
+                <h1 class="title">{ "Welcome to brongan.com" }</h1>
             </header>
             <p>{"Hello my name is Brennan I like Rust"}</p>
+            <Nav/>
         </>
     }
 }
@@ -130,7 +131,6 @@ pub fn root() -> Html {
     html! {
         <div class="root">
             <BrowserRouter>
-                <Nav/>
                 <div class="main-panel">
                     <Switch<Route> render={main_panel} />
                 </div>

@@ -29,17 +29,11 @@ fn analytics_content() -> HtmlResult {
     match *resp {
         Ok(ref res) => {
             let analytics: Html = res.iter().map(to_html).collect();
-            let html = html! {
-                <>
-                    <header class="header">
-                        <h1 class="title">{ "Analytics" }</h1>
-                    </header>
-                    <div class="analytics">
-                        { analytics }
-                    </div>
-                </>
-            };
-            Ok(html.into())
+            Ok(html! {
+                <div class="analytics">
+                    { analytics }
+                </div>
+            })
         }
         Err(ref failure) => {
             let message = format!("Failed to get analytics: {}", failure.to_string());
@@ -52,8 +46,13 @@ fn analytics_content() -> HtmlResult {
 pub fn analytics() -> Html {
     let fallback = html! {<div>{"Loading..."}</div>};
     html! {
-        <Suspense {fallback}>
-            <AnalyticsContent />
-        </Suspense>
+        <>
+            <header class="header">
+                <h1 class="title">{ "Analytics" }</h1>
+            </header>
+            <Suspense {fallback}>
+                <AnalyticsContent />
+            </Suspense>
+        </>
     }
 }

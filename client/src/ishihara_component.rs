@@ -31,18 +31,18 @@ pub fn render_plate() -> Html {
 
     html! {
         <>
-            <header class="ishihara-header">
+            <header class="header">
                 <h1> { "Ishihara Plate Generator" } </h1>
             </header>
-            <div class="ishihara-description">
+            <div class="description">
                 <p style="display:inline"> { "Randomly Generates a Colorblindness Test Image in your browser! See: "} </p>
                 <a href="https://en.wikipedia.org/wiki/Ishihara_test"> {"wikipedia.org/wiki/Ishihara_test"} </a>
             </div>
             <IshiharaInput onsubmit={onsubmit_func}/>
-            <div class="ishihara-readout">
+            <div class="readout">
                 <canvas ref={canvas_ref} />
             </div>
-            <footer class="ishihara-footnote">
+            <footer class="footnote">
                 <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
             </footer>
         </>
