@@ -33,18 +33,18 @@ use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::Subscriber
 #[derive(Parser, Debug)]
 #[clap(name = "server", about = "My server")]
 struct Opt {
-    #[clap(short = 'a', long = "addr")]
+    #[clap(short, long = "addr")]
     addr: Option<String>,
-    #[clap(long, default_value = "8081")]
+    #[clap(short, long, default_value = "80")]
     port: u16,
-    #[clap(long, default_value = "8443")]
+    #[clap(long, default_value = "443")]
     ssl_port: u16,
-    #[clap(long = "static-dir", default_value = "target/dist/")]
+    #[clap(long, default_value = "")]
     static_dir: String,
     #[clap(long, default_value = "cert/")]
     cert_dir: String,
-    #[clap(long, short, action)]
-    prod: bool,
+    #[clap(long)]
+    dev: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -74,10 +74,14 @@ fn sentry_guard() -> Result<ClientInitGuard> {
 }
 
 async fn https_server(opt: Opt, server_state: ServerState, listen_address: SocketAddr) {
+    info!("Starting with: {opt:?}");
     let static_dir = PathBuf::from(&opt.static_dir);
     let cert_dir = PathBuf::from(&opt.cert_dir);
     let index_path = static_dir.join("index.html");
-    let index = read_to_string(index_path).await.unwrap();
+    let index = match read_to_string(&index_path).await {
+        Ok(index) => index,
+        Err(err) => panic!("Failed to read index at {}: {err}", index_path.display()),
+    };
 
     let api = Router::new()
         .route("/catscii", get(catscii_get))
@@ -151,10 +155,10 @@ async fn redirect_http_to_https(http: SocketAddr, https: SocketAddr) {
 #[tokio::main]
 async fn main() {
     let opt = Opt::parse();
-    let _guard = if opt.prod {
-        Some(sentry_guard().unwrap())
-    } else {
+    let _guard = if opt.dev {
         None
+    } else {
+        Some(sentry_guard().unwrap())
     };
     let (_honeyguard, _tracer) = new_pipeline(
         std::env::var("HONEYCOMB_API_KEY").expect("$HONEYCOMB_API_KEY should be set"),

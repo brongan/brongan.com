@@ -6,7 +6,7 @@ build:
 	./result | docker load
 
 run:
-  nix run
+	nix run
 
 deploy:
   just build

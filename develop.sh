@@ -4,4 +4,4 @@ IFS=$'\n\t'
 
 trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 trunk serve --proxy-backend="http://[::1]:8081/api/" &
-cargo watch -- cargo run --bin server -- --port 8081 --static-dir ./target/dist
+cargo watch -- cargo run --bin server -- --port 8081 --ssl-port 8443  --static-dir target/dist --cert-dir cert --dev
