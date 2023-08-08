@@ -19,20 +19,23 @@
       };
     };
   };
-  outputs = { nixpkgs, crane, flake-utils, rust-overlay, ... }:
-    flake-utils.lib.eachDefaultSystem (localSystem:
+  outputs = { self, nixpkgs, crane, flake-utils, rust-overlay, ... }:
+    flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
-        crossSystem = "aarch64-linux";
         pkgs = import nixpkgs {
-          inherit crossSystem localSystem;
+          inherit system;
           config.allowUnfree = true;
           overlays = [ (import rust-overlay) ];
         };
-        rustToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
-          targets = [ "aarch64-unknown-linux-gnu" ];
-        };
-        craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
         inherit (pkgs) lib;
+        wasmToolchain = pkgs.rust-bin.stable.latest.default.override {
+          targets = [ "wasm32-unknown-unknown" ];
+        };
+        nativeToolchain = pkgs.rust-bin.stable.latest.default.override {
+          targets = [ "x86_64-unknown-linux-gnu" ];
+        };
+        wasmCraneLib = (crane.mkLib pkgs).overrideToolchain wasmToolchain;
+        nativeCraneLib = (crane.mkLib pkgs).overrideToolchain nativeToolchain;
         src = lib.cleanSourceWith {
           src = ./.;
           filter = path: type:
@@ -42,36 +45,26 @@
             (lib.hasSuffix "\.vert" path) ||
             (lib.hasInfix "/img/" path) ||
             (lib.hasInfix "/resources/" path) ||
-            (craneLib.filterCargoSources path type)
+            (wasmCraneLib.filterCargoSources path type)
           ;
         };
-        crateExpression =
-          { sqlite, libiconv, lib, pkg-config, qemu, stdenv }:
-          craneLib.buildPackage {
-            inherit src;
-            depsBuildBuild = [ qemu ];
-            nativeBuildInputs = [ pkg-config ];
-            buildInputs = [ sqlite ];
-            CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "${stdenv.cc.targetPrefix}cc";
-            CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUNNER = "qemu-aarch64";
-            cargoExtraArgs = "--target aarch64-unknown-linux-gnu";
-            HOST_CC = "${stdenv.cc.nativePrefix}cc";
-
-            pname = "server";
-            version = "0.1.0";
-            CARGO_BUILD_TARGET = "aarch64-unknown-linux-gnu";
-            # CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
-            CLIENT_DIST = myClient;
-          };
-        myServer = pkgs.callPackage crateExpression { };
-        wasmToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
-          targets = [ "wasm32-unknown-unknown" ];
-        };
-        wasmCraneLib = (crane.mkLib pkgs).overrideToolchain wasmToolchain;
-        wasmArgs = {
+        commonArgs = {
           inherit src;
           version = "0.1.0";
-
+        };
+        buildInputs = with pkgs; [ sqlite ];
+        nativeArgs = commonArgs // {
+          pname = "server";
+          CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
+          # CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
+          inherit buildInputs;
+        };
+        cargoArtifacts = nativeCraneLib.buildDepsOnly nativeArgs;
+        myServer = nativeCraneLib.buildPackage (nativeArgs // {
+          inherit cargoArtifacts;
+          CLIENT_DIST = myClient;
+        });
+        wasmArgs = commonArgs // {
           pname = "client";
           cargoExtraArgs = "--package=client";
           CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
@@ -85,7 +78,7 @@
           trunkIndexPath = "client/index.html";
         });
         dockerImage = pkgs.dockerTools.streamLayeredImage {
-          name = "brongan-com";
+          name = "brongan_com";
           tag = "latest";
           contents = [ myServer myClient ];
           config = {
@@ -95,17 +88,10 @@
         };
       in
       {
-        checks = {
-          inherit myServer;
-        };
         packages = {
           inherit myServer dockerImage;
           default = myServer;
         };
-        apps.default = flake-utils.lib.mkApp {
-          drv = pkgs.writeScriptBin "my-app" ''
-            ${pkgs.pkgsBuildBuild.qemu}/bin/qemu-aarch64 ${myServer}/bin/server
-          '';
-        };
-      });
+      }
+    );
 }
