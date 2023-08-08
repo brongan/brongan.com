@@ -99,8 +99,8 @@ fn nav() -> Html {
             let callback = Callback::from(move |_| nav.push(&route));
             html! {
                 <div class="nav-item">
-                    <input type="image" onclick={callback} src={nav_button.thumbnail.clone()} />
-                    <h3>{ nav_button.title.clone() }</h3>
+                    <input type="image" onclick={callback} src={nav_button.thumbnail} />
+                    <h3>{ nav_button.title }</h3>
                 </div>
             }
         })
