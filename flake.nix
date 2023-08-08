@@ -32,7 +32,7 @@
           targets = [ "wasm32-unknown-unknown" ];
         };
         nativeToolchain = pkgs.rust-bin.stable.latest.default.override {
-          targets = [ "x86_64-unknown-linux-gnu" ];
+          targets = [ "x86_64-unknown-linux-musl" ];
         };
         wasmCraneLib = (crane.mkLib pkgs).overrideToolchain wasmToolchain;
         nativeCraneLib = (crane.mkLib pkgs).overrideToolchain nativeToolchain;
@@ -50,14 +50,13 @@
         };
         commonArgs = {
           inherit src;
+          pname = "brongan.com";
           version = "0.1.0";
         };
-        buildInputs = with pkgs; [ sqlite ];
         nativeArgs = commonArgs // {
           pname = "server";
-          CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
-          # CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
-          inherit buildInputs;
+          CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
+          CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
         };
         cargoArtifacts = nativeCraneLib.buildDepsOnly nativeArgs;
         myServer = nativeCraneLib.buildPackage (nativeArgs // {
@@ -82,7 +81,7 @@
           tag = "latest";
           contents = [ myServer myClient ];
           config = {
-            Cmd = [ "${myServer}/bin/server" ];
+            Cmd = [ "${myServer}/bin/server" "--static-dir=\"\"" ];
             Env = with pkgs; [ "GEOLITE2_COUNTRY_DB=${clash-geoip}/etc/clash/Country.mmdb" ];
           };
         };
