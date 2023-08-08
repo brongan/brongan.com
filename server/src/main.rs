@@ -73,6 +73,19 @@ fn sentry_guard() -> Result<ClientInitGuard> {
     )))
 }
 
+async fn rustls_config(cert_dir: &PathBuf) -> RustlsConfig {
+    let cert_path = cert_dir.join("fullchain.pem");
+    let privkey_path = cert_dir.join("privkey.pem");
+    match RustlsConfig::from_pem_file(&cert_path, &privkey_path).await {
+        Ok(config) => config,
+        Err(err) => panic!(
+            "Failed to read cert/key at {}, {}: {err}",
+            cert_path.display(),
+            privkey_path.display()
+        ),
+    }
+}
+
 async fn https_server(opt: Opt, server_state: ServerState, listen_address: SocketAddr) {
     info!("Starting with: {opt:?}");
     let static_dir = PathBuf::from(&opt.static_dir);
@@ -112,13 +125,8 @@ async fn https_server(opt: Opt, server_state: ServerState, listen_address: Socke
             record_analytics,
         ));
 
-    let config =
-        RustlsConfig::from_pem_file(cert_dir.join("fullchain.pem"), cert_dir.join("privkey.pem"))
-            .await
-            .unwrap();
-
     info!("https listening on: {listen_address}");
-    axum_server::bind_rustls(listen_address, config)
+    axum_server::bind_rustls(listen_address, rustls_config(&cert_dir).await)
         .serve(app.into_make_service_with_connect_info::<SocketAddr>())
         .await
         .unwrap();

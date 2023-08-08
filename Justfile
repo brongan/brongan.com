@@ -10,8 +10,7 @@ run:
 
 deploy:
   just build
-  podman push brongan_com docker://registry.fly.io/still-lake-5553:latest
-  flyctl deploy -i registry.fly.io/still-lake-5553:latest
+  podman save localhost/brongan-com | ssh opc podman load
 
 develop:
   ./develop.sh
