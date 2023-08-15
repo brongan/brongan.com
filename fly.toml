@@ -1,6 +1,6 @@
 # fly.toml file generated for still-lake-5553 on 2023-05-05T18:35:34-07:00
 
-app = "still-lake-5553"
+app = "rust-brongan-com"
 kill_signal = "SIGINT"
 kill_timeout = 5
 primary_region = "sea"
