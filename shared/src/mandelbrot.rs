@@ -4,10 +4,11 @@ use num::Complex;
 use rayon::iter::IndexedParallelIterator;
 use rayon::iter::IntoParallelRefMutIterator;
 use rayon::iter::ParallelIterator;
+use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
 use std::str::FromStr;
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Bounds {
     pub width: u32,
     pub height: u32,
@@ -132,4 +133,26 @@ pub fn generate_mandelbrot(
     let mut image = DynamicImage::new_rgba8(bounds.width, bounds.height).to_rgba8();
     render(&mut image, upper_left, lower_right);
     image
+}
+
+pub fn generate_mandelbrot_multithreaded(
+    bounds: Bounds,
+    upper_left: Complex<f64>,
+    lower_right: Complex<f64>,
+) -> GrayImage {
+    let mut image = GrayImage::new(bounds.width, bounds.height);
+    render_multithreaded(&mut image, upper_left, lower_right);
+    image
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct MandelbrotRequest {
+    pub bounds: Bounds,
+    pub upper_left: Complex<f64>,
+    pub lower_right: Complex<f64>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct MandelbrotResponse {
+    pub image: Vec<u8>,
 }

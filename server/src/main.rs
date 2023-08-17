@@ -1,7 +1,9 @@
 mod analytics;
 mod catscii;
 mod locat;
+mod mandelbrot;
 
+use crate::mandelbrot::mandelbrot_get;
 use analytics::{analytics_get, record_analytics};
 use anyhow::Result;
 use axum::body::{boxed, Body};
@@ -98,6 +100,7 @@ async fn https_server(opt: Opt, server_state: ServerState, listen_address: Socke
 
     let api = Router::new()
         .route("/catscii", get(catscii_get))
+        .route("/mandelbrot", get(mandelbrot_get))
         .route("/analytics", get(analytics_get));
     let app = Router::new()
         .nest("/api", api)

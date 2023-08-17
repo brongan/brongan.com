@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
+pub mod mandelbrot;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Analytics {
     pub ip_address: String,

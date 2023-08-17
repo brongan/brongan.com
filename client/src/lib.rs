@@ -3,6 +3,7 @@ use crate::catscii_component::Catscii;
 use crate::game_of_life::GameOfLifeModel;
 use crate::ishihara_component::IshiharaPlate;
 use crate::mandelbrot_component::MandelbrotModel;
+use shared::mandelbrot::Bounds;
 use yew::html;
 use yew::{function_component, Callback, Html};
 use yew_router::prelude::*;
@@ -14,7 +15,6 @@ mod game_of_life;
 mod ishihara;
 mod ishihara_component;
 mod ishihara_form;
-mod mandelbrot;
 mod mandelbrot_component;
 mod point2d;
 
@@ -44,11 +44,15 @@ struct Page {
 }
 
 fn main_panel(routes: Route) -> Html {
+    let bounds = Bounds {
+        width: 800,
+        height: 500,
+    };
     match routes {
         Route::Home => html! { <Home/> },
         Route::Ishihara => html! { <IshiharaPlate/> },
         Route::GameofLife => html! { <GameOfLifeModel/> },
-        Route::Mandelbrot => html! { <MandelbrotModel/> },
+        Route::Mandelbrot => html! { <MandelbrotModel bounds={bounds}/> },
         Route::Catscii => html! { <Catscii/> },
         Route::Analytics => html! { <AnalyticsComponent/> },
         Route::NotFound => html! { <h1>{ "404" }</h1> },

@@ -4,4 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0"
+image = "0.24"
+num = { version = "0.4", features = ["serde"] }
+rayon = "1.7.0"
 serde = { version = "1.0.163", features = ["derive"] }

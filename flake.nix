@@ -54,14 +54,18 @@
           version = "0.1.0";
         };
         nativeArgs = commonArgs // {
-          buildInputs = with pkgs.pkgsMusl; [ sqlite ];
           pname = "server";
           CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
           CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
+          env = {
+            SQLITE3_STATIC = 1;
+          };
         };
         cargoArtifacts = nativeCraneLib.buildDepsOnly nativeArgs;
         myServer = nativeCraneLib.buildPackage (nativeArgs // {
           inherit cargoArtifacts;
+          buildInputs = with pkgs.pkgsMusl; [ sqlite stdenv.cc.cc.lib clangStdenv ];
+
           CLIENT_DIST = myClient;
         });
         wasmArgs = commonArgs // {
@@ -82,7 +86,7 @@
           tag = "latest";
           contents = [ myServer myClient ];
           config = {
-            Cmd = [ "${myServer}/bin/server" "--static-dir=\"\"" ];
+            Cmd = [ "${myServer}/bin/server" "--static-dir=\"\" --port 8081 --ssl-port 8443 --cert-dir \" \"" ];
             Env = with pkgs; [ "GEOLITE2_COUNTRY_DB=${clash-geoip}/etc/clash/Country.mmdb" ];
           };
         };
