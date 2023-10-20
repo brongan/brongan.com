@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 fixedbitset = "0.4"
+getrandom = { version = "0.2", features = ["js"] }
 gloo-events = "0.1"
 gloo-net = "0.2"
 gloo-timers = "0.2"
