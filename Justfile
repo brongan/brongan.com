@@ -10,10 +10,10 @@ container:
 	./result | podman load
 
 run:
-	env RUSTFLAGS="-C target-feature=+crt-static" cargo run --target=x86_64-unknown-linux-musl --bin server -- --port 8081 --ssl-port 8443  --static-dir target/dist --cert-dir cert --dev
+	env RUSTFLAGS="-C target-feature=+crt-static" cargo run --target=x86_64-unknown-linux-musl --bin server -- --port 8081 --ssl-port 8443  --static-dir client/dist --cert-dir cert --dev
 
 deploy:
-  just build
+  just container
   podman push brongan_com docker://registry.fly.io/rust-brongan-com:latest
   flyctl deploy -i registry.fly.io/rust-brongan-com:latest
 
