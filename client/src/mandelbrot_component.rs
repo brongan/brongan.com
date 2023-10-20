@@ -28,7 +28,7 @@ pub struct MandelbrotInputProps {
 
 #[function_component(MandelbrotInput)]
 pub fn mandelbrot_input(
-    MandelbrotInputProps { selected, on_click }: &MandelbrotInputProps,
+    MandelbrotInputProps { selected: _, on_click }: &MandelbrotInputProps,
 ) -> Html {
     RenderingOption::iter()
         .enumerate()
