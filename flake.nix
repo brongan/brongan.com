@@ -1,15 +1,12 @@
 {
   description = "My personal website!.";
   inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs-for-wasm-bindgen.url = "github:NixOS/nixpkgs/4e6868b1aa3766ab1de169922bb3826143941973";
     crane = {
       url = "github:ipetkov/crane";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        rust-overlay.follows = "rust-overlay";
-        flake-utils.follows = "flake-utils";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
     };
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
@@ -19,7 +16,7 @@
       };
     };
   };
-  outputs = { self, nixpkgs, crane, flake-utils, rust-overlay, ... }:
+  outputs = { self, nixpkgs, crane, flake-utils, rust-overlay, nixpkgs-for-wasm-bindgen, ... }:
     flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
         pkgs = import nixpkgs {
@@ -34,7 +31,9 @@
         nativeToolchain = pkgs.rust-bin.stable.latest.default.override {
           targets = [ "x86_64-unknown-linux-musl" ];
         };
-        wasmCraneLib = (crane.mkLib pkgs).overrideToolchain wasmToolchain;
+        wasmCraneLib = ((crane.mkLib pkgs).overrideToolchain wasmToolchain).overrideScope' (final: prev: {
+          inherit (import nixpkgs-for-wasm-bindgen { inherit system; }) wasm-bindgen-cli;
+        });
         nativeCraneLib = (crane.mkLib pkgs).overrideToolchain nativeToolchain;
         src = lib.cleanSourceWith {
           src = ./.;
@@ -52,6 +51,7 @@
           inherit src;
           pname = "brongan.com";
           version = "0.1.0";
+          strictDeps = true;
         };
         nativeArgs = commonArgs // {
           pname = "server";
@@ -65,7 +65,6 @@
         myServer = nativeCraneLib.buildPackage (nativeArgs // {
           inherit cargoArtifacts;
           buildInputs = with pkgs.pkgsMusl; [ sqlite stdenv.cc.cc.lib clangStdenv ];
-
           CLIENT_DIST = myClient;
         });
         wasmArgs = commonArgs // {
