@@ -57,9 +57,6 @@
           pname = "server";
           CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
           CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
-          env = {
-            SQLITE3_STATIC = 1;
-          };
         };
         cargoArtifacts = nativeCraneLib.buildDepsOnly nativeArgs;
         myServer = nativeCraneLib.buildPackage (nativeArgs // {
