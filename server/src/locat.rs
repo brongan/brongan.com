@@ -9,6 +9,7 @@ use serde::Serialize;
 use shared::Analytics;
 use std::net::IpAddr;
 use tokio_rusqlite::Connection;
+use tracing::info;
 
 /// Allows geo-locating IPs and keeps analytics
 #[derive(Debug)]
@@ -43,7 +44,12 @@ impl Locat {
         geoip_country_db_path: &str,
         analytics_db_path: String,
     ) -> Result<Self, Error> {
+        info!(
+            "Reading Geoip Country DB at path: {}",
+            geoip_country_db_path
+        );
         let geoip_data = tokio::fs::read(geoip_country_db_path).await?;
+        info!("Successfully read Geoip Country DB.");
         Ok(Self {
             geoip: maxminddb::Reader::from_source(geoip_data)?,
             analytics: Db::create(analytics_db_path).await?,
@@ -99,6 +105,7 @@ struct Db {
 
 impl Db {
     async fn create(path: String) -> Result<Self, tokio_rusqlite::Error> {
+        info!("Reading Sqlite3 db at: {}", path);
         let connection = Connection::open(path).await?;
         connection
             .call(|connection| {
@@ -115,6 +122,7 @@ impl Db {
                 Ok::<_, rusqlite::Error>(())
             })
             .await?;
+        info!("Successfully created connection with Sqlite3 db.");
         Ok(Self { connection })
     }
 

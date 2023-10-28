@@ -6,6 +6,7 @@ mod mandelbrot;
 use crate::mandelbrot::mandelbrot_get;
 use analytics::{analytics_get, record_analytics};
 use anyhow::Result;
+use artem::util::fatal_error;
 use axum::body::{boxed, Body};
 use axum::extract::Host;
 use axum::handler::HandlerWithoutStateExt;
@@ -165,7 +166,9 @@ async fn redirect_http_to_https(http: SocketAddr, https: SocketAddr) {
 
 #[tokio::main]
 async fn main() {
+    info!("Starting brongan.com");
     let opt = Opt::parse();
+    info!("Creating Sentry and Honeyguard Hooks.");
     let _guard = if opt.dev {
         None
     } else {
@@ -186,7 +189,14 @@ async fn main() {
         .finish()
         .with(filter)
         .init();
-    let server_state = get_server_state().await.unwrap();
+    info!("Creating Server State.");
+    let server_state = match get_server_state().await {
+        Ok(state) => state,
+        Err(e) => {
+            info!("{e}");
+            fatal_error("TERMINATING. Failed to get initial server state.", None);
+        }
+    };
 
     let addr = if let Some(ip) = &opt.addr {
         IpAddr::from_str(&ip).unwrap()
@@ -195,6 +205,10 @@ async fn main() {
     };
     let http_addr = SocketAddr::from((addr, opt.port));
     let https_addr = SocketAddr::from((addr, opt.ssl_port));
+    info!(
+        "Binding handlers to sockets: ({}, {})",
+        http_addr, https_addr
+    );
     tokio::spawn(redirect_http_to_https(http_addr, https_addr));
     https_server(opt, server_state, https_addr).await;
 }
