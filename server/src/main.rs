@@ -129,7 +129,7 @@ async fn https_server(opt: Opt, server_state: ServerState, listen_address: Socke
             record_analytics,
         ));
 
-    info!("https listening on: {listen_address}");
+    info!("HTTPS listening on: {listen_address}");
     axum_server::bind_rustls(listen_address, rustls_config(&cert_dir).await)
         .serve(app.into_make_service_with_connect_info::<SocketAddr>())
         .await
@@ -157,7 +157,7 @@ async fn redirect_http_to_https(http: SocketAddr, https: SocketAddr) {
             }
         }
     };
-    info!("Http listening on : {http}");
+    info!("HTTP listening on : {http}");
     axum_server::bind(http)
         .serve(redirect.into_make_service())
         .await

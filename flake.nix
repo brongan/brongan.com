@@ -61,7 +61,6 @@
         cargoArtifacts = nativeCraneLib.buildDepsOnly nativeArgs;
         myServer = nativeCraneLib.buildPackage (nativeArgs // {
           inherit cargoArtifacts;
-          buildInputs = with pkgs.pkgsMusl; [ sqlite stdenv.cc.cc.lib clangStdenv ];
           CLIENT_DIST = myClient;
         });
         wasmArgs = commonArgs // {
