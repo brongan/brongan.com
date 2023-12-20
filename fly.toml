@@ -14,7 +14,7 @@ ANALYTICS_DB = "/db/analytics.db"
 
 [[services]]
   protocol = "tcp"
-  internal_port = 8081
+  internal_port = 8080
   processes = ["app"]
 
   [[services.ports]]

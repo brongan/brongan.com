@@ -36,18 +36,18 @@ use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::Subscriber
 #[derive(Parser, Debug)]
 #[clap(name = "server", about = "My server")]
 struct Opt {
-    #[clap(short, long = "addr")]
-    addr: Option<String>,
-    #[clap(short, long, default_value = "80")]
-    port: u16,
-    #[clap(long, default_value = "443")]
-    ssl_port: u16,
-    #[clap(long, default_value = "")]
-    static_dir: String,
-    #[clap(long, default_value = "cert/")]
-    cert_dir: String,
     #[clap(long)]
     dev: bool,
+    #[clap(long)]
+    static_dir: String,
+    #[clap(long)]
+    addr: Option<String>,
+    #[clap(long)]
+    port: u16,
+    #[clap(long)]
+    ssl_port: Option<u16>,
+    #[clap(long)]
+    cert_dir: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -87,53 +87,6 @@ async fn rustls_config(cert_dir: &PathBuf) -> RustlsConfig {
             privkey_path.display()
         ),
     }
-}
-
-async fn https_server(opt: Opt, server_state: ServerState, listen_address: SocketAddr) {
-    info!("Starting with: {opt:?}");
-    let static_dir = PathBuf::from(&opt.static_dir);
-    let cert_dir = PathBuf::from(&opt.cert_dir);
-    let index_path = static_dir.join("index.html");
-    let index = match read_to_string(&index_path).await {
-        Ok(index) => index,
-        Err(err) => panic!("Failed to read index at {}: {err}", index_path.display()),
-    };
-
-    let api = Router::new()
-        .route("/catscii", get(catscii_get))
-        .route("/mandelbrot", get(mandelbrot_get))
-        .route("/analytics", get(analytics_get));
-    let app = Router::new()
-        .nest("/api", api)
-        .with_state(server_state.clone())
-        .fallback(get(|req| async move {
-            match ServeDir::new(&opt.static_dir).oneshot(req).await {
-                Ok(res) => {
-                    let status = res.status();
-                    match status {
-                        StatusCode::NOT_FOUND => HttpResponse::builder()
-                            .status(StatusCode::OK)
-                            .body(boxed(Body::from(index)))
-                            .unwrap(),
-                        _ => res.map(boxed),
-                    }
-                }
-                Err(err) => Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(boxed(Body::from(format!("error: {err}"))))
-                    .unwrap(),
-            }
-        }))
-        .layer(middleware::from_fn_with_state(
-            server_state,
-            record_analytics,
-        ));
-
-    info!("HTTPS listening on: {listen_address}");
-    axum_server::bind_rustls(listen_address, rustls_config(&cert_dir).await)
-        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
-        .await
-        .unwrap();
 }
 
 async fn redirect_http_to_https(http: SocketAddr, https: SocketAddr) {
@@ -203,12 +156,66 @@ async fn main() {
     } else {
         IpAddr::V6(Ipv6Addr::LOCALHOST)
     };
+
+    let app = {
+        let static_dir = PathBuf::from(&opt.static_dir);
+        let index_path = static_dir.join("index.html");
+        let index = match read_to_string(&index_path).await {
+            Ok(index) => index,
+            Err(err) => panic!("Failed to read index at {}: {err}", index_path.display()),
+        };
+
+        let api = Router::new()
+            .route("/catscii", get(catscii_get))
+            .route("/mandelbrot", get(mandelbrot_get))
+            .route("/analytics", get(analytics_get));
+        let app = Router::new()
+            .nest("/api", api)
+            .with_state(server_state.clone())
+            .fallback(get(|req| async move {
+                match ServeDir::new(static_dir).oneshot(req).await {
+                    Ok(res) => {
+                        let status = res.status();
+                        match status {
+                            StatusCode::NOT_FOUND => HttpResponse::builder()
+                                .status(StatusCode::OK)
+                                .body(boxed(Body::from(index)))
+                                .unwrap(),
+                            _ => res.map(boxed),
+                        }
+                    }
+                    Err(err) => Response::builder()
+                        .status(StatusCode::INTERNAL_SERVER_ERROR)
+                        .body(boxed(Body::from(format!("error: {err}"))))
+                        .unwrap(),
+                }
+            }))
+            .layer(middleware::from_fn_with_state(
+                server_state,
+                record_analytics,
+            ));
+        app
+    };
+
     let http_addr = SocketAddr::from((addr, opt.port));
-    let https_addr = SocketAddr::from((addr, opt.ssl_port));
-    info!(
-        "Binding handlers to sockets: ({}, {})",
-        http_addr, https_addr
-    );
-    tokio::spawn(redirect_http_to_https(http_addr, https_addr));
-    https_server(opt, server_state, https_addr).await;
+    if let (Some(ssl_port), Some(cert_dir)) = (opt.ssl_port, opt.cert_dir) {
+        let https_addr = SocketAddr::from((addr, ssl_port));
+        info!("Binding handlers to sockets: ({http_addr}, {https_addr})",);
+        tokio::spawn(redirect_http_to_https(http_addr, https_addr));
+        axum_server::bind_rustls(https_addr, rustls_config(&PathBuf::from(&cert_dir)).await)
+            .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+            .await
+            .unwrap();
+    } else {
+        info!("Binding handler to socket: {}", http_addr);
+        let quit_sig = async {
+            _ = tokio::signal::ctrl_c().await;
+            warn!("Initiating graceful shutdown");
+        };
+        axum::Server::bind(&http_addr)
+            .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+            .with_graceful_shutdown(quit_sig)
+            .await
+            .unwrap();
+    }
 }

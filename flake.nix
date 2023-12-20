@@ -29,7 +29,7 @@
           targets = [ "wasm32-unknown-unknown" ];
         };
         nativeToolchain = pkgs.rust-bin.stable.latest.default.override {
-          targets = [ "x86_64-unknown-linux-musl" ];
+          targets = [ "x86_64-unknown-linux-gnu" ];
         };
         wasmCraneLib = ((crane.mkLib pkgs).overrideToolchain wasmToolchain).overrideScope' (final: prev: {
           inherit (import nixpkgs-for-wasm-bindgen { inherit system; }) wasm-bindgen-cli;
@@ -55,8 +55,8 @@
         };
         nativeArgs = commonArgs // {
           pname = "server";
-          CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
-          CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
+          CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
+          # CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
         };
         cargoArtifacts = nativeCraneLib.buildDepsOnly nativeArgs;
         myServer = nativeCraneLib.buildPackage (nativeArgs // {
@@ -81,7 +81,12 @@
           tag = "latest";
           contents = [ myServer myClient ];
           config = {
-            Cmd = [ "${myServer}/bin/server" "--static-dir=\"\" --port 8081 --ssl-port 8443 --cert-dir \" \"" ];
+            Cmd = [
+              "${myServer}/bin/server"
+              "--addr=0.0.0.0"
+              "--port=8080"
+              "--static-dir=/"
+            ];
             Env = with pkgs; [ "GEOLITE2_COUNTRY_DB=${clash-geoip}/etc/clash/Country.mmdb" ];
           };
         };
