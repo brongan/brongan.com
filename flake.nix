@@ -24,12 +24,16 @@
           config.allowUnfree = true;
           overlays = [ (import rust-overlay) ];
         };
+        sqliteStatic = pkgs.pkgsMusl.sqlite.override {
+          stdenv =
+            pkgs.pkgsStatic.stdenv;
+        };
         inherit (pkgs) lib;
         wasmToolchain = pkgs.rust-bin.stable.latest.default.override {
           targets = [ "wasm32-unknown-unknown" ];
         };
         nativeToolchain = pkgs.rust-bin.stable.latest.default.override {
-          targets = [ "x86_64-unknown-linux-gnu" ];
+          targets = [ "x86_64-unknown-linux-musl" ];
         };
         wasmCraneLib = ((crane.mkLib pkgs).overrideToolchain wasmToolchain).overrideScope' (final: prev: {
           inherit (import nixpkgs-for-wasm-bindgen { inherit system; }) wasm-bindgen-cli;
@@ -52,11 +56,13 @@
           pname = "brongan.com";
           version = "0.1.0";
           strictDeps = true;
+          nativeBuildInputs = with pkgs; [ pkg-config ];
         };
         nativeArgs = commonArgs // {
           pname = "server";
-          CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
-          # CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
+          CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
+          CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
+          buildInputs = [ sqliteStatic ];
         };
         cargoArtifacts = nativeCraneLib.buildDepsOnly nativeArgs;
         myServer = nativeCraneLib.buildPackage (nativeArgs // {

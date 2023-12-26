@@ -38,11 +38,11 @@ use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::Subscriber
 struct Opt {
     #[clap(long)]
     dev: bool,
-    #[clap(long)]
+    #[clap(long, default_value = "/")]
     static_dir: String,
     #[clap(long)]
     addr: Option<String>,
-    #[clap(long)]
+    #[clap(long, default_value = "8080")]
     port: u16,
     #[clap(long)]
     ssl_port: Option<u16>,

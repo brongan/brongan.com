@@ -9,6 +9,9 @@ container:
 	nix build .#dockerImage
 	./result | podman load
 
+container-run: container
+	nix run
+
 run: build
 	env RUSTFLAGS="-C target-feature=+crt-static" cargo run --target=x86_64-unknown-linux-musl --bin server -- --port 8081 --ssl-port 8443  --static-dir client/dist --cert-dir cert --dev
 
