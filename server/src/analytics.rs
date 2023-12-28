@@ -1,23 +1,27 @@
 use crate::ServerState;
-use axum::http::Request;
-use axum::middleware::Next;
 use axum::{
     body::BoxBody,
     extract::{ConnectInfo, State},
+    http::Request,
+    middleware::Next,
     response::{IntoResponse, Response},
 };
-use hyper::header::ACCEPT;
-use hyper::HeaderMap;
-use opentelemetry::trace::get_active_span;
-use opentelemetry::KeyValue;
+use hyper::{header::ACCEPT, HeaderMap};
 use opentelemetry::{
     global,
-    trace::{FutureExt, TraceContextExt, Tracer},
-    Context,
+    trace::{get_active_span, FutureExt, TraceContextExt, Tracer},
+    Context, KeyValue,
 };
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::path::Path;
 use tracing::{info, warn};
+
+fn get_fly_client_addr(headers: &HeaderMap) -> Option<IpAddr> {
+    let header = headers.get("fly-client-ip")?;
+    let header = header.to_str().ok()?;
+    let addr = header.parse::<IpAddr>().ok()?;
+    Some(addr)
+}
 
 pub async fn analytics_get(
     headers: HeaderMap,
@@ -47,6 +51,7 @@ pub async fn analytics_get(
 pub async fn record_analytics<B>(
     State(state): State<ServerState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     request: Request<B>,
     next: Next<B>,
 ) -> Response {
@@ -62,7 +67,7 @@ pub async fn record_analytics<B>(
         _ => (),
     }
 
-    let ip = addr.ip();
+    let ip = get_fly_client_addr(&headers).unwrap_or(addr.ip());
     let iso_code = if ip.is_loopback() {
         "DEV"
     } else {
