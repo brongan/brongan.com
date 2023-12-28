@@ -2,8 +2,7 @@ _default:
   just --list
 
 build:
-	env RUSTFLAGS="-C target-feature=+crt-static" cargo build --target=x86_64-unknown-linux-musl --bin server 
-	cargo build --target=wasm32-unknown-unknown --bin client
+	cargo build --all
 
 container:
 	nix build .#dockerImage
@@ -13,7 +12,7 @@ container-run: container
 	nix run
 
 run: build
-	env RUSTFLAGS="-C target-feature=+crt-static" cargo run --target=x86_64-unknown-linux-musl --bin server -- --port 8081 --ssl-port 8443  --static-dir client/dist --cert-dir cert --dev
+	cargo run --bin server -- --port 8081 --ssl-port 8443 --static-dir client/dist --cert-dir cert --dev
 
 deploy: container
   podman push brongan_com docker://registry.fly.io/rust-brongan-com:latest
@@ -24,3 +23,4 @@ opc: container
 
 develop:
   ./develop.sh
+
