@@ -30,7 +30,7 @@ use std::sync::Arc;
 use tokio::fs::read_to_string;
 use tower::ServiceExt;
 use tower_http::services::ServeDir;
-use tracing::{info, warn, Level};
+use tracing::{error, info, warn, Level};
 use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Parser, Debug)]
@@ -56,7 +56,7 @@ pub struct ServerState {
     locat: Arc<Locat>,
 }
 
-async fn get_server_state() -> Result<ServerState> {
+async fn create_server_state() -> Result<ServerState> {
     let country_db_dev_path = "db/GeoLite2-Country.mmdb".to_string();
     let country_db_path = std::env::var("GEOLITE2_COUNTRY_DB").unwrap_or(country_db_dev_path);
     let db = std::env::var("DB").unwrap_or("db/sqlite.db".to_string());
@@ -110,7 +110,7 @@ async fn redirect_http_to_https(http: SocketAddr, https: SocketAddr) {
             }
         }
     };
-    info!("HTTP listening on : {http}");
+    info!("HTTP Redirect listening at: {http}");
     axum_server::bind(http)
         .serve(redirect.into_make_service())
         .await
@@ -143,10 +143,10 @@ async fn main() {
         .with(filter)
         .init();
     info!("Creating Server State.");
-    let server_state = match get_server_state().await {
+    let server_state = match create_server_state().await {
         Ok(state) => state,
         Err(e) => {
-            info!("{e}");
+            error!("{e}");
             fatal_error("TERMINATING. Failed to get initial server state.", None);
         }
     };
@@ -157,6 +157,7 @@ async fn main() {
         IpAddr::V6(Ipv6Addr::LOCALHOST)
     };
 
+    info!("Creating Router.");
     let app = {
         let static_dir = PathBuf::from(&opt.static_dir);
         let index_path = static_dir.join("index.html");
@@ -202,6 +203,7 @@ async fn main() {
         let https_addr = SocketAddr::from((addr, ssl_port));
         info!("Binding handlers to sockets: ({http_addr}, {https_addr})",);
         tokio::spawn(redirect_http_to_https(http_addr, https_addr));
+        info!("HTTPS listening at: {https_addr}");
         axum_server::bind_rustls(https_addr, rustls_config(&PathBuf::from(&cert_dir)).await)
             .serve(app.into_make_service_with_connect_info::<SocketAddr>())
             .await
