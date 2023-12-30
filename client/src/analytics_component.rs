@@ -36,7 +36,7 @@ fn analytics_content() -> HtmlResult {
             })
         }
         Err(ref failure) => {
-            let message = format!("Failed to get analytics: {}", failure.to_string());
+            let message = format!("Failed to get analytics: {}", failure);
             Ok(message.into())
         }
     }

@@ -24,7 +24,7 @@ use locat::Locat;
 use opentelemetry_honeycomb::new_pipeline;
 use sentry::ClientInitGuard;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::fs::read_to_string;
@@ -76,7 +76,7 @@ fn sentry_guard() -> Result<ClientInitGuard> {
     )))
 }
 
-async fn rustls_config(cert_dir: &PathBuf) -> RustlsConfig {
+async fn rustls_config(cert_dir: &Path) -> RustlsConfig {
     let cert_path = cert_dir.join("fullchain.pem");
     let privkey_path = cert_dir.join("privkey.pem");
     match RustlsConfig::from_pem_file(&cert_path, &privkey_path).await {
@@ -152,51 +152,47 @@ async fn main() {
     };
 
     let addr = if let Some(ip) = &opt.addr {
-        IpAddr::from_str(&ip).unwrap()
+        IpAddr::from_str(ip).unwrap()
     } else {
         IpAddr::V6(Ipv6Addr::LOCALHOST)
     };
 
     info!("Creating Router.");
-    let app = {
-        let static_dir = PathBuf::from(&opt.static_dir);
-        let index_path = static_dir.join("index.html");
-        let index = match read_to_string(&index_path).await {
-            Ok(index) => index,
-            Err(err) => panic!("Failed to read index at {}: {err}", index_path.display()),
-        };
-
-        let api = Router::new()
-            .route("/catscii", get(catscii_get))
-            .route("/mandelbrot", get(mandelbrot_get))
-            .route("/analytics", get(analytics_get));
-        let app = Router::new()
-            .nest("/api", api)
-            .with_state(server_state.clone())
-            .fallback(get(|req| async move {
-                match ServeDir::new(static_dir).oneshot(req).await {
-                    Ok(res) => {
-                        let status = res.status();
-                        match status {
-                            StatusCode::NOT_FOUND => HttpResponse::builder()
-                                .status(StatusCode::OK)
-                                .body(boxed(Body::from(index)))
-                                .unwrap(),
-                            _ => res.map(boxed),
-                        }
-                    }
-                    Err(err) => Response::builder()
-                        .status(StatusCode::INTERNAL_SERVER_ERROR)
-                        .body(boxed(Body::from(format!("error: {err}"))))
-                        .unwrap(),
-                }
-            }))
-            .layer(middleware::from_fn_with_state(
-                server_state,
-                record_analytics,
-            ));
-        app
+    let static_dir = PathBuf::from(&opt.static_dir);
+    let index_path = static_dir.join("index.html");
+    let index = match read_to_string(&index_path).await {
+        Ok(index) => index,
+        Err(err) => panic!("Failed to read index at {}: {err}", index_path.display()),
     };
+    let api = Router::new()
+        .route("/catscii", get(catscii_get))
+        .route("/mandelbrot", get(mandelbrot_get))
+        .route("/analytics", get(analytics_get));
+    let app = Router::new()
+        .nest("/api", api)
+        .with_state(server_state.clone())
+        .fallback(get(|req| async move {
+            match ServeDir::new(static_dir).oneshot(req).await {
+                Ok(res) => {
+                    let status = res.status();
+                    match status {
+                        StatusCode::NOT_FOUND => HttpResponse::builder()
+                            .status(StatusCode::OK)
+                            .body(boxed(Body::from(index)))
+                            .unwrap(),
+                        _ => res.map(boxed),
+                    }
+                }
+                Err(err) => Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(boxed(Body::from(format!("error: {err}"))))
+                    .unwrap(),
+            }
+        }))
+        .layer(middleware::from_fn_with_state(
+            server_state,
+            record_analytics,
+        ));
 
     let http_addr = SocketAddr::from((addr, opt.port));
     if let (Some(ssl_port), Some(cert_dir)) = (opt.ssl_port, opt.cert_dir) {

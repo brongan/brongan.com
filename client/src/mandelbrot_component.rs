@@ -28,7 +28,10 @@ pub struct MandelbrotInputProps {
 
 #[function_component(MandelbrotInput)]
 pub fn mandelbrot_input(
-    MandelbrotInputProps { selected: _, on_click }: &MandelbrotInputProps,
+    MandelbrotInputProps {
+        selected: _,
+        on_click,
+    }: &MandelbrotInputProps,
 ) -> Html {
     RenderingOption::iter()
         .enumerate()
@@ -36,7 +39,7 @@ pub fn mandelbrot_input(
             let on_select = {
                 let on_click = on_click.clone();
                 Callback::from(move |_| {
-                    on_click.emit(option.clone());
+                    on_click.emit(option);
                 })
             };
             html! {
@@ -75,7 +78,7 @@ fn render(
     .map_err(|_| anyhow!("Failed to convert to ImageData."));
 
     {
-        let bounds = bounds.clone();
+        let bounds = *bounds;
         let canvas_ref = canvas_ref.clone();
         use_effect(move || {
             let canvas = canvas_ref.cast::<HtmlCanvasElement>().unwrap();
@@ -143,7 +146,7 @@ fn render(
     .unwrap();
 
     {
-        let bounds = bounds.clone();
+        let bounds = *bounds;
         let canvas_ref = canvas_ref.clone();
         use_effect(move || {
             info!("Setting Canvas.");

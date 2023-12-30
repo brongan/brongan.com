@@ -29,5 +29,5 @@ pub async fn mandelbrot_get(
         .write_to(&mut Cursor::new(&mut image), image::ImageOutputFormat::Png)
         .unwrap();
 
-    return Json(MandelbrotResponse { image }).into_response();
+    Json(MandelbrotResponse { image }).into_response()
 }
