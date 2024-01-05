@@ -1,3 +1,5 @@
+use crate::color::{hex_color, Color};
+use crate::point2d::Point2D;
 use image::{DynamicImage, Rgba, RgbaImage};
 use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut};
 use rand::distributions::uniform::Uniform;
@@ -8,9 +10,6 @@ use rusttype::{point, Font, Scale};
 use std::fmt;
 use strum_macros::EnumIter;
 use strum_macros::EnumString;
-
-use crate::color::{hex_color, Color};
-use crate::point2d::Point2D;
 
 #[derive(Clone, Copy)]
 enum IshiharaColor {

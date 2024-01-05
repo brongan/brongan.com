@@ -1,30 +1,28 @@
-use gloo_net::http::Request;
-use yew::html;
-use yew::html::HtmlResult;
-use yew::suspense::use_future;
-use yew::Suspense;
-use yew::{function_component, AttrValue, Html};
+use leptos::{component, create_resource, server, view, IntoView, ServerFnError, SignalGet};
 
-#[function_component(CatsciiContent)]
-fn catscii_content() -> HtmlResult {
-    let resp = use_future(|| async { Request::get("/api/catscii").send().await?.text().await })?;
-    match *resp {
-        Ok(ref res) => Ok(Html::from_html_unchecked(AttrValue::from(res.clone()))),
-        Err(ref failure) => Ok(failure.to_string().into()),
-    }
+#[server(GetCatscii, "/api", "Url", "catscii")]
+pub async fn get_catscii() -> Result<String, ServerFnError> {
+    todo!()
 }
 
-#[function_component(Catscii)]
-pub fn catscii() -> Html {
-    let fallback = html! {<div>{"Loading..."}</div>};
-    html! {
-        <>
-            <header class="header">
-                <h1 class="title">{ "Catscii" }</h1>
-            </header>
-            <Suspense {fallback}>
-                <CatsciiContent />
-            </Suspense>
-        </>
+#[component]
+fn catscii_content(art: String) -> impl IntoView {
+    view! { <p>{art}</p> }
+}
+
+#[component]
+pub fn catscii() -> impl IntoView {
+    let once = create_resource(|| (), |_| async move { get_catscii().await.unwrap() });
+    view! {
+        <header class="header">
+            <h1 class="title">{ "Catscii" }</h1>
+        </header>
+        <div class="content"> {
+                move || match once.get() {
+                    Some(art) => view! { <CatsciiContent art/> }.into_view(),
+                    None => view! { <p>"Loading..."</p> }.into_view(),
+                }
+            }
+        </div>
     }
 }

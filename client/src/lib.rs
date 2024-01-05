@@ -1,12 +1,12 @@
 use crate::analytics_component::AnalyticsComponent;
 use crate::catscii_component::Catscii;
-use crate::game_of_life::GameOfLifeModel;
+use crate::game_of_life::GameOfLife;
 use crate::ishihara_component::IshiharaPlate;
 use crate::mandelbrot_component::MandelbrotModel;
+use leptos::IntoAttribute;
+use leptos::{component, view, CollectView, IntoView};
+use leptos_router::{Route, Router, Routes};
 use shared::mandelbrot::Bounds;
-use yew::html;
-use yew::{function_component, Callback, Html};
-use yew_router::prelude::*;
 
 mod analytics_component;
 mod catscii_component;
@@ -18,108 +18,67 @@ mod ishihara_form;
 mod mandelbrot_component;
 mod point2d;
 
-#[derive(Clone, Routable, PartialEq)]
-enum Route {
-    #[at("/")]
-    Home,
-    #[at("/ishihara")]
-    Ishihara,
-    #[at("/game-of-life")]
-    GameofLife,
-    #[at("/mandelbrot")]
-    Mandelbrot,
-    #[at("/catscii/")]
-    Catscii,
-    #[at("/analytics/")]
-    Analytics,
-    #[not_found]
-    #[at("/404")]
-    NotFound,
-}
-
-struct Page {
+struct NavItem {
     title: &'static str,
-    route: Route,
+    route: &'static str,
     thumbnail: &'static str,
 }
 
-fn main_panel(routes: Route) -> Html {
-    let bounds = Bounds {
-        width: 800,
-        height: 500,
-    };
-    match routes {
-        Route::Home => html! { <Home/> },
-        Route::Ishihara => html! { <IshiharaPlate/> },
-        Route::GameofLife => html! { <GameOfLifeModel/> },
-        Route::Mandelbrot => html! { <MandelbrotModel bounds={bounds}/> },
-        Route::Catscii => html! { <Catscii/> },
-        Route::Analytics => html! { <AnalyticsComponent/> },
-        Route::NotFound => html! { <h1>{ "404" }</h1> },
-    }
-}
-
-#[function_component(Nav)]
-fn nav() -> Html {
-    let nav_buttons = vec![
-        Page {
-            title: "Home",
-            route: Route::Home,
-            thumbnail: "img/brongan.jpg",
-        },
-        Page {
-            title: "Ishihara",
-            route: Route::Ishihara,
-            thumbnail: "img/color-blind-test.png",
-        },
-        Page {
-            title: "Game of Life",
-            route: Route::GameofLife,
-            thumbnail: "img/game-of-life.png",
-        },
-        Page {
-            title: "Mandelbrot",
-            route: Route::Mandelbrot,
-            thumbnail: "img/mandelbrot.png",
-        },
-        Page {
-            title: "Catscii",
-            route: Route::Catscii,
-            thumbnail: "img/catscii.png",
-        },
-        Page {
-            title: "Analytics",
-            route: Route::Analytics,
-            thumbnail: "img/analytics.png",
-        },
-    ];
-
-    let nav = use_navigator().unwrap();
-    let nav_buttons = nav_buttons
-        .iter()
-        .map(|nav_button| {
-            let nav = nav.clone();
-            let route = nav_button.route.clone();
-            let callback = Callback::from(move |_| nav.push(&route));
-            html! {
-                <div class="nav-item">
-                    <input type="image" onclick={callback} src={nav_button.thumbnail} />
-                    <h3>{ nav_button.title }</h3>
-                </div>
-            }
-        })
-        .collect::<Html>();
-
-    html! {
-        <div class="nav">
-            { nav_buttons }
+#[component]
+fn nav_button(nav_item: NavItem) -> impl IntoView {
+    view! {
+        <div class="nav-item">
+            <a type="image" src={nav_item.thumbnail} href={nav_item.route}/>
+            <h3>{ nav_item.title }</h3>
         </div>
     }
 }
 
-#[function_component(Home)]
-fn home() -> Html {
-    html! {
+#[component]
+fn nav() -> impl IntoView {
+    let nav_items = vec![
+        NavItem {
+            title: "Home",
+            route: "/",
+            thumbnail: "img/brongan.jpg",
+        },
+        NavItem {
+            title: "Ishihara",
+            route: "/ishihara",
+            thumbnail: "img/color-blind-test.png",
+        },
+        NavItem {
+            title: "Game of Life",
+            route: "/game-of-life",
+            thumbnail: "img/game-of-life.png",
+        },
+        NavItem {
+            title: "Mandelbrot",
+            route: "/mandelbrot",
+            thumbnail: "img/mandelbrot.png",
+        },
+        NavItem {
+            title: "Catscii",
+            route: "/catscii",
+            thumbnail: "img/catscii.png",
+        },
+        NavItem {
+            title: "Analytics",
+            route: "/analytics",
+            thumbnail: "img/analytics.png",
+        },
+    ];
+
+    view! {
+        <div class="nav">
+            { nav_items.into_iter().map(|item| view! { <NavButton nav_item={item}/> }).collect_view()}
+        </div>
+    }
+}
+
+#[component]
+fn home() -> impl IntoView {
+    view! {
         <>
             <header class="header">
                 <h1 class="title">{ "Welcome to brongan.com" }</h1>
@@ -130,15 +89,24 @@ fn home() -> Html {
     }
 }
 
-#[function_component(Root)]
-pub fn root() -> Html {
-    html! {
-        <div class="root">
-            <BrowserRouter>
-                <div class="main-panel">
-                    <Switch<Route> render={main_panel} />
-                </div>
-            </BrowserRouter>
-        </div>
+#[component]
+pub fn root() -> impl IntoView {
+    view! {
+      <Router>
+        <nav>
+          /* ... */
+        </nav>
+          <main class="main-panel">
+              <Routes>
+                  <Route path="/" view=Home/>
+                  <Route path="/ishihara" view=IshiharaPlate/>
+                  <Route path="/game-of-ilfe" view=GameOfLife/>
+                  <Route path="/mandelbrot" view=||view! { <MandelbrotModel bounds={Bounds {width: 800, height: 500}}/> } />
+                  <Route path="/catscii" view=Catscii />
+                  <Route path="/analytics" view=AnalyticsComponent />
+                  <Route path="/*any" view=|| view! { <h1>"Not Found"</h1> }/>
+              </Routes>
+          </main>
+      </Router>
     }
 }

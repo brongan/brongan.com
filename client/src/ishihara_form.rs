@@ -1,8 +1,10 @@
 use crate::ishihara::Blindness;
+use leptos::html::Form;
+use leptos::{component, create_node_ref, view, IntoView, NodeRef, WriteSignal};
+use leptos::{CollectView, IntoAttribute};
 use std::str::FromStr;
 use strum::IntoEnumIterator;
-use web_sys::{FormData, HtmlFormElement};
-use yew::prelude::*;
+use web_sys::{FormData, SubmitEvent};
 
 #[derive(Debug, Default)]
 pub struct Data {
@@ -21,36 +23,26 @@ impl From<FormData> for Data {
     }
 }
 
-#[derive(Properties, PartialEq)]
-pub struct Props {
-    pub onsubmit: Callback<Data>,
-}
-
-#[function_component(IshiharaInput)]
-pub fn ishihara_input(props: &Props) -> Html {
-    let form_ref = use_node_ref();
-    let form_callback_ref = form_ref.clone();
-    let blindness_choices: Html = Blindness::iter().map(|blindness| {
+#[component]
+pub fn ishihara_input(set_data: WriteSignal<Data>) -> impl IntoView {
+    let blindness_choices = Blindness::iter().map(|blindness| {
         let choice = format!("{}-{}", blindness, "choice");
-        html! {
-            <>
-                <input type="radio" id={choice.clone()} name="blindness" value={blindness.to_string()} checked=true />
-                <label for={choice}> {blindness.to_string()} </label>
-            </>
+        view! {
+            <input type="radio" id={choice.clone()} name="blindness" value={blindness.to_string()} checked=true />
+            <label for={choice}> {blindness.to_string()} </label>
         }
-    }).collect();
+    }).collect_view();
 
-    let form_callback = props.onsubmit.clone();
-    let onsubmit = Callback::from(move |e: SubmitEvent| {
-        e.prevent_default();
-        if let Some(form) = form_callback_ref.cast::<HtmlFormElement>() {
-            let data = Data::from(FormData::new_with_form(&form).unwrap());
-            form_callback.emit(data);
-        }
-    });
+    let form_element: NodeRef<Form> = create_node_ref();
+    let form = form_element().expect("form in DOM.");
+    let on_submit = move |ev: SubmitEvent| {
+        ev.prevent_default();
+        let value = form_element().expect("<input> to exist");
+        set_data(Data::from(FormData::new_with_form(form.into())));
+    };
 
-    html! {
-        <form onsubmit={onsubmit} ref={form_ref}>
+    view! {
+        <form onsubmit={on_submit} ref={form_ref}>
             <div class="blindness-selector">
                 {blindness_choices}
             </div>

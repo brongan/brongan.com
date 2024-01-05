@@ -15,11 +15,14 @@ use axum::middleware;
 use axum::response::{Redirect, Response};
 use axum::routing::get;
 use axum::Router;
+use axum::{routing::post, Router};
 use axum_server::tls_rustls::RustlsConfig;
 use catscii::catscii_get;
 use clap::Parser;
 use hyper::http::uri::Scheme;
 use hyper::Uri;
+use leptos::*;
+use leptos_axum::{generate_route_list, LeptosRoutes};
 use locat::Locat;
 use opentelemetry_honeycomb::new_pipeline;
 use sentry::ClientInitGuard;
@@ -164,12 +167,19 @@ async fn main() {
         Ok(index) => index,
         Err(err) => panic!("Failed to read index at {}: {err}", index_path.display()),
     };
+
+    // Leptos
+    let conf = get_configuration(None).await.unwrap();
+    let leptos_options = conf.leptos_options;
+
     let api = Router::new()
         .route("/catscii", get(catscii_get))
         .route("/mandelbrot", get(mandelbrot_get))
         .route("/analytics", get(analytics_get));
     let app = Router::new()
         .nest("/api", api)
+        .route("/api/*fn_name", post(leptos_axum::handle_server_fns))
+        .leptos_routes(&leptos_options, routes, Root)
         .with_state(server_state.clone())
         .fallback(get(|req| async move {
             match ServeDir::new(static_dir).oneshot(req).await {
