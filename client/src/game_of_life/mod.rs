@@ -5,10 +5,9 @@ mod webgl;
 use crate::game_of_life::universe::{Universe, UniverseRenderer};
 use crate::game_of_life::util::Timer;
 use crate::game_of_life::webgl::WebGLRenderer;
-use leptos::{
-    component, create_effect, create_node_ref, create_signal, html::Canvas, view, IntoAttribute,
-    IntoView, NodeRef, WriteSignal,
-};
+use crate::Footer;
+use leptos::html::Canvas;
+use leptos::*;
 use leptos_use::{use_interval, UseIntervalReturn};
 use std::ops::Deref;
 use web_sys::MouseEvent;
@@ -52,7 +51,7 @@ pub fn game_of_life_canvas(
 }
 
 #[component]
-pub fn game_of_life() -> impl IntoView {
+pub fn instructions() -> impl IntoView {
     let instructions = vec![
         "Click => Toggle the State of a Cell",
         "Shift + Click => Insert a Pulsar",
@@ -63,31 +62,52 @@ pub fn game_of_life() -> impl IntoView {
         .map(|n| view! { <li>{n}</li>})
         .collect::<Vec<_>>();
 
+    view! {
+        <div class="life-instructions">
+            <ul>
+                {instructions}
+            </ul>
+        </div>
+    }
+}
+
+#[component]
+pub fn game_of_life() -> impl IntoView {
     let width = 128;
     let height = 64;
-    let universe = Universe::new(width, height);
 
     let UseIntervalReturn {
-        counter,
-        reset,
-        is_active,
+        counter: _,
+        reset: _,
+        is_active: _,
         pause,
         resume,
     } = use_interval(16);
 
     let (button, press_button) = create_signal(None);
+    let (universe, set_universe) = create_signal(Universe::new(width, height));
     create_effect(move |_| match button() {
         Some(Msg::ToggleCell(x, y)) => {
-            universe.toggle_cell(x, y);
+            set_universe.update(|universe| universe.toggle_cell(x, y));
         }
         Some(Msg::InsertGlider(x, y)) => {
-            universe.insert_glider(x, y);
+            set_universe.update(|universe| universe.insert_glider(x, y));
         }
         Some(Msg::InsertPulsar(x, y)) => {
-            universe.insert_pulsar(x, y);
+            set_universe.update(|universe| universe.insert_pulsar(x, y));
         }
         _ => (),
     });
+
+    let tick = move |_| {
+        set_universe.update(|universe: &mut Universe| universe.tick());
+    };
+    let reset = move |_| {
+        set_universe.update(|universe| universe.reset());
+    };
+    let kill_all = move |_| {
+        set_universe.update(|universe| universe.kill_all());
+    };
 
     view! {
         <div>
@@ -100,25 +120,15 @@ pub fn game_of_life() -> impl IntoView {
                        <GameOfLifeCanvas width={width} height={height} press_button={press_button}/>
                     </div>
                     <div class="life-buttons">
-                        <button class="game-button" onclick=move |_| {resume();}>{ "Start" }</button>
-                        <button class="game-button" onclick=move |_| {pause();}>{ "Stop" }</button>
-                        <button class="game-button" onclick=move |_| {universe.tick();}>{ "Tick" }</button>
-                        <button class="game-button" onclick=move |_| {universe.reset(); }>{ "Reset" }</button>
-                        <button class="game-button" onclick=move |_| {universe.kill_all()}>{ "KillAll" }</button>
-                    </div>
-                    <div class="life-instructions">
-                        <ul>
-                            {instructions}
-                        </ul>
+                        <button class="game-button" on:click=move |_| {resume();}>{ "Start" }</button>
+                        <button class="game-button" on:click=move |_| {pause();}>{ "Stop" }</button>
+                        <button class="game-button" on:click=tick >{ "Tick" }</button>
+                        <button class="game-button" on:click=reset >{ "Reset" }</button>
+                        <button class="game-button" on:click=kill_all >{ "KillAll" }</button>
                     </div>
                 </section>
             </section>
-            <footer class="app-footer">
-                <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
-                <strong class="footer-text">
-                    { "Game of Life - a rust experiment " }
-                </strong>
-            </footer>
+            <Footer text=String::from("Game of Life - a rust experiment ")/>
         </div>
     }
 }

@@ -25,6 +25,18 @@ struct NavItem {
 }
 
 #[component]
+pub fn footer(text: String) -> impl IntoView {
+    view! {
+        <footer class="app-footer">
+            <p><a href="https://github.com/brongan/brongan.com" target="_blank">{ "source" }</a></p>
+            <strong class="footer-text">
+            { text  }
+            </strong>
+        </footer>
+    }
+}
+
+#[component]
 fn nav_button(nav_item: NavItem) -> impl IntoView {
     view! {
         <div class="nav-item">

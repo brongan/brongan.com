@@ -2,19 +2,20 @@ use crate::ishihara::Blindness;
 use leptos::html::Form;
 use leptos::{component, create_node_ref, view, IntoView, NodeRef, WriteSignal};
 use leptos::{CollectView, IntoAttribute};
+use std::ops::Deref;
 use std::str::FromStr;
 use strum::IntoEnumIterator;
 use web_sys::{FormData, SubmitEvent};
 
-#[derive(Debug, Default)]
-pub struct Data {
+#[derive(Debug, Default, Clone)]
+pub struct IshiharaArgs {
     pub blindness: Blindness,
     pub text: String,
 }
 
 const TEXT_INPUT: &str = "text-input";
 
-impl From<FormData> for Data {
+impl From<FormData> for IshiharaArgs {
     fn from(data: FormData) -> Self {
         Self {
             text: data.get(TEXT_INPUT).as_string().unwrap(),
@@ -24,7 +25,7 @@ impl From<FormData> for Data {
 }
 
 #[component]
-pub fn ishihara_input(set_data: WriteSignal<Data>) -> impl IntoView {
+pub fn ishihara_input(set_data: WriteSignal<IshiharaArgs>) -> impl IntoView {
     let blindness_choices = Blindness::iter().map(|blindness| {
         let choice = format!("{}-{}", blindness, "choice");
         view! {
@@ -34,15 +35,16 @@ pub fn ishihara_input(set_data: WriteSignal<Data>) -> impl IntoView {
     }).collect_view();
 
     let form_element: NodeRef<Form> = create_node_ref();
-    let form = form_element().expect("form in DOM.");
     let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();
-        let value = form_element().expect("<input> to exist");
-        set_data(Data::from(FormData::new_with_form(form.into())));
+        let value = form_element().expect("form in dom");
+        set_data(IshiharaArgs::from(
+            FormData::new_with_form(value.deref()).expect("good form."),
+        ));
     };
 
     view! {
-        <form onsubmit={on_submit} ref={form_ref}>
+        <form on:submit={on_submit} ref={form_ref}>
             <div class="blindness-selector">
                 {blindness_choices}
             </div>
