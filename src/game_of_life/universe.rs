@@ -1,4 +1,4 @@
-use crate::game_of_life::util::Timer;
+use crate::game_of_life::Timer;
 use fixedbitset::FixedBitSet;
 use rand::distributions::{Bernoulli, Distribution};
 use rand::thread_rng;

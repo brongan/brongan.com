@@ -1,22 +1,27 @@
-use crate::analytics_component::AnalyticsComponent;
-use crate::catscii_component::Catscii;
-use crate::game_of_life::GameOfLife;
-use crate::ishihara_component::IshiharaPlate;
-use crate::mandelbrot_component::MandelbrotModel;
+use crate::mandelbrot::Bounds;
+use cfg_if::cfg_if;
 use leptos::IntoAttribute;
 use leptos::{component, view, CollectView, IntoView};
 use leptos_router::{Route, Router, Routes};
-use shared::mandelbrot::Bounds;
+use routes::analytics_component::AnalyticsComponent;
+use routes::analytics_component::AnalyticsComponent;
+use routes::catscii_component::Catscii;
+use routes::game_of_life::GameOfLife;
+use routes::ishihara_component::IshiharaPlate;
+use routes::mandelbrot_component::MandelbrotModel;
 
-mod analytics_component;
-mod catscii_component;
+mod analytics;
+#[cfg(feature = "ssr")]
+mod catscii;
 mod color;
 mod game_of_life;
 mod ishihara;
-mod ishihara_component;
 mod ishihara_form;
-mod mandelbrot_component;
+#[cfg(feature = "ssr")]
+mod locat;
+mod mandelbrot;
 mod point2d;
+mod routes;
 
 struct NavItem {
     title: &'static str,
@@ -120,5 +125,21 @@ pub fn root() -> impl IntoView {
               </Routes>
           </main>
       </Router>
+    }
+}
+
+// Needs to be in lib.rs AFAIK because wasm-bindgen needs us to be compiling a lib. I may be wrong.
+cfg_if! {
+    if #[cfg(feature = "hydrate")] {
+        use wasm_bindgen::prelude::wasm_bindgen;
+
+        #[wasm_bindgen]
+        pub fn hydrate() {
+            _ = console_log::init_with_level(log::Level::Debug);
+            console_error_panic_hook::set_once();
+            leptos::mount_to_body(move || {
+                view! {  <App/> }
+            });
+        }
     }
 }

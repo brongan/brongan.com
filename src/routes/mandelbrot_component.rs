@@ -1,3 +1,4 @@
+use crate::mandelbrot::{generate_mandelbrot, Bounds};
 use anyhow::anyhow;
 use image::io::Reader as ImageReader;
 use image::RgbaImage;
@@ -5,7 +6,6 @@ use leptos::{component, view, IntoView};
 use leptos::{create_node_ref, html::Canvas, NodeRef};
 use log::info;
 use num::Complex;
-use shared::mandelbrot::{generate_mandelbrot, Bounds};
 use std::io::Cursor;
 use wasm_bindgen::{Clamped, JsCast};
 use web_sys::{CanvasRenderingContext2d, ImageData};
@@ -74,14 +74,14 @@ pub fn mandelbrot_model(bounds: Bounds) -> impl IntoView {
     view! {
         <>
             <header class="header">
-                <h1> { "Mandelbrot" } </h1>
+            <h1> { "Mandelbrot" } </h1>
             </header>
             <div class="readout">
-                <RenderMandelbrot bounds={bounds} upper_left={upper_left} lower_right={lower_right} />
+            <RenderMandelbrot bounds={bounds} upper_left={upper_left} lower_right={lower_right} />
             </div>
             <footer class="footnote">
-                <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
+            <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
             </footer>
-        </>
+            </>
     }
 }

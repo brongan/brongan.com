@@ -41,19 +41,19 @@ pub fn ishihara_plate() -> impl IntoView {
     view! {
         <header class="header">
             <h1> { "Ishihara Plate Generator" } </h1>
-        </header>
-        <div class="description">
+            </header>
+            <div class="description">
             <p style="display:inline"> { "Randomly Generates a Colorblindness Test Image in your browser! See: "} </p>
             <a href="https://en.wikipedia.org/wiki/Ishihara_test"> {"wikipedia.org/wiki/Ishihara_test"} </a>
-        </div>
-        <div class="input">
+            </div>
+            <div class="input">
             <IshiharaInput set_data={set_ishihara_args}/>
-        </div>
-        <div class="readout">
+            </div>
+            <div class="readout">
             <ShowPlate ishihara_args/>
-        </div>
-        <footer class="footnote">
+            </div>
+            <footer class="footnote">
             <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
-        </footer>
+            </footer>
     }
 }

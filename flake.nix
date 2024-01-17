@@ -59,7 +59,7 @@
           nativeBuildInputs = with pkgs; [ pkg-config ];
         };
         nativeArgs = commonArgs // {
-          pname = "server";
+          cargoExtraArgs = "--features=ssr";
           CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
           CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
           buildInputs = [ sqliteStatic ];
@@ -70,8 +70,7 @@
           CLIENT_DIST = myClient;
         });
         wasmArgs = commonArgs // {
-          pname = "client";
-          cargoExtraArgs = "--package=client";
+          cargoExtraArgs = "--features=hydrate";
           CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
         };
         cargoArtifactsWasm = wasmCraneLib.buildDepsOnly (wasmArgs // {
@@ -80,7 +79,7 @@
         myClient = wasmCraneLib.buildTrunkPackage (wasmArgs // {
           pname = "brongan-com-client";
           cargoArtifacts = cargoArtifactsWasm;
-          trunkIndexPath = "client/index.html";
+          trunkIndexPath = "index.html";
         });
         dockerImage = pkgs.dockerTools.streamLayeredImage {
           name = "brongan_com";

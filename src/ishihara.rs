@@ -149,7 +149,7 @@ fn max_allowed_radius(candidate_point: &Point2D, circles: &[Circle]) -> Option<f
 }
 
 fn render_text(text: &str) -> RgbaImage {
-    let font_data = include_bytes!("../resources/fonts/Roboto-Regular.ttf");
+    let font_data = include_bytes!("../../resources/fonts/Roboto-Regular.ttf");
     let font = Font::try_from_bytes(font_data as &[u8]).expect("Error constructing Font");
     let scale = Scale::uniform(FONT_SCALE);
     let color = Color {

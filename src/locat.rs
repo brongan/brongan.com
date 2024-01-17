@@ -1,3 +1,4 @@
+use crate::Analytics;
 use anyhow::Context;
 use anyhow::Result;
 use opentelemetry::{
@@ -6,7 +7,6 @@ use opentelemetry::{
 };
 use serde::Deserialize;
 use serde::Serialize;
-use shared::Analytics;
 use std::net::IpAddr;
 use tokio_rusqlite::Connection;
 use tracing::info;
@@ -112,10 +112,10 @@ impl Db {
                 // create analytics table
                 connection.execute(
                     "CREATE TABLE IF NOT EXISTS analytics (
-                key TEXT PRIMARY KEY,
-                iso_code TEXT,
-                count INTEGER NOT NULL
-            )",
+                                key TEXT PRIMARY KEY,
+                                iso_code TEXT,
+                                count INTEGER NOT NULL
+                                )",
                     [],
                 )?;
 
@@ -155,9 +155,9 @@ impl Db {
             .call(move |connection| {
                 let mut statement = connection.prepare(
                     "INSERT INTO analytics (key, iso_code, count)
-                VALUES (?, ?, 1)
-                ON CONFLICT (key)
-                DO UPDATE SET count = count + 1",
+                            VALUES (?, ?, 1)
+                            ON CONFLICT (key)
+                            DO UPDATE SET count = count + 1",
                 )?;
                 statement.execute([key, iso_code])?;
                 Ok(())

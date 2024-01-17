@@ -611,6 +611,65 @@ dependencies = [
 ]
 
 [[package]]
+name = "brongan_com"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "artem",
+ "async-rustls",
+ "axum",
+ "axum-server",
+ "base64 0.13.1",
+ "cfg-if",
+ "clap 4.4.11",
+ "color-eyre",
+ "fixedbitset",
+ "futures",
+ "futures-util",
+ "getrandom 0.2.11",
+ "gloo-events",
+ "gloo-net",
+ "gloo-timers 0.2.6",
+ "hyper",
+ "image",
+ "imageproc",
+ "js-sys",
+ "leptos",
+ "leptos-use",
+ "leptos_axum",
+ "leptos_router",
+ "libsqlite3-sys",
+ "log",
+ "maxminddb",
+ "nom",
+ "num",
+ "opentelemetry",
+ "opentelemetry-honeycomb",
+ "pretty-hex",
+ "rand 0.8.5",
+ "rayon",
+ "reqwest",
+ "rusqlite",
+ "rusttype",
+ "sentry",
+ "serde",
+ "serde_json",
+ "strum",
+ "strum_macros",
+ "thiserror",
+ "tokio",
+ "tokio-rusqlite",
+ "tokio-stream",
+ "tokio-util",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "wasm-bindgen",
+ "wasm-logger",
+]
+
+[[package]]
 name = "brotli"
 version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -854,37 +913,6 @@ checksum = "105180c05a72388d5f5e4e4f6c79eecb92497bda749fa8f963a16647c5d5377f"
 dependencies = [
  "clap 3.2.25",
  "roff",
-]
-
-[[package]]
-name = "client"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "fixedbitset",
- "getrandom 0.2.11",
- "gloo-events",
- "gloo-net",
- "gloo-timers 0.2.6",
- "image",
- "imageproc",
- "js-sys",
- "leptos",
- "leptos-use",
- "leptos_router",
- "log",
- "nom",
- "num",
- "rand 0.8.5",
- "rusttype",
- "serde",
- "serde_json",
- "shared",
- "strum",
- "strum_macros",
- "wasm-bindgen",
- "wasm-logger",
- "web-sys",
 ]
 
 [[package]]
@@ -2093,6 +2121,7 @@ dependencies = [
  "tracing",
  "typed-builder",
  "typed-builder-macro",
+ "wasm-bindgen",
  "web-sys",
 ]
 
@@ -2260,6 +2289,7 @@ dependencies = [
  "cfg-if",
  "futures",
  "indexmap 2.1.0",
+ "js-sys",
  "paste",
  "pin-project",
  "rkyv",
@@ -2272,7 +2302,9 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "wasm-bindgen",
  "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
@@ -3682,47 +3714,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "server"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "artem",
- "async-rustls",
- "axum",
- "axum-server",
- "base64 0.13.1",
- "clap 4.4.11",
- "color-eyre",
- "futures",
- "futures-util",
- "hyper",
- "image",
- "leptos",
- "leptos_axum",
- "libsqlite3-sys",
- "maxminddb",
- "num",
- "opentelemetry",
- "opentelemetry-honeycomb",
- "pretty-hex",
- "reqwest",
- "rusqlite",
- "sentry",
- "serde",
- "serde_json",
- "shared",
- "thiserror",
- "tokio",
- "tokio-rusqlite",
- "tokio-stream",
- "tokio-util",
- "tower",
- "tower-http",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "server_fn"
 version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3779,17 +3770,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f40ca3c46823713e0d4209592e8d6e826aa57e928f09752619fc696c499637f6"
 dependencies = [
  "lazy_static",
-]
-
-[[package]]
-name = "shared"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "image",
- "num",
- "rayon",
- "serde",
 ]
 
 [[package]]

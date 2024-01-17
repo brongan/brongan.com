@@ -1,5 +1,5 @@
+use crate::analytics::Analytics;
 use leptos::{component, create_resource, server, view, IntoView, ServerFnError, SignalGet};
-use shared::Analytics;
 
 #[server(GetAnalytics, "/api", "Url", "analytics")]
 pub async fn get_analytics() -> Result<Analytics, ServerFnError> {
@@ -10,10 +10,10 @@ pub async fn get_analytics() -> Result<Analytics, ServerFnError> {
 pub fn analytics_content(analytics: Analytics) -> impl IntoView {
     view! {
         <p>
-            { &analytics.ip_address }
-            { &analytics.path }
-            { &analytics.iso_code }
-            { &analytics.count }
+            { analytics.ip_address }
+            { analytics.path }
+            { analytics.iso_code }
+            { analytics.count }
         </p>
     }
 }

@@ -1,3 +1,4 @@
+use crate::point2d::Point2D;
 use anyhow::anyhow;
 use image::{DynamicImage, GrayImage, RgbaImage};
 use num::Complex;
@@ -7,6 +8,8 @@ use rayon::iter::ParallelIterator;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
 use std::str::FromStr;
+
+type Point2d = Point2D;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Bounds {
@@ -36,18 +39,6 @@ impl FromStr for Bounds {
         parse_pair(s, 'x')
             .map(|(width, height)| Bounds { width, height })
             .ok_or_else(|| anyhow!("Failed to parse bounds."))
-    }
-}
-
-#[derive(Clone, Copy)]
-pub struct Point2d {
-    pub x: u32,
-    pub y: u32,
-}
-
-impl Display for Point2d {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "({}, {})", self.x, self.y)
     }
 }
 
