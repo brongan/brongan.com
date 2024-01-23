@@ -1,4 +1,4 @@
-use crate::Analytics;
+use crate::analytics::Analytics;
 use anyhow::Context;
 use anyhow::Result;
 use opentelemetry::{

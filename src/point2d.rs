@@ -4,16 +4,16 @@ use rand::Rng;
 use std::fmt;
 
 #[derive(Debug, PartialEq, Default)]
-pub struct Point2D {
-    pub x: i32,
-    pub y: i32,
+pub struct Point2D<T> {
+    pub x: T,
+    pub y: T,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct UniformPoint2D(Uniform<i32>, Uniform<i32>);
 
 impl UniformSampler for UniformPoint2D {
-    type X = Point2D;
+    type X = Point2D<i32>;
     fn new<B1, B2>(low: B1, high: B2) -> Self
     where
         B1: SampleBorrow<Self::X> + Sized,
@@ -39,17 +39,17 @@ impl UniformSampler for UniformPoint2D {
     }
 }
 
-impl SampleUniform for Point2D {
+impl SampleUniform for Point2D<i32> {
     type Sampler = UniformPoint2D;
 }
 
-impl Point2D {
-    pub fn distance(&self, other: &Point2D) -> f64 {
+impl Point2D<i32> {
+    pub fn distance(&self, other: &Point2D<i32>) -> f64 {
         (((other.x - self.x).pow(2) + (other.y - self.y).pow(2)) as f64).sqrt()
     }
 }
 
-impl fmt::Display for Point2D {
+impl<T: std::fmt::Display> fmt::Display for Point2D<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({}, {})", self.x, self.y)
     }

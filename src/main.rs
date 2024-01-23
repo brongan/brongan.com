@@ -53,12 +53,6 @@ cfg_if! {
             cert_dir: Option<String>,
         }
 
-#[derive(Clone, Debug)]
-        pub struct ServerState {
-            client: reqwest::Client,
-            locat: Arc<Locat>,
-        }
-
         async fn create_server_state() -> Result<ServerState> {
             let country_db_dev_path = "db/GeoLite2-Country.mmdb".to_string();
             let country_db_path = std::env::var("GEOLITE2_COUNTRY_DB").unwrap_or(country_db_dev_path);

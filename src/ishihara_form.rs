@@ -44,7 +44,7 @@ pub fn ishihara_input(set_data: WriteSignal<IshiharaArgs>) -> impl IntoView {
     };
 
     view! {
-        <form on:submit={on_submit} ref={form_ref}>
+        <form on:submit=on_submit ref={form_element}>
             <div class="blindness-selector">
                 {blindness_choices}
             </div>

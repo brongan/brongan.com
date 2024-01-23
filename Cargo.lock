@@ -643,6 +643,7 @@ dependencies = [
  "maxminddb",
  "nom",
  "num",
+ "num-traits",
  "opentelemetry",
  "opentelemetry-honeycomb",
  "pretty-hex",

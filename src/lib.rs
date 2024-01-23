@@ -1,9 +1,12 @@
+use std::sync::Arc;
+
 use crate::mandelbrot::Bounds;
 use cfg_if::cfg_if;
 use leptos::IntoAttribute;
 use leptos::{component, view, CollectView, IntoView};
 use leptos_router::{Route, Router, Routes};
-use routes::analytics_component::AnalyticsComponent;
+#[cfg(feature = "ssr")]
+use locat::Locat;
 use routes::analytics_component::AnalyticsComponent;
 use routes::catscii_component::Catscii;
 use routes::game_of_life::GameOfLife;
@@ -16,12 +19,20 @@ mod catscii;
 mod color;
 mod game_of_life;
 mod ishihara;
+#[cfg(feature = "hydrate")]
 mod ishihara_form;
 #[cfg(feature = "ssr")]
 mod locat;
 mod mandelbrot;
 mod point2d;
 mod routes;
+
+#[cfg(feature = "ssr")]
+#[derive(Clone, Debug)]
+pub struct ServerState {
+    client: reqwest::Client,
+    locat: Arc<Locat>,
+}
 
 struct NavItem {
     title: &'static str,

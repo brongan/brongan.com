@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
 use std::str::FromStr;
 
-type Point2d = Point2D;
+type Point2d = Point2D<u32>;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Bounds {

@@ -11,6 +11,8 @@ use std::fmt;
 use strum_macros::EnumIter;
 use strum_macros::EnumString;
 
+type Point2d = Point2D<i32>;
+
 #[derive(Clone, Copy)]
 enum IshiharaColor {
     Inside,
@@ -18,7 +20,7 @@ enum IshiharaColor {
 }
 
 struct Circle {
-    center: Point2D,
+    center: Point2d,
     radius: f64,
     ishihara_color: Option<IshiharaColor>,
 }
@@ -89,8 +91,8 @@ impl Circle {
         let mut circles: Vec<Circle> = Vec::new();
         let mut area: f64 = 0.0;
         let uniform = Uniform::new(
-            Point2D { x: 0, y: 0 },
-            Point2D {
+            Point2d { x: 0, y: 0 },
+            Point2d {
                 x: x as i32,
                 y: y as i32,
             },
@@ -136,7 +138,7 @@ impl Circle {
     }
 }
 
-fn max_allowed_radius(candidate_point: &Point2D, circles: &[Circle]) -> Option<f64> {
+fn max_allowed_radius(candidate_point: &Point2d, circles: &[Circle]) -> Option<f64> {
     let mut curr_radius = Circle::MAX_RADIUS;
     for other in circles {
         let edge_distance = candidate_point.distance(&other.center) - other.radius;
@@ -149,7 +151,7 @@ fn max_allowed_radius(candidate_point: &Point2D, circles: &[Circle]) -> Option<f
 }
 
 fn render_text(text: &str) -> RgbaImage {
-    let font_data = include_bytes!("../../resources/fonts/Roboto-Regular.ttf");
+    let font_data = include_bytes!("../assets/fonts/Roboto-Regular.ttf");
     let font = Font::try_from_bytes(font_data as &[u8]).expect("Error constructing Font");
     let scale = Scale::uniform(FONT_SCALE);
     let color = Color {

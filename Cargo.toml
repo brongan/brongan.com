@@ -36,6 +36,7 @@ log = "0.4"
 maxminddb = "0.23.0"
 nom = "7.0"
 num = { version = "0.4", features = ["serde"] }
+num-traits = "0.2.17"
 opentelemetry = { version = "0.18.0", features = ["rt-tokio"], optional = true }
 opentelemetry-honeycomb = { git = "https://github.com/fasterthanlime/opentelemetry-honeycomb-rs", branch = "simplified", version = "0.1.0", optional = true }
 pretty-hex = "0.3.0"
@@ -78,6 +79,7 @@ ssr = [
     "dep:libsqlite3-sys",
     "dep:opentelemetry",
     "dep:opentelemetry-honeycomb",
+    "dep:rusqlite",
     "dep:reqwest",
     "dep:tokio",
     "dep:tokio-rusqlite",
