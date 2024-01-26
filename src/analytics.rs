@@ -36,7 +36,7 @@ if #[cfg(feature = "ssr")] {
         trace::{get_active_span, FutureExt, TraceContextExt, Tracer},
         Context, KeyValue,
     };
-        use std::net::{IpAddr, SocketAddr};
+    use std::net::{IpAddr, SocketAddr};
     use std::path::Path;
     use tracing::{info, warn};
 

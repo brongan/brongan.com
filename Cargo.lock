@@ -668,6 +668,7 @@ dependencies = [
  "tracing-subscriber",
  "wasm-bindgen",
  "wasm-logger",
+ "web-sys",
 ]
 
 [[package]]

@@ -61,6 +61,7 @@ tracing = { version ="0.1", optional = true }
 tracing-subscriber = { version = "0.3", features = ["json"] }
 wasm-bindgen = "=0.2.87"
 wasm-logger = {version = "0.2", optional = true}
+web-sys = "0.3"
 
 [features]
 default = ["ssr"]

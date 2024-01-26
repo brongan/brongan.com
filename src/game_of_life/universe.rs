@@ -1,4 +1,3 @@
-use crate::game_of_life::Timer;
 use fixedbitset::FixedBitSet;
 use rand::distributions::{Bernoulli, Distribution};
 use rand::thread_rng;
@@ -88,9 +87,7 @@ impl Universe {
     }
 
     pub fn tick(&mut self) {
-        let _timer = Timer::new("Universe::tick");
         {
-            let _timer = Timer::new("new generation");
             for row in 0..self.height {
                 for col in 0..self.width {
                     let idx = self.get_index(row, col);
@@ -118,7 +115,6 @@ impl Universe {
                 }
             }
         }
-        let _timer = Timer::new("swap cells");
         std::mem::swap(&mut self.cells, &mut self._next);
     }
 

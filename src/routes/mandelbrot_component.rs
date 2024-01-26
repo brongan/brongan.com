@@ -11,7 +11,7 @@ use wasm_bindgen::{Clamped, JsCast};
 use web_sys::{CanvasRenderingContext2d, ImageData};
 
 #[component]
-fn show_mandelbrot(image: RgbaImage) -> impl IntoView {
+pub fn show_mandelbrot(image: RgbaImage) -> impl IntoView {
     let image = ImageData::new_with_u8_clamped_array_and_sh(
         Clamped(image.as_raw()),
         image.width(),
