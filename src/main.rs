@@ -1,6 +1,4 @@
-pub mod app;
-#[cfg(feature = "ssr")]
-pub mod server;
+use brongan_com::server;
 
 #[cfg(feature = "ssr")]
 #[tokio::main]

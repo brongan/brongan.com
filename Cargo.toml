@@ -8,7 +8,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 anyhow = "1.0"
-artem = { version = "1.2", default-features = false }
+artem = { version = "1.2", default-features = false, optional = true }
 async-rustls = { version = "0.4.0", optional = true }
 axum = { version = "0.6.16", features = ["macros"], optional = true }
 axum-server = { version = "0.5.1", features = ["tls-rustls"], optional = true }
@@ -26,7 +26,7 @@ gloo-timers = { version = "0.2", optional = true}
 hyper = { version = "0.14.27", optional = true }
 image = "0.24"
 imageproc = "0.23"
-js-sys = { version = "0.3", optional = true}
+js-sys = { version = "0.3"}
 leptos = { version = "0.5", features = ["nightly", "csr"] }
 leptos-use = "0.8.0"
 leptos_axum = { version = "0.5", optional = true }
@@ -41,7 +41,7 @@ opentelemetry = { version = "0.18.0", features = ["rt-tokio"], optional = true }
 opentelemetry-honeycomb = { git = "https://github.com/fasterthanlime/opentelemetry-honeycomb-rs", branch = "simplified", version = "0.1.0", optional = true }
 pretty-hex = "0.3.0"
 rand = "0.8"
-rayon = "1.7.0"
+rayon = { version = "1.7.0"}
 reqwest = { version = "0.11", default-features = false, features = ["json","rustls-tls-webpki-roots"], optional = true }
 rusqlite = { version = "0.29.0", optional = true }
 rusttype = "0.9"
@@ -61,17 +61,38 @@ tracing = { version ="0.1", optional = true }
 tracing-subscriber = { version = "0.3", features = ["json"] }
 wasm-bindgen = "=0.2.87"
 wasm-logger = {version = "0.2", optional = true}
-web-sys = "0.3"
+
+[dependencies.web-sys]
+version = "0.3"
+features = [
+  'CanvasRenderingContext2d',
+  'Document',
+  'DomRect',
+  'Element',
+  'EventTarget',
+  'FormData',
+  'HtmlCanvasElement',
+  'HtmlFormElement',
+  'ImageData',
+  'Request',
+  'SubmitEvent',
+  'WebGlBuffer',
+  'WebGlProgram',
+  'WebGlRenderingContext',
+  'WebGlShader',
+  'WebGlTexture',
+  'WebGlUniformLocation',
+]
 
 [features]
 default = ["ssr"]
 hydrate = ["leptos/hydrate", "leptos_router/hydrate", "dep:gloo-events",
 "dep:gloo-net",
 "dep:gloo-timers",
-"dep:js-sys",
 "dep:wasm-logger"]
 
 ssr = [
+	"dep:sentry",
     "dep:async-rustls",
     "dep:axum",
     "dep:axum-server",
@@ -80,16 +101,17 @@ ssr = [
     "dep:libsqlite3-sys",
     "dep:opentelemetry",
     "dep:opentelemetry-honeycomb",
-    "dep:rusqlite",
     "dep:reqwest",
+    "dep:rusqlite",
     "dep:tokio",
     "dep:tokio-rusqlite",
     "dep:tokio-stream",
+    "dep:artem",
     "dep:tower",
     "dep:tower-http",
+    "dep:tracing",
     "leptos/ssr",
     "leptos_router/ssr",
-    "dep:tracing",
 ]
 
 [profile.release]

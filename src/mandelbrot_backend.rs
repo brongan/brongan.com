@@ -1,17 +1,11 @@
-use crate::mandelbrot::mandelbrot::MandelbrotRequest;
-use crate::mandelbrot::mandelbrot::MandelbrotResponse;
+use crate::mandelbrot::{generate_mandelbrot_multithreaded, MandelbrotRequest, MandelbrotResponse};
+use crate::ServerState;
 use axum::extract::{Query, State};
-use axum::{
-    http::header::HeaderMap,
-    response::{IntoResponse, Json, Response},
-};
+use axum::http::header::HeaderMap;
+use axum::response::{IntoResponse, Json, Response};
 use opentelemetry::global;
 use opentelemetry::trace::Tracer;
-use shared::mandelbrot;
-use shared::mandelbrot::generate_mandelbrot_multithreaded;
 use std::io::Cursor;
-
-use crate::ServerState;
 
 #[axum::debug_handler]
 pub async fn mandelbrot_get(

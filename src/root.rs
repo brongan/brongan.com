@@ -1,7 +1,6 @@
-use crate::routes::game_of_life::GameOfLife;
+use crate::game_of_life::GameOfLife;
 use crate::routes::ishihara_component::IshiharaPlate;
 use crate::routes::mandelbrot_component::MandelbrotModel;
-use crate::routes::mandelbrot_component::ShowMandelbrot;
 use crate::{
     mandelbrot::Bounds,
     routes::{analytics_component::AnalyticsComponent, catscii_component::Catscii},
@@ -93,7 +92,7 @@ fn home() -> impl IntoView {
 }
 
 #[component]
-pub fn app() -> impl IntoView {
+pub fn root() -> impl IntoView {
     view! {
       <Router>
         <nav>

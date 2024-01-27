@@ -1,26 +1,25 @@
-use crate::app::Root;
+use crate::analytics::{analytics_get, record_analytics};
+use crate::catscii::catscii_get;
 use crate::locat::Locat;
 use crate::mandelbrot_backend::mandelbrot_get;
-use analytics::{analytics_get, record_analytics};
+use crate::root::Root;
+use crate::ServerState;
 use anyhow::Result;
 use artem::util::fatal_error;
 use axum::body::{boxed, Body};
 use axum::extract::Host;
+use axum::extract::State;
 use axum::handler::HandlerWithoutStateExt;
 use axum::http::{Response as HttpResponse, StatusCode};
 use axum::middleware;
-use axum::response::{Redirect, Response};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::get;
+use axum::routing::post;
 use axum::Router;
-use axum::{routing::post, Router};
 use axum_server::tls_rustls::RustlsConfig;
-use brongan_com::catscii::catscii_get;
-use brongan_com::locat::Locat;
-use brongan_com::routes;
 use clap::Parser;
 use hyper::http::uri::Scheme;
-use hyper::Uri;
-use leptos::*;
+use hyper::{Request, Uri};
 use leptos::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use opentelemetry_honeycomb::new_pipeline;
@@ -28,7 +27,6 @@ use sentry::ClientInitGuard;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::sync::Arc;
 use std::sync::Arc;
 use tokio::fs::read_to_string;
 use tower::ServiceExt;
@@ -53,11 +51,12 @@ struct Opt {
     cert_dir: Option<String>,
 }
 
-async fn create_server_state() -> Result<ServerState> {
+async fn create_server_state(leptos_options: LeptosOptions) -> Result<ServerState> {
     let country_db_dev_path = "db/GeoLite2-Country.mmdb".to_string();
     let country_db_path = std::env::var("GEOLITE2_COUNTRY_DB").unwrap_or(country_db_dev_path);
     let db = std::env::var("DB").unwrap_or("db/sqlite.db".to_string());
     Ok(ServerState {
+        leptos_options,
         locat: Arc::new(Locat::new(&country_db_path, db).await?),
         client: Default::default(),
     })
@@ -114,7 +113,16 @@ async fn redirect_http_to_https(http: SocketAddr, https: SocketAddr) {
         .unwrap();
 }
 
-async fn run() {
+async fn leptos_routes_handler(State(state): State<ServerState>, req: Request<Body>) -> Response {
+    let handler = leptos_axum::render_app_to_stream_with_context(
+        state.leptos_options,
+        || {},
+        || view! {<Root/>},
+    );
+    handler(req).await.into_response()
+}
+
+pub async fn run() {
     info!("Starting brongan.com");
     let opt = Opt::parse();
     info!("Creating Sentry and Honeyguard Hooks.");
@@ -138,14 +146,6 @@ async fn run() {
         .finish()
         .with(filter)
         .init();
-    info!("Creating Server State.");
-    let server_state = match create_server_state().await {
-        Ok(state) => state,
-        Err(e) => {
-            error!("{e}");
-            fatal_error("TERMINATING. Failed to get initial server state.", None);
-        }
-    };
 
     let addr = if let Some(ip) = &opt.addr {
         IpAddr::from_str(ip).unwrap()
@@ -164,6 +164,16 @@ async fn run() {
     // Leptos
     let conf = get_configuration(None).await.unwrap();
     let leptos_options = conf.leptos_options;
+    let routes = generate_route_list(Root);
+
+    info!("Creating Server State.");
+    let server_state = match create_server_state(leptos_options).await {
+        Ok(state) => state,
+        Err(e) => {
+            error!("{e}");
+            fatal_error("TERMINATING. Failed to get initial server state.", None);
+        }
+    };
 
     let api = Router::new()
         .route("/catscii", get(catscii_get))
@@ -172,7 +182,7 @@ async fn run() {
     let app = Router::new()
         .nest("/api", api)
         .route("/api/*fn_name", post(leptos_axum::handle_server_fns))
-        .leptos_routes(&leptos_options, routes, Root)
+        .leptos_routes_with_handler(routes, get(leptos_routes_handler))
         .with_state(server_state.clone())
         .fallback(get(|req| async move {
             match ServeDir::new(static_dir).oneshot(req).await {

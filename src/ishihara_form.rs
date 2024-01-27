@@ -1,7 +1,6 @@
 use crate::ishihara::Blindness;
 use leptos::html::Form;
-use leptos::{component, create_node_ref, view, IntoView, NodeRef, WriteSignal};
-use leptos::{CollectView, IntoAttribute};
+use leptos::*;
 use std::ops::Deref;
 use std::str::FromStr;
 use strum::IntoEnumIterator;
