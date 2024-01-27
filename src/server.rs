@@ -25,7 +25,7 @@ use leptos::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use opentelemetry_honeycomb::new_pipeline;
 use sentry::ClientInitGuard;
-use std::net::{IpAddr, Ipv6Addr, SocketAddr};
+use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
@@ -46,14 +46,8 @@ pub struct ServerState {
 #[derive(Parser, Debug)]
 #[clap(name = "server", about = "My server")]
 struct Opt {
-    #[clap(long)]
+    #[clap(long, default_value_t = true)]
     dev: bool,
-    #[clap(long, default_value = "/")]
-    static_dir: String,
-    #[clap(long)]
-    addr: Option<String>,
-    #[clap(long, default_value = "8080")]
-    port: u16,
     #[clap(long)]
     ssl_port: Option<u16>,
     #[clap(long)]
@@ -156,24 +150,14 @@ pub async fn run() {
         .with(filter)
         .init();
 
-    let addr = if let Some(ip) = &opt.addr {
-        IpAddr::from_str(ip).unwrap()
-    } else {
-        IpAddr::V6(Ipv6Addr::LOCALHOST)
-    };
+    // Leptos
+    let conf = get_configuration(Some("Cargo.toml")).await.unwrap();
+    let leptos_options = conf.leptos_options;
+    let http_addr = leptos_options.site_addr;
+    let routes = generate_route_list(Root);
 
     info!("Creating Router.");
-    let static_dir = PathBuf::from(&opt.static_dir);
-    let index_path = static_dir.join("index.html");
-    let index = match read_to_string(&index_path).await {
-        Ok(index) => index,
-        Err(err) => panic!("Failed to read index at {}: {err}", index_path.display()),
-    };
-
-    // Leptos
-    let conf = get_configuration(None).await.unwrap();
-    let leptos_options = conf.leptos_options;
-    let routes = generate_route_list(Root);
+    let static_dir = PathBuf::from(&leptos_options.site_pkg_dir);
 
     info!("Creating Server State.");
     let server_state = match create_server_state(leptos_options).await {
@@ -200,7 +184,7 @@ pub async fn run() {
                     match status {
                         StatusCode::NOT_FOUND => HttpResponse::builder()
                             .status(StatusCode::OK)
-                            .body(boxed(Body::from(index)))
+                            .body(boxed(Body::from("")))
                             .unwrap(),
                         _ => res.map(boxed),
                     }
@@ -216,11 +200,10 @@ pub async fn run() {
             record_analytics,
         ));
 
-    let http_addr = SocketAddr::from((addr, opt.port));
     if let (Some(ssl_port), Some(cert_dir)) = (opt.ssl_port, opt.cert_dir) {
-        let https_addr = SocketAddr::from((addr, ssl_port));
+        let https_addr = SocketAddr::from((http_addr.ip(), ssl_port));
         info!("Binding handlers to sockets: ({http_addr}, {https_addr})",);
-        tokio::spawn(redirect_http_to_https(http_addr, https_addr));
+        tokio::spawn(redirect_http_to_https(http_addr.clone(), https_addr));
         info!("HTTPS listening at: {https_addr}");
         axum_server::bind_rustls(https_addr, rustls_config(&PathBuf::from(&cert_dir)).await)
             .serve(app.into_make_service_with_connect_info::<SocketAddr>())
