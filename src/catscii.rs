@@ -1,3 +1,4 @@
+use crate::server::ServerState;
 use artem::options::{OptionBuilder, TargetType::HtmlFile};
 use axum::{
     body::BoxBody,
@@ -14,8 +15,6 @@ use opentelemetry::{
 };
 use reqwest::{header, StatusCode};
 use serde::Deserialize;
-
-use crate::ServerState;
 
 async fn get_cat_url(client: &reqwest::Client) -> Result<String> {
     let api_url = "https://api.thecatapi.com/v1/images/search";

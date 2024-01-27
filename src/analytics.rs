@@ -22,7 +22,7 @@ impl Display for Analytics {
 
 cfg_if! {
 if #[cfg(feature = "ssr")] {
-    use crate::ServerState;
+    use crate::server::ServerState;
     use axum::{
         body::BoxBody,
         extract::{ConnectInfo, State},

@@ -3,10 +3,10 @@ use crate::catscii::catscii_get;
 use crate::locat::Locat;
 use crate::mandelbrot_backend::mandelbrot_get;
 use crate::root::Root;
-use crate::ServerState;
 use anyhow::Result;
 use artem::util::fatal_error;
 use axum::body::{boxed, Body};
+use axum::extract::FromRef;
 use axum::extract::Host;
 use axum::extract::State;
 use axum::handler::HandlerWithoutStateExt;
@@ -20,6 +20,7 @@ use axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
 use hyper::http::uri::Scheme;
 use hyper::{Request, Uri};
+use leptos::LeptosOptions;
 use leptos::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use opentelemetry_honeycomb::new_pipeline;
@@ -33,6 +34,14 @@ use tower::ServiceExt;
 use tower_http::services::ServeDir;
 use tracing::{error, info, warn, Level};
 use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::SubscriberInitExt};
+
+#[cfg(feature = "ssr")]
+#[derive(FromRef, Debug, Clone)]
+pub struct ServerState {
+    pub leptos_options: LeptosOptions,
+    pub client: reqwest::Client,
+    pub locat: Arc<Locat>,
+}
 
 #[derive(Parser, Debug)]
 #[clap(name = "server", about = "My server")]

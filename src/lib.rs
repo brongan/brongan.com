@@ -16,19 +16,6 @@ pub mod routes;
 #[cfg(feature = "ssr")]
 pub mod server;
 
-use axum::extract::FromRef;
-use leptos::LeptosOptions;
-use locat::Locat;
-use std::sync::Arc;
-
-#[cfg(feature = "ssr")]
-#[derive(FromRef, Debug, Clone)]
-pub struct ServerState {
-    leptos_options: LeptosOptions,
-    client: reqwest::Client,
-    locat: Arc<Locat>,
-}
-
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub fn hydrate() {
     use crate::root::Root;

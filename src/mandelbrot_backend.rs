@@ -1,5 +1,5 @@
 use crate::mandelbrot::{generate_mandelbrot_multithreaded, MandelbrotRequest, MandelbrotResponse};
-use crate::ServerState;
+use crate::server::ServerState;
 use axum::extract::{Query, State};
 use axum::http::header::HeaderMap;
 use axum::response::{IntoResponse, Json, Response};
