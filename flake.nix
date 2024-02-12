@@ -29,10 +29,10 @@
             pkgs.pkgsStatic.stdenv;
         };
         inherit (pkgs) lib;
-        wasmToolchain = pkgs.rust-bin.stable.latest.default.override {
+        wasmToolchain = pkgs.rust-bin.nightly.latest.default.override {
           targets = [ "wasm32-unknown-unknown" ];
         };
-        nativeToolchain = pkgs.rust-bin.stable.latest.default.override {
+        nativeToolchain = pkgs.rust-bin.nightly.latest.default.override {
           targets = [ "x86_64-unknown-linux-musl" ];
         };
         wasmCraneLib = ((crane.mkLib pkgs).overrideToolchain wasmToolchain).overrideScope' (final: prev: {
@@ -46,8 +46,7 @@
             (lib.hasSuffix "\.scss" path) ||
             (lib.hasSuffix "\.frag" path) ||
             (lib.hasSuffix "\.vert" path) ||
-            (lib.hasInfix "/img/" path) ||
-            (lib.hasInfix "/resources/" path) ||
+            (lib.hasInfix "/assets/" path) ||
             (wasmCraneLib.filterCargoSources path type)
           ;
         };
@@ -70,16 +69,15 @@
           CLIENT_DIST = myClient;
         });
         wasmArgs = commonArgs // {
-          cargoExtraArgs = "--features=hydrate";
+          cargoExtraArgs = "--no-default-features --features=hydrate";
           CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
         };
         cargoArtifactsWasm = wasmCraneLib.buildDepsOnly (wasmArgs // {
           doCheck = false;
         });
-        myClient = wasmCraneLib.buildTrunkPackage (wasmArgs // {
+        myClient = wasmCraneLib.buildPackage (wasmArgs // {
           pname = "brongan-com-client";
           cargoArtifacts = cargoArtifactsWasm;
-          trunkIndexPath = "index.html";
         });
         dockerImage = pkgs.dockerTools.streamLayeredImage {
           name = "brongan_com";
@@ -90,7 +88,7 @@
               "${myServer}/bin/server"
               "--addr=0.0.0.0"
               "--port=8080"
-              "--static-dir=/"
+              "--dev false"
             ];
             Env = with pkgs; [ "GEOLITE2_COUNTRY_DB=${clash-geoip}/etc/clash/Country.mmdb" ];
           };

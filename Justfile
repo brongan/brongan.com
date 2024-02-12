@@ -12,7 +12,7 @@ container-run: container
 	nix run
 
 run: build
-	cargo run --bin server -- --port 8081 --ssl-port 8443 --static-dir client/dist --cert-dir cert --dev
+	cargo run -- --port 8081 --ssl-port 8443 --cert-dir cert --dev true
 
 deploy: container
   podman push brongan_com docker://registry.fly.io/rust-brongan-com:latest

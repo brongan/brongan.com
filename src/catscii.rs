@@ -1,19 +1,19 @@
 use crate::server::ServerState;
 use artem::options::{OptionBuilder, TargetType::HtmlFile};
 use axum::{
-    body::BoxBody,
+    body::Body,
     extract::State,
     http::{header::CONTENT_TYPE, HeaderMap},
     response::{IntoResponse, Response},
 };
 use color_eyre::{eyre::eyre, Result};
+use http::{header, StatusCode};
 use image::DynamicImage;
 use opentelemetry::{
     global,
     trace::{get_active_span, FutureExt, Span, Status, TraceContextExt, Tracer},
     Context, KeyValue,
 };
-use reqwest::{header, StatusCode};
 use serde::Deserialize;
 
 async fn get_cat_url(client: &reqwest::Client) -> Result<String> {
@@ -73,7 +73,7 @@ async fn get_cat_ascii_art(client: &reqwest::Client) -> Result<String> {
     Ok(ascii_art)
 }
 
-async fn root_get_inner(client: &reqwest::Client) -> Response<BoxBody> {
+async fn root_get_inner(client: &reqwest::Client) -> Response<Body> {
     match get_cat_ascii_art(client).await {
         Ok(art) => (
             StatusCode::OK,
@@ -96,10 +96,7 @@ async fn root_get_inner(client: &reqwest::Client) -> Response<BoxBody> {
     }
 }
 
-pub async fn catscii_get(
-    headers: HeaderMap,
-    State(state): State<ServerState>,
-) -> Response<BoxBody> {
+pub async fn catscii_get(headers: HeaderMap, State(state): State<ServerState>) -> Response<Body> {
     let tracer = global::tracer("");
     let mut span = tracer.start("root_get");
     span.set_attribute(KeyValue::new(

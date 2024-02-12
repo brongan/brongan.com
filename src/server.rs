@@ -1,26 +1,19 @@
-use crate::analytics::{analytics_get, record_analytics};
-use crate::catscii::catscii_get;
+use crate::analytics::record_analytics;
+use crate::fileserve::file_and_error_handler;
 use crate::locat::Locat;
-use crate::mandelbrot_backend::mandelbrot_get;
 use crate::root::Root;
 use anyhow::Result;
 use artem::util::fatal_error;
-use axum::body::{boxed, Body};
-use axum::extract::FromRef;
-use axum::extract::Host;
-use axum::extract::State;
+use axum::body::Body;
+use axum::extract::{FromRef, Host, State};
 use axum::handler::HandlerWithoutStateExt;
-use axum::http::{Response as HttpResponse, StatusCode};
-use axum::middleware;
+use axum::http::{Request, StatusCode, Uri};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::get;
-use axum::routing::post;
-use axum::Router;
+use axum::{middleware, serve, Router};
 use axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
-use hyper::http::uri::Scheme;
-use hyper::{Request, Uri};
-use leptos::LeptosOptions;
+use http::uri::Scheme;
 use leptos::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use opentelemetry_honeycomb::new_pipeline;
@@ -29,9 +22,7 @@ use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
-use tokio::fs::read_to_string;
-use tower::ServiceExt;
-use tower_http::services::ServeDir;
+use tokio::net::TcpListener;
 use tracing::{error, info, warn, Level};
 use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -151,15 +142,12 @@ pub async fn run() {
         .init();
 
     // Leptos
-    let conf = get_configuration(Some("Cargo.toml")).await.unwrap();
+    let conf = get_configuration(None).await.unwrap();
     let leptos_options = conf.leptos_options;
     let http_addr = leptos_options.site_addr;
     let routes = generate_route_list(Root);
 
-    info!("Creating Router.");
-    let static_dir = PathBuf::from(&leptos_options.site_pkg_dir);
-
-    info!("Creating Server State.");
+    info!("Creating Server State with options: {leptos_options:?}");
     let server_state = match create_server_state(leptos_options).await {
         Ok(state) => state,
         Err(e) => {
@@ -168,33 +156,10 @@ pub async fn run() {
         }
     };
 
-    let api = Router::new()
-        .route("/catscii", get(catscii_get))
-        .route("/mandelbrot", get(mandelbrot_get))
-        .route("/analytics", get(analytics_get));
     let app = Router::new()
-        .nest("/api", api)
-        .route("/api/*fn_name", post(leptos_axum::handle_server_fns))
         .leptos_routes_with_handler(routes, get(leptos_routes_handler))
+        .fallback(file_and_error_handler)
         .with_state(server_state.clone())
-        .fallback(get(|req| async move {
-            match ServeDir::new(static_dir).oneshot(req).await {
-                Ok(res) => {
-                    let status = res.status();
-                    match status {
-                        StatusCode::NOT_FOUND => HttpResponse::builder()
-                            .status(StatusCode::OK)
-                            .body(boxed(Body::from("")))
-                            .unwrap(),
-                        _ => res.map(boxed),
-                    }
-                }
-                Err(err) => Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(boxed(Body::from(format!("error: {err}"))))
-                    .unwrap(),
-            }
-        }))
         .layer(middleware::from_fn_with_state(
             server_state,
             record_analytics,
@@ -215,10 +180,13 @@ pub async fn run() {
             _ = tokio::signal::ctrl_c().await;
             warn!("Initiating graceful shutdown");
         };
-        axum::Server::bind(&http_addr)
-            .serve(app.into_make_service_with_connect_info::<SocketAddr>())
-            .with_graceful_shutdown(quit_sig)
-            .await
-            .unwrap();
+        let listener = TcpListener::bind(http_addr).await.unwrap();
+        serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .with_graceful_shutdown(quit_sig)
+        .await
+        .unwrap();
     }
 }

@@ -1,12 +1,10 @@
 use crate::mandelbrot::{generate_mandelbrot, Bounds};
 use anyhow::anyhow;
-use image::io::Reader as ImageReader;
 use image::RgbaImage;
 use leptos::{component, view, IntoView};
 use leptos::{create_node_ref, html::Canvas, NodeRef};
 use log::info;
 use num::Complex;
-use std::io::Cursor;
 use wasm_bindgen::{Clamped, JsCast};
 use web_sys::{CanvasRenderingContext2d, ImageData};
 
@@ -46,21 +44,6 @@ fn render_mandelbrot(
     info!("generating mandelbrot image");
     let image = generate_mandelbrot(bounds, upper_left, lower_right);
     view! { <ShowMandelbrot image/> }
-}
-
-fn convert_to_js(image: &[u8]) -> ImageData {
-    info!("Converting Image to javascript.");
-    let image = ImageReader::new(Cursor::new(image))
-        .with_guessed_format()
-        .unwrap()
-        .decode()
-        .unwrap();
-    ImageData::new_with_u8_clamped_array_and_sh(
-        Clamped(image.as_bytes()),
-        image.width(),
-        image.height(),
-    )
-    .unwrap()
 }
 
 #[component]

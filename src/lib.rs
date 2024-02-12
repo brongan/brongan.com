@@ -2,6 +2,8 @@ pub mod analytics;
 #[cfg(feature = "ssr")]
 pub mod catscii;
 pub mod color;
+#[cfg(feature = "ssr")]
+pub mod fileserve;
 pub mod game_of_life;
 pub mod ishihara;
 pub mod ishihara_form;

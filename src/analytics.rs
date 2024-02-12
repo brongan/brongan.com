@@ -1,4 +1,5 @@
 use cfg_if::cfg_if;
+use http::{header::ACCEPT, HeaderMap};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
@@ -24,13 +25,12 @@ cfg_if! {
 if #[cfg(feature = "ssr")] {
     use crate::server::ServerState;
     use axum::{
-        body::BoxBody,
         extract::{ConnectInfo, State},
         http::Request,
         middleware::Next,
         response::{IntoResponse, Response},
+        body::Body,
     };
-    use hyper::{header::ACCEPT, HeaderMap};
     use opentelemetry::{
         global,
         trace::{get_active_span, FutureExt, TraceContextExt, Tracer},
@@ -50,7 +50,7 @@ if #[cfg(feature = "ssr")] {
     pub async fn analytics_get(
         headers: HeaderMap,
         State(state): State<ServerState>,
-        ) -> Response<BoxBody> {
+        ) -> Response<Body> {
         let tracer = global::tracer("");
         let span = tracer.start("analytics_get");
         let analytics = state
@@ -72,17 +72,18 @@ if #[cfg(feature = "ssr")] {
             .into_response()
     }
 
-    pub async fn record_analytics<B>(
+    pub async fn record_analytics(
         State(state): State<ServerState>,
         ConnectInfo(addr): ConnectInfo<SocketAddr>,
         headers: HeaderMap,
-        request: Request<B>,
-        next: Next<B>,
+        request: Request<Body>,
+        next: Next,
         ) -> Response {
         if request.uri().path() == "/_trunk/ws" {
             return next.run(request).await;
         }
         let path = Path::new(request.uri().path());
+        info!("Requested {:?}", request.uri());
 
         if let Some("wasm" | "js" | "png" | "jpg" | "vert" | "scss" | "frag" | "css") =
             path.extension().and_then(|os_str| os_str.to_str())
@@ -115,7 +116,7 @@ if #[cfg(feature = "ssr")] {
             .record_request(ip, iso_code.to_owned(), request.uri().path().to_owned())
             .await
             {
-                Ok(_) => info!("Recorded request from {ip} for {}", request.uri().path()),
+                Ok(_) => info!("From {ip}."),
                 Err(err) => warn!("Failed to record request from {ip}: {}", err),
             }
 

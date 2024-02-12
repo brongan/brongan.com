@@ -5,7 +5,8 @@ use crate::{
     mandelbrot::Bounds,
     routes::{analytics_component::AnalyticsComponent, catscii_component::Catscii},
 };
-use leptos::{component, view, CollectView, IntoView};
+use leptos::*;
+use leptos_meta::*;
 use leptos_router::{Route, Router, Routes};
 
 struct NavItem {
@@ -93,16 +94,19 @@ fn home() -> impl IntoView {
 
 #[component]
 pub fn root() -> impl IntoView {
+    provide_meta_context();
     view! {
       <Router>
         <nav>
           /* ... */
         </nav>
-          <main class="main-panel">
+        <main class="main-panel">
+            <Title text="brongan.com" />
+            <Link rel="stylesheet" type_="text/css" href="/pkg/brongan.css"/>
               <Routes>
                   <Route path="/" view=Home/>
                   <Route path="/ishihara" view=IshiharaPlate/>
-                  <Route path="/game-of-ilfe" view=GameOfLife/>
+                  <Route path="/game-of-life" view=GameOfLife/>
                   <Route path="/mandelbrot" view=||view! { <MandelbrotModel bounds={Bounds {width: 800, height: 500}}/> } />
                   <Route path="/catscii" view=Catscii />
                   <Route path="/analytics" view=AnalyticsComponent />

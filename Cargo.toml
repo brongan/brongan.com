@@ -10,8 +10,8 @@ crate-type = ["cdylib", "rlib"]
 anyhow = "1.0"
 artem = { version = "1.2", default-features = false, optional = true }
 async-rustls = { version = "0.4.0", optional = true }
-axum = { version = "0.6.16", features = ["macros"], optional = true }
-axum-server = { version = "0.5.1", features = ["tls-rustls"], optional = true }
+axum = { version = "0.7", features = ["macros"], optional = true }
+axum-server = { version = "0.6", features = ["tls-rustls"], optional = true }
 base64 = "0.13"
 cfg-if = "1.0.0"
 clap = { version = "4.2", features = ["derive"] }
@@ -23,14 +23,16 @@ getrandom = { version = "0.2", features = ["js"] }
 gloo-events = {version = "0.1", optional = true}
 gloo-net = { version = "0.2", optional = true}
 gloo-timers = { version = "0.2", optional = true}
-hyper = { version = "0.14.27", optional = true }
 image = "0.24"
+http = "1"
 imageproc = "0.23"
 js-sys = { version = "0.3"}
-leptos = { version = "0.5", features = ["nightly"] }
+leptos = { version = "0.6", features = ["nightly"] }
 leptos-use = "0.8.0"
-leptos_axum = { version = "0.5", optional = true }
-leptos_router = { version = "0.5", features = ["nightly"] }
+leptos_axum = { version = "0.6", optional = true }
+leptos_meta = { version = "0.6", features = ["nightly"] }
+leptos_dom = "0.6"
+leptos_router = { version = "0.6", features = ["nightly"] }
 libsqlite3-sys = { version = "*", features = [], optional = true}
 log = "0.4"
 maxminddb = "0.23.0"
@@ -55,9 +57,9 @@ tokio = { version = "1.28", features = ["full", "fs", "test-util"], optional = t
 tokio-rusqlite = { version = "0.4.0", optional = true }
 tokio-stream = { version = "0.1.14", optional = true }
 tokio-util = { version = "0.7.8", optional = true }
-tower = { version = "0.4.13", optional = true }
-tower-http = { version = "0.4.1", features = ["full"], optional = true }
-tracing = { version ="0.1", optional = true }
+tower = { version = "0.4", optional = true }
+tower-http = { version = "0.5", features = ["full"], optional = true }
+tracing = { version ="0.1" }
 tracing-subscriber = { version = "0.3", features = ["json"] }
 wasm-bindgen = "=0.2.90"
 wasm-logger = {version = "0.2", optional = true}
@@ -92,6 +94,8 @@ hydrate = [
 	"dep:gloo-timers",
 	"dep:wasm-logger",
 	"leptos/hydrate",
+	"leptos_meta/hydrate",
+	"leptos_dom/hydrate",
 	"leptos_router/hydrate",
 ]
 ssr = [
@@ -100,7 +104,6 @@ ssr = [
     "dep:async-rustls",
     "dep:axum",
     "dep:axum-server",
-    "dep:hyper",
     "dep:leptos_axum",
     "dep:libsqlite3-sys",
     "dep:opentelemetry",
@@ -112,8 +115,9 @@ ssr = [
     "dep:tokio-stream",
     "dep:tower",
     "dep:tower-http",
-    "dep:tracing",
     "leptos/ssr",
+    "leptos_meta/ssr",
+	"leptos_dom/ssr",
     "leptos_router/ssr",
 ]
 
@@ -130,11 +134,10 @@ panic = "abort"
 
 [package.metadata.leptos]
 output-name = "brongan.com"
-site-root = "target/site"
 style-file = "style/main.scss"
 assets-dir = "assets"
 lib-default-features = false
-site-address = "127.0.0.1:8080"
+site-addr = "127.0.0.1:8080"
 reload-port = 3001
 browserquery = "defaults"
 bin-features = ["ssr"]
