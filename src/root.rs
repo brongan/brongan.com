@@ -8,6 +8,7 @@ use crate::{
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::{Route, Router, Routes};
+use log::info;
 
 struct NavItem {
     title: &'static str,
@@ -102,7 +103,7 @@ pub fn root() -> impl IntoView {
         </nav>
         <main class="main-panel">
             <Title text="brongan.com" />
-            <Link rel="stylesheet" type_="text/css" href="/pkg/brongan.css"/>
+            <Stylesheet href="/pkg/brongan.css"/>
               <Routes>
                   <Route path="/" view=Home/>
                   <Route path="/ishihara" view=IshiharaPlate/>
@@ -110,7 +111,6 @@ pub fn root() -> impl IntoView {
                   <Route path="/mandelbrot" view=||view! { <MandelbrotModel bounds={Bounds {width: 800, height: 500}}/> } />
                   <Route path="/catscii" view=Catscii />
                   <Route path="/analytics" view=AnalyticsComponent />
-                  <Route path="/*any" view=|| view! { <h1>"Not Found"</h1> }/>
               </Routes>
           </main>
       </Router>

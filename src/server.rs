@@ -107,19 +107,9 @@ async fn redirect_http_to_https(http: SocketAddr, https: SocketAddr) {
         .unwrap();
 }
 
-async fn leptos_routes_handler(State(state): State<ServerState>, req: Request<Body>) -> Response {
-    let handler = leptos_axum::render_app_to_stream_with_context(
-        state.leptos_options,
-        || {},
-        || view! {<Root/>},
-    );
-    handler(req).await.into_response()
-}
-
 pub async fn run() {
     info!("Starting brongan.com");
     let opt = Opt::parse();
-    info!("Creating Sentry and Honeyguard Hooks.");
     let _guard = if opt.dev {
         None
     } else {
@@ -145,7 +135,6 @@ pub async fn run() {
     let conf = get_configuration(None).await.unwrap();
     let leptos_options = conf.leptos_options;
     let http_addr = leptos_options.site_addr;
-    let routes = generate_route_list(Root);
 
     info!("Creating Server State with options: {leptos_options:?}");
     let server_state = match create_server_state(leptos_options).await {
@@ -157,13 +146,13 @@ pub async fn run() {
     };
 
     let app = Router::new()
-        .leptos_routes_with_handler(routes, get(leptos_routes_handler))
+        .leptos_routes(&server_state, generate_route_list(Root), Root)
         .fallback(file_and_error_handler)
-        .with_state(server_state.clone())
         .layer(middleware::from_fn_with_state(
-            server_state,
+            server_state.clone(),
             record_analytics,
-        ));
+        ))
+        .with_state(server_state);
 
     if let (Some(ssl_port), Some(cert_dir)) = (opt.ssl_port, opt.cert_dir) {
         let https_addr = SocketAddr::from((http_addr.ip(), ssl_port));
@@ -180,9 +169,8 @@ pub async fn run() {
             _ = tokio::signal::ctrl_c().await;
             warn!("Initiating graceful shutdown");
         };
-        let listener = TcpListener::bind(http_addr).await.unwrap();
         serve(
-            listener,
+            TcpListener::bind(http_addr).await.unwrap(),
             app.into_make_service_with_connect_info::<SocketAddr>(),
         )
         .with_graceful_shutdown(quit_sig)
