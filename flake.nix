@@ -58,13 +58,14 @@
           nativeBuildInputs = with pkgs; [ pkg-config ];
         };
         nativeArgs = commonArgs // {
-          cargoExtraArgs = "--features=ssr";
+          cargoExtraArgs = "--no-default-features --features=ssr";
           CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
           CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
           buildInputs = [ sqliteStatic ];
         };
         cargoArtifacts = nativeCraneLib.buildDepsOnly nativeArgs;
         myServer = nativeCraneLib.buildPackage (nativeArgs // {
+		  pname = "brongan-com-server";
           inherit cargoArtifacts;
           CLIENT_DIST = myClient;
         });
