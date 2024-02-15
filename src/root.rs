@@ -1,10 +1,8 @@
 use crate::game_of_life::GameOfLife;
+use crate::routes::analytics_component::AnalyticsComponent;
+use crate::routes::catscii_component::Catscii;
 use crate::routes::ishihara_component::IshiharaPlate;
-use crate::routes::mandelbrot_component::MandelbrotModel;
-use crate::{
-    mandelbrot::Bounds,
-    routes::{analytics_component::AnalyticsComponent, catscii_component::Catscii},
-};
+use crate::routes::mandelbrot_component::Mandelbrot;
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::{Route, Router, Routes};
@@ -40,7 +38,7 @@ fn nav_button(nav_item: NavItem) -> impl IntoView {
 }
 
 #[component]
-fn nav() -> impl IntoView {
+fn navigation() -> impl IntoView {
     let nav_items = vec![
         NavItem {
             title: "Home",
@@ -84,13 +82,11 @@ fn nav() -> impl IntoView {
 #[component]
 fn home() -> impl IntoView {
     view! {
-        <>
-            <header class="header">
-                <h1 class="title">{ "Welcome to brongan.com" }</h1>
-            </header>
-            <p>{"Hello my name is Brennan I like Rust"}</p>
-            <Nav/>
-        </>
+        <header class="header">
+            <h1 class="title">{ "Welcome to brongan.com" }</h1>
+        </header>
+        <p>{"Hello my name is Brennan I like Rust"}</p>
+        <Navigation/>
     }
 }
 
@@ -99,8 +95,8 @@ pub fn root() -> impl IntoView {
     provide_meta_context();
     view! {
       <Router>
-        <nav>
-          /* ... */
+        <nav class="sidebar">
+          <Navigation/>
         </nav>
         <main class="main-panel">
             <Title text="brongan.com" />
@@ -109,7 +105,7 @@ pub fn root() -> impl IntoView {
                   <Route path="/" view=Home/>
                   <Route path="/ishihara" view=IshiharaPlate/>
                   <Route path="/game-of-life" view=GameOfLife/>
-                  <Route path="/mandelbrot" view=||view! { <MandelbrotModel bounds={Bounds {width: 800, height: 500}}/> } />
+                  <Route path="/mandelbrot" view=Mandelbrot /> />
                   <Route path="/catscii" view=Catscii />
                   <Route path="/analytics" view=AnalyticsComponent />
               </Routes>

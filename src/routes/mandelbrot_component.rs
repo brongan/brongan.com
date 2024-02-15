@@ -1,8 +1,8 @@
 use crate::mandelbrot::{generate_mandelbrot, Bounds};
 use anyhow::anyhow;
 use image::RgbaImage;
-use leptos::{component, view, IntoView};
-use leptos::{create_node_ref, html::Canvas, NodeRef};
+use leptos::html::Canvas;
+use leptos::*;
 use log::info;
 use num::Complex;
 use wasm_bindgen::{Clamped, JsCast};
@@ -48,6 +48,7 @@ fn render_mandelbrot(
 
 #[component]
 pub fn mandelbrot_model(bounds: Bounds) -> impl IntoView {
+    info!("mandelbrot");
     let upper_left = Complex::<f64> {
         re: -1.20,
         im: 0.35,
@@ -55,16 +56,19 @@ pub fn mandelbrot_model(bounds: Bounds) -> impl IntoView {
     let lower_right = Complex::<f64> { re: -1.0, im: 0.20 };
 
     view! {
-        <>
-            <header class="header">
+        <header class="header">
             <h1> { "Mandelbrot" } </h1>
-            </header>
-            <div class="readout">
+        </header>
+        <div class="readout">
             <RenderMandelbrot bounds={bounds} upper_left={upper_left} lower_right={lower_right} />
-            </div>
-            <footer class="footnote">
+        </div>
+        <footer class="footnote">
             <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
-            </footer>
-            </>
+        </footer>
     }
+}
+
+#[component]
+pub fn mandelbrot() -> impl IntoView {
+    view! { <MandelbrotModel bounds={Bounds {width: 800, height: 500}} /> }
 }
