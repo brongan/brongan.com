@@ -1,13 +1,33 @@
-use leptos::{component, create_resource, server, view, IntoView, ServerFnError, SignalGet};
+use leptos::*;
+
+#[cfg(feature = "ssr")]
+pub mod ssr {
+    use crate::locat::Locat;
+    use leptos::*;
+    use std::sync::Arc;
+
+    pub fn locat() -> Result<Arc<Locat>, ServerFnError> {
+        use_context::<Arc<Locat>>()
+            .ok_or_else(|| ServerFnError::ServerError("Locat missing.".into()))
+    }
+
+    pub fn client() -> Result<reqwest::Client, ServerFnError> {
+        use_context::<reqwest::Client>()
+            .ok_or_else(|| ServerFnError::ServerError("Reqwest Client missing.".into()))
+    }
+}
 
 #[server(GetCatscii, "/api", "Url", "catscii")]
 pub async fn get_catscii() -> Result<String, ServerFnError> {
-    todo!()
+    let client = self::ssr::client()?;
+    crate::catscii::get_cat_ascii_art(&client)
+        .await
+        .map_err(|_e| ServerFnError::ServerError("Failed to get catscii art".into()))
 }
 
 #[component]
-fn catscii_content(art: String) -> impl IntoView {
-    view! { <p>{art}</p> }
+fn catscii_content(html: String) -> impl IntoView {
+    view! { <div inner_html=html/> }
 }
 
 #[component]
@@ -19,7 +39,7 @@ pub fn catscii() -> impl IntoView {
         </header>
         <div class="content"> {
                 move || match once.get() {
-                    Some(art) => view! { <CatsciiContent art/> }.into_view(),
+                    Some(html) => view! { <CatsciiContent html/> }.into_view(),
                     None => view! { <p>"Loading..."</p> }.into_view(),
                 }
             }

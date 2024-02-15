@@ -4,16 +4,20 @@ use crate::locat::Locat;
 use crate::root::Root;
 use anyhow::Result;
 use artem::util::fatal_error;
-use axum::extract::{FromRef, Host};
+use axum::body::Body;
+use axum::extract::Path as AxumPath;
+use axum::extract::{FromRef, Host, Request, State};
 use axum::handler::HandlerWithoutStateExt;
 use axum::http::{StatusCode, Uri};
-use axum::response::Redirect;
+use axum::response::{IntoResponse, Redirect, Response};
+use axum::routing::get;
 use axum::{middleware, serve, Router};
 use axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
 use http::uri::Scheme;
 use leptos::*;
-use leptos_axum::{generate_route_list, LeptosRoutes};
+use leptos_axum::{generate_route_list, handle_server_fns_with_context, LeptosRoutes};
+use leptos_router::RouteListing;
 use opentelemetry_honeycomb::new_pipeline;
 use sentry::ClientInitGuard;
 use std::net::SocketAddr;
@@ -30,6 +34,7 @@ pub struct ServerState {
     pub leptos_options: LeptosOptions,
     pub client: reqwest::Client,
     pub locat: Arc<Locat>,
+    pub routes: Vec<RouteListing>,
 }
 
 #[derive(Parser, Debug)]
@@ -43,7 +48,10 @@ struct Opt {
     cert_dir: Option<String>,
 }
 
-async fn create_server_state(leptos_options: LeptosOptions) -> Result<ServerState> {
+async fn create_server_state(
+    leptos_options: LeptosOptions,
+    routes: Vec<RouteListing>,
+) -> Result<ServerState> {
     let country_db_dev_path = "db/GeoLite2-Country.mmdb".to_string();
     let country_db_path = std::env::var("GEOLITE2_COUNTRY_DB").unwrap_or(country_db_dev_path);
     let db = std::env::var("DB").unwrap_or("db/sqlite.db".to_string());
@@ -51,6 +59,7 @@ async fn create_server_state(leptos_options: LeptosOptions) -> Result<ServerStat
         leptos_options,
         locat: Arc::new(Locat::new(&country_db_path, db).await?),
         client: Default::default(),
+        routes,
     })
 }
 
@@ -105,6 +114,35 @@ async fn redirect_http_to_https(http: SocketAddr, https: SocketAddr) {
         .unwrap();
 }
 
+async fn server_fn_handler(
+    State(state): State<ServerState>,
+    path: AxumPath<String>,
+    request: Request<Body>,
+) -> impl IntoResponse {
+    info!("{:?}", path);
+    handle_server_fns_with_context(
+        move || {
+            provide_context(state.locat.clone());
+            provide_context(state.client.clone());
+        },
+        request,
+    )
+    .await
+}
+
+async fn leptos_routes_handler(State(state): State<ServerState>, req: Request<Body>) -> Response {
+    let handler = leptos_axum::render_route_with_context(
+        state.leptos_options.clone(),
+        state.routes.clone(),
+        move || {
+            provide_context(state.locat.clone());
+            provide_context(state.client.clone());
+        },
+        Root,
+    );
+    handler(req).await.into_response()
+}
+
 pub async fn run() {
     info!("Starting brongan.com");
     let opt = Opt::parse();
@@ -135,7 +173,7 @@ pub async fn run() {
     let http_addr = leptos_options.site_addr;
 
     info!("Creating Server State with options: {leptos_options:?}");
-    let server_state = match create_server_state(leptos_options).await {
+    let server_state = match create_server_state(leptos_options, generate_route_list(Root)).await {
         Ok(state) => state,
         Err(e) => {
             error!("{e}");
@@ -144,7 +182,11 @@ pub async fn run() {
     };
 
     let app = Router::new()
-        .leptos_routes(&server_state, generate_route_list(Root), Root)
+        .route(
+            "/api/*fn_name",
+            get(server_fn_handler).post(server_fn_handler),
+        )
+        .leptos_routes_with_handler(generate_route_list(Root), get(leptos_routes_handler))
         .fallback(file_and_error_handler)
         .layer(middleware::from_fn_with_state(
             server_state.clone(),

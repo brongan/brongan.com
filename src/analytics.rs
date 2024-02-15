@@ -1,5 +1,4 @@
 use cfg_if::cfg_if;
-use http::{header::ACCEPT, HeaderMap};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
@@ -23,6 +22,7 @@ impl Display for Analytics {
 
 cfg_if! {
 if #[cfg(feature = "ssr")] {
+use http::{header::ACCEPT, HeaderMap};
     use crate::server::ServerState;
     use axum::{
         extract::{ConnectInfo, State},

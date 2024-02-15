@@ -46,7 +46,7 @@ async fn download_file(url: &str, client: &reqwest::Client) -> Result<Vec<u8>> {
         .to_vec())
 }
 
-async fn get_cat_ascii_art(client: &reqwest::Client) -> Result<String> {
+pub async fn get_cat_ascii_art(client: &reqwest::Client) -> Result<String> {
     let tracer = global::tracer("");
     let image = get_cat_url(client)
         .with_context(Context::current_with_span(tracer.start("get_cat_url")))
