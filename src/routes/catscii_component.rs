@@ -24,7 +24,7 @@ pub fn catscii_ascii() -> impl IntoView {
     let (_pending, set_pending) = create_signal(false);
 
     view! {
-        <div>
+        <div class="ascii-art">
             <Transition
                 fallback=move || view! {  <p>"Loading..."</p>}
                 set_pending

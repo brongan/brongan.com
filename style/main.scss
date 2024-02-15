@@ -127,3 +127,9 @@ body {
 	margin-top: 16px;
 }
 
+.content {
+    display: flex;
+    justify-content: center;
+	align-items: flex-start; /* Adjust vertical alignment */
+    height: 100vh;
+}
