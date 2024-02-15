@@ -2,14 +2,7 @@ use leptos::*;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use crate::locat::Locat;
     use leptos::*;
-    use std::sync::Arc;
-
-    pub fn locat() -> Result<Arc<Locat>, ServerFnError> {
-        use_context::<Arc<Locat>>()
-            .ok_or_else(|| ServerFnError::ServerError("Locat missing.".into()))
-    }
 
     pub fn client() -> Result<reqwest::Client, ServerFnError> {
         use_context::<reqwest::Client>()

@@ -1,4 +1,4 @@
-use crate::analytics::record_analytics;
+use crate::analytics::ssr::record_analytics;
 use crate::fileserve::file_and_error_handler;
 use crate::locat::Locat;
 use crate::root::Root;

@@ -1,4 +1,3 @@
-use cfg_if::cfg_if;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
@@ -20,17 +19,17 @@ impl Display for Analytics {
     }
 }
 
-cfg_if! {
-if #[cfg(feature = "ssr")] {
-use http::{header::ACCEPT, HeaderMap};
+#[cfg(feature = "ssr")]
+pub mod ssr {
     use crate::server::ServerState;
     use axum::{
+        body::Body,
         extract::{ConnectInfo, State},
         http::Request,
         middleware::Next,
         response::{IntoResponse, Response},
-        body::Body,
     };
+    use http::{header::ACCEPT, HeaderMap};
     use opentelemetry::{
         global,
         trace::{get_active_span, FutureExt, TraceContextExt, Tracer},
@@ -50,7 +49,7 @@ use http::{header::ACCEPT, HeaderMap};
     pub async fn analytics_get(
         headers: HeaderMap,
         State(state): State<ServerState>,
-        ) -> Response<Body> {
+    ) -> Response<Body> {
         let tracer = global::tracer("");
         let span = tracer.start("analytics_get");
         let analytics = state
@@ -78,19 +77,18 @@ use http::{header::ACCEPT, HeaderMap};
         headers: HeaderMap,
         request: Request<Body>,
         next: Next,
-        ) -> Response {
+    ) -> Response {
         if request.uri().path() == "/_trunk/ws" {
             return next.run(request).await;
         }
         let path = Path::new(request.uri().path());
 
-        if let Some("wasm" | "js" | "png" | "jpg" | "vert" | "scss" | "frag" | "css") =
+        if let Some("wasm" | "js" | "png" | "jpg" | "vert" | "scss" | "frag" | "css" | "ico") =
             path.extension().and_then(|os_str| os_str.to_str())
-            {
-                return next.run(request).await;
-            }
+        {
+            return next.run(request).await;
+        }
 
-        info!("Requested {:?}", request.uri());
         let ip = get_fly_client_addr(&headers).unwrap_or(addr.ip());
 
         let iso_code = if ip.is_loopback() {
@@ -116,11 +114,11 @@ use http::{header::ACCEPT, HeaderMap};
             .locat
             .record_request(ip, iso_code.to_owned(), request.uri().path().to_owned())
             .await
-            {
-                Ok(_) => info!("From {ip}."),
-                Err(err) => warn!("Failed to record request from {ip}: {}", err),
-            }
+        {
+            Ok(_) => info!("{ip} requested {:?}", request.uri()),
+            Err(err) => warn!("Failed to record request from {ip}: {}", err),
+        }
 
         next.run(request).await
     }
-}}
+}
