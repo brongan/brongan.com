@@ -18,7 +18,10 @@ pub mod routes;
 #[cfg(feature = "ssr")]
 pub mod server;
 
-#[wasm_bindgen::prelude::wasm_bindgen]
+use wasm_bindgen::prelude::wasm_bindgen;
+
+#[cfg(feature = "hydrate")]
+#[wasm_bindgen]
 pub fn hydrate() {
     use crate::root::Root;
 

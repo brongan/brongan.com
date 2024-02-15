@@ -1,16 +1,20 @@
-use crate::mandelbrot::{generate_mandelbrot, Bounds};
-use anyhow::anyhow;
-use image::RgbaImage;
-use leptos::html::Canvas;
+use crate::mandelbrot::Bounds;
 use leptos::*;
 use log::info;
 use num::Complex;
+
+#[cfg(not(feature = "ssr"))]
 use wasm_bindgen::{Clamped, JsCast};
-use web_sys::{CanvasRenderingContext2d, ImageData};
 
 #[component]
-pub fn show_mandelbrot(image: RgbaImage) -> impl IntoView {
-    let image = ImageData::new_with_u8_clamped_array_and_sh(
+#[cfg(not(feature = "ssr"))]
+pub fn show_mandelbrot(image: image::RgbaImage) -> impl IntoView {
+    use anyhow::anyhow;
+    use image::RgbaImage;
+    use leptos::html::Canvas;
+    use web_sys::CanvasRenderingContext2d;
+
+    let image = web_sys::ImageData::new_with_u8_clamped_array_and_sh(
         Clamped(image.as_raw()),
         image.width(),
         image.height(),
@@ -36,14 +40,63 @@ pub fn show_mandelbrot(image: RgbaImage) -> impl IntoView {
 }
 
 #[component]
+#[cfg(not(feature = "ssr"))]
 fn render_mandelbrot(
     bounds: Bounds,
     upper_left: Complex<f64>,
     lower_right: Complex<f64>,
 ) -> impl IntoView {
     info!("generating mandelbrot image");
-    let image = generate_mandelbrot(bounds, upper_left, lower_right);
+    let image = crate::mandelbrot::generate_mandelbrot(bounds, upper_left, lower_right);
     view! { <ShowMandelbrot image/> }
+}
+
+#[component]
+#[cfg(feature = "ssr")]
+fn render_mandelbrot(
+    bounds: Bounds,
+    upper_left: Complex<f64>,
+    lower_right: Complex<f64>,
+) -> impl IntoView {
+    view! { <p> Hello from SSR. </p> }
+}
+
+#[server(GetMandelbrot, "/api", "Cbor", "mandelbrot")]
+pub async fn get_mandelbrot(
+    bounds: Bounds,
+    upper_left: Complex<f64>,
+    lower_right: Complex<f64>,
+) -> Result<Vec<u8>, ServerFnError> {
+    let image =
+        crate::mandelbrot::generate_mandelbrot_multithreaded(bounds, upper_left, lower_right);
+    let mut image_bytes: Vec<u8> = Vec::new();
+    image
+        .write_to(
+            &mut std::io::Cursor::new(&mut image_bytes),
+            image::ImageOutputFormat::Png,
+        )
+        .unwrap();
+    Ok(image_bytes)
+}
+
+#[component]
+fn load_mandelbrot(
+    bounds: Bounds,
+    upper_left: Complex<f64>,
+    lower_right: Complex<f64>,
+) -> impl IntoView {
+    info!("loading mandelbrot image");
+    view! {
+        <header class="header">
+            <h1> { "Mandelbrot" } </h1>
+        </header>
+        <div class="readout">
+            <RenderMandelbrot bounds={bounds} upper_left={upper_left} lower_right={lower_right} />
+        </div>
+        <footer class="footnote">
+            <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
+        </footer>
+    }
 }
 
 #[component]
