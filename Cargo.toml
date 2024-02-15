@@ -133,7 +133,7 @@ codegen-units = 1
 panic = "abort"
 
 [package.metadata.leptos]
-output-name = "brongan.com"
+output-name = "brongan"
 style-file = "style/main.scss"
 assets-dir = "assets"
 lib-default-features = false

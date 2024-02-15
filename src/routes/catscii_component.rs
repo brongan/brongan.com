@@ -26,23 +26,35 @@ pub async fn get_catscii() -> Result<String, ServerFnError> {
 }
 
 #[component]
-fn catscii_content(html: String) -> impl IntoView {
-    view! { <div inner_html=html/> }
+pub fn catscii_ascii() -> impl IntoView {
+    let cats = create_resource(|| (), |_| async move { get_catscii().await.unwrap() });
+    let (_pending, set_pending) = create_signal(false);
+
+    view! {
+        <div>
+            <Transition
+                fallback=move || view! {  <p>"Loading..."</p>}
+                set_pending
+            >
+            {
+                move || match cats.get() {
+                    Some(html) => view! { <div inner_html=html/> }.into_view(),
+                    None => view! { <p>"Loading..."</p> }.into_view(),
+                }
+            }
+            </Transition>
+        </div>
+    }
 }
 
 #[component]
 pub fn catscii() -> impl IntoView {
-    let once = create_resource(|| (), |_| async move { get_catscii().await.unwrap() });
     view! {
         <header class="header">
             <h1 class="title">{ "Catscii" }</h1>
         </header>
-        <div class="content"> {
-                move || match once.get() {
-                    Some(html) => view! { <CatsciiContent html/> }.into_view(),
-                    None => view! { <p>"Loading..."</p> }.into_view(),
-                }
-            }
+        <div class="content">
+            <CatsciiAscii/>
         </div>
     }
 }

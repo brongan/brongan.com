@@ -83,7 +83,6 @@ use http::{header::ACCEPT, HeaderMap};
             return next.run(request).await;
         }
         let path = Path::new(request.uri().path());
-        info!("Requested {:?}", request.uri());
 
         if let Some("wasm" | "js" | "png" | "jpg" | "vert" | "scss" | "frag" | "css") =
             path.extension().and_then(|os_str| os_str.to_str())
@@ -91,7 +90,9 @@ use http::{header::ACCEPT, HeaderMap};
                 return next.run(request).await;
             }
 
+        info!("Requested {:?}", request.uri());
         let ip = get_fly_client_addr(&headers).unwrap_or(addr.ip());
+
         let iso_code = if ip.is_loopback() {
             "DEV"
         } else {
