@@ -18,16 +18,10 @@ pub mod routes;
 #[cfg(feature = "ssr")]
 pub mod server;
 
-use wasm_bindgen::prelude::wasm_bindgen;
-
 #[cfg(feature = "hydrate")]
-#[wasm_bindgen]
+#[wasm_bindgen::prelude::wasm_bindgen]
 pub fn hydrate() {
-    use crate::root::Root;
-
-    // TODO fix.
-    // _ = leptos::leptos_dom::logging::console_log::init_with_level(log::Level::Debug);
-    // console_error_panic_hook::set_once();
-
-    leptos::mount_to_body(Root);
+    _ = console_log::init_with_level(log::Level::Debug);
+    console_error_panic_hook::set_once();
+    leptos::mount_to_body(root::Root);
 }
