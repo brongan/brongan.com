@@ -8,7 +8,6 @@ use crate::{
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::{Route, Router, Routes};
-use log::info;
 
 struct NavItem {
     title: &'static str,
@@ -32,7 +31,9 @@ pub fn footer(text: String) -> impl IntoView {
 fn nav_button(nav_item: NavItem) -> impl IntoView {
     view! {
         <div class="nav-item">
-            <a type="image" src={nav_item.thumbnail} href={nav_item.route}/>
+            <a href={nav_item.route}>
+                <img src={nav_item.thumbnail} />
+            </a>
             <h3>{ nav_item.title }</h3>
         </div>
     }

@@ -24,7 +24,7 @@
 	text-align: center;
 	display: block;
 	flex-direction: column;
-	input {
+	img {
 		width: 125px;
 		height: 125px;
 		object-fit: cover;
@@ -45,7 +45,7 @@
 }
 
 body {
-	background: url(img/background.png) no-repeat fixed;
+	background: url(/img/background.png) no-repeat fixed;
 	-webkit-background-size: cover;
 	-moz-background-size: cover;
 	-o-background-size: cover;
