@@ -40,8 +40,8 @@ pub struct ServerState {
 #[derive(Parser, Debug)]
 #[clap(name = "server", about = "My server")]
 struct Opt {
-    #[clap(long, default_value_t = true)]
-    dev: bool,
+    #[clap(long, default_value_t = false)]
+    prod: bool,
     #[clap(long)]
     ssl_port: Option<u16>,
     #[clap(long)]
@@ -146,10 +146,10 @@ async fn leptos_routes_handler(State(state): State<ServerState>, req: Request<Bo
 pub async fn run() {
     info!("Starting brongan.com");
     let opt = Opt::parse();
-    let _guard = if opt.dev {
-        None
-    } else {
+    let _guard = if opt.prod {
         Some(sentry_guard().unwrap())
+    } else {
+        None
     };
     let (_honeyguard, _tracer) = new_pipeline(
         std::env::var("HONEYCOMB_API_KEY").expect("$HONEYCOMB_API_KEY should be set"),

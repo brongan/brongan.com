@@ -16,7 +16,7 @@
       };
     };
   };
-  outputs = { self, nixpkgs, crane, flake-utils, rust-overlay, nixpkgs-for-wasm-bindgen, ... }:
+  outputs = { nixpkgs, crane, flake-utils, rust-overlay, nixpkgs-for-wasm-bindgen, ... }:
     flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
         pkgs = import nixpkgs {
@@ -35,7 +35,7 @@
         nativeToolchain = pkgs.rust-bin.nightly.latest.default.override {
           targets = [ "x86_64-unknown-linux-musl" ];
         };
-        wasmCraneLib = ((crane.mkLib pkgs).overrideToolchain wasmToolchain).overrideScope' (final: prev: {
+        wasmCraneLib = ((crane.mkLib pkgs).overrideToolchain wasmToolchain).overrideScope (final: prev: {
           inherit (import nixpkgs-for-wasm-bindgen { inherit system; }) wasm-bindgen-cli;
         });
         nativeCraneLib = (crane.mkLib pkgs).overrideToolchain nativeToolchain;
@@ -63,10 +63,10 @@
           CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
           buildInputs = [ sqliteStatic ];
         };
-        cargoArtifacts = nativeCraneLib.buildDepsOnly nativeArgs;
+        nativeArtifacts = nativeCraneLib.buildDepsOnly nativeArgs;
         myServer = nativeCraneLib.buildPackage (nativeArgs // {
 		  pname = "brongan-com-server";
-          inherit cargoArtifacts;
+          cargoArtifacts = nativeArtifacts;
           CLIENT_DIST = myClient;
         });
         wasmArgs = commonArgs // {
@@ -74,10 +74,10 @@
           CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
           doCheck = false;
         };
-        cargoArtifactsWasm = wasmCraneLib.buildDepsOnly wasmArgs;
+        wasmArtifacts = wasmCraneLib.buildDepsOnly wasmArgs;
         myClient = wasmCraneLib.buildPackage (wasmArgs // {
           pname = "brongan-com-client";
-          cargoArtifacts = cargoArtifactsWasm;
+          cargoArtifacts = wasmArtifacts;
         });
         dockerImage = pkgs.dockerTools.streamLayeredImage {
           name = "brongan_com";
@@ -85,10 +85,8 @@
           contents = [ myServer myClient ];
           config = {
             Cmd = [
-              "${myServer}/bin/server"
-              "--addr=0.0.0.0"
-              "--port=8080"
-              "--dev false"
+              "${myServer}/bin/brongan_com"
+              "--prod"
             ];
             Env = with pkgs; [ "GEOLITE2_COUNTRY_DB=${clash-geoip}/etc/clash/Country.mmdb" ];
           };

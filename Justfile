@@ -8,9 +8,6 @@ container:
 	nix build .#dockerImage
 	./result | podman load
 
-container-run: container
-	nix run
-
 run: build
 	cargo leptos serve
 
