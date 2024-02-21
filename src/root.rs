@@ -100,7 +100,7 @@ pub fn root() -> impl IntoView {
         </nav>
         <main class="main-panel">
             <Title text="brongan.com" />
-            <Stylesheet href="/pkg/brongan.css"/>
+            <Stylesheet href="/pkg/main-dea73183440380c.css"/>
               <Routes>
                   <Route path="/" view=Home/>
                   <Route path="/ishihara" view=IshiharaPlate/>

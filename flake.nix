@@ -43,7 +43,7 @@
           src = ./.;
           filter = path: type:
             (lib.hasSuffix "\.html" path) ||
-            (lib.hasSuffix "\.scss" path) ||
+			(lib.hasSuffix "\.scss" path) ||
             (lib.hasSuffix "\.frag" path) ||
             (lib.hasSuffix "\.vert" path) ||
             (lib.hasInfix "/assets/" path) ||
@@ -75,9 +75,16 @@
           doCheck = false;
         };
         wasmArtifacts = wasmCraneLib.buildDepsOnly wasmArgs;
-        myClient = wasmCraneLib.buildPackage (wasmArgs // {
+        myClient = wasmCraneLib.buildTrunkPackage (wasmArgs // {
           pname = "brongan-com-client";
           cargoArtifacts = wasmArtifacts;
+		  trunkIndexPath = "./index.html";
+		  trunkExtraBuildArgs = "--no-default-features --features hydrate";
+		  wasm-bindgen-cli = pkgs.wasm-bindgen-cli.override {
+            version = "0.2.90";
+            hash = "sha256-X8+DVX7dmKh7BgXqP7Fp0smhup5OO8eWEhn26ODYbkQ=";
+            cargoHash = "sha256-ckJxAR20GuVGstzXzIj1M0WBFj5eJjrO2/DRMUK5dwM=";
+          };
         });
         dockerImage = pkgs.dockerTools.streamLayeredImage {
           name = "brongan_com";
@@ -85,10 +92,16 @@
           contents = [ myServer myClient ];
           config = {
             Cmd = [
-              "${myServer}/bin/brongan_com"
+              "${myServer}/bin/server"
               "--prod"
             ];
-            Env = with pkgs; [ "GEOLITE2_COUNTRY_DB=${clash-geoip}/etc/clash/Country.mmdb" ];
+            Env = with pkgs; [
+			"GEOLITE2_COUNTRY_DB=${clash-geoip}/etc/clash/Country.mmdb"
+			"RUST_LOG=info"
+			"LEPTOS_OUTPUT_NAME=brongan"
+			"LEPTOS_SITE_ADDR=0.0.0.0:8080"
+			"LEPTOS_SITE_ROOT=site"
+			];
           };
         };
       in
