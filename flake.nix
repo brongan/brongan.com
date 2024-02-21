@@ -72,10 +72,9 @@
         wasmArgs = commonArgs // {
           cargoExtraArgs = "--no-default-features --features=hydrate";
           CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
-        };
-        cargoArtifactsWasm = wasmCraneLib.buildDepsOnly (wasmArgs // {
           doCheck = false;
-        });
+        };
+        cargoArtifactsWasm = wasmCraneLib.buildDepsOnly wasmArgs;
         myClient = wasmCraneLib.buildPackage (wasmArgs // {
           pname = "brongan-com-client";
           cargoArtifacts = cargoArtifactsWasm;
