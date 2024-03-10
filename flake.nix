@@ -16,7 +16,7 @@
       };
     };
   };
-  outputs = { nixpkgs, crane, flake-utils, rust-overlay, nixpkgs-for-wasm-bindgen, ... }:
+  outputs = { self, nixpkgs, crane, flake-utils, rust-overlay, nixpkgs-for-wasm-bindgen, ... }:
     flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
         pkgs = import nixpkgs {
@@ -39,17 +39,23 @@
           inherit (import nixpkgs-for-wasm-bindgen { inherit system; }) wasm-bindgen-cli;
         });
         nativeCraneLib = (crane.mkLib pkgs).overrideToolchain nativeToolchain;
+		css = pkgs.stdenv.mkDerivation {
+			name = "css";
+			src = self;
+			nativeBuildInputs = with pkgs; [ dart-sass tree ];
+			buildPhase = "sass ./style/main.scss main.css";
+			installPhase = "mkdir -p $out; install -t $out main.css";
+		};
         src = lib.cleanSourceWith {
           src = ./.;
           filter = path: type:
             (lib.hasSuffix "\.html" path) ||
-			(lib.hasSuffix "\.scss" path) ||
             (lib.hasSuffix "\.frag" path) ||
             (lib.hasSuffix "\.vert" path) ||
             (lib.hasInfix "/assets/" path) ||
             (wasmCraneLib.filterCargoSources path type)
           ;
-        };
+        } // css;
         commonArgs = {
           inherit src;
           pname = "brongan.com";
