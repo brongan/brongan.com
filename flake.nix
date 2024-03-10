@@ -44,21 +44,11 @@
 			src = self;
 			nativeBuildInputs = with pkgs; [ dart-sass tree ];
 			buildPhase = "sass ./style/main.scss main.css";
-			installPhase = "mkdir -p $out; install -t $out main.css";
+			installPhase = "mkdir -p $out/lib; install -t $out/lib main.css";
 		};
-        src = lib.cleanSourceWith {
-          src = ./.;
-          filter = path: type:
-            (lib.hasSuffix "\.html" path) ||
-            (lib.hasSuffix "\.frag" path) ||
-            (lib.hasSuffix "\.vert" path) ||
-            (lib.hasInfix "/assets/" path) ||
-            (wasmCraneLib.filterCargoSources path type)
-          ;
-        } // css;
+        src = lib.cleanSource ./.;
         commonArgs = {
           inherit src;
-          pname = "brongan.com";
           version = "0.1.0";
           strictDeps = true;
           nativeBuildInputs = with pkgs; [ pkg-config ];
@@ -81,21 +71,14 @@
           doCheck = false;
         };
         wasmArtifacts = wasmCraneLib.buildDepsOnly wasmArgs;
-        myClient = wasmCraneLib.buildTrunkPackage (wasmArgs // {
+        myClient = wasmCraneLib.buildPackage (wasmArgs // {
           pname = "brongan-com-client";
           cargoArtifacts = wasmArtifacts;
-		  trunkIndexPath = "./index.html";
-		  trunkExtraBuildArgs = "--no-default-features --features hydrate";
-		  wasm-bindgen-cli = pkgs.wasm-bindgen-cli.override {
-            version = "0.2.90";
-            hash = "sha256-X8+DVX7dmKh7BgXqP7Fp0smhup5OO8eWEhn26ODYbkQ=";
-            cargoHash = "sha256-ckJxAR20GuVGstzXzIj1M0WBFj5eJjrO2/DRMUK5dwM=";
-          };
-        });
+		  });
         dockerImage = pkgs.dockerTools.streamLayeredImage {
           name = "brongan_com";
           tag = "latest";
-          contents = [ myServer myClient ];
+          contents = [ myServer myClient css ];
           config = {
             Cmd = [
               "${myServer}/bin/server"

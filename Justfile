@@ -5,8 +5,8 @@ build:
 	cargo build --target=wasm32-unknown-unknown --no-default-features --features hydrate
 	cargo build --target x86_64-unknown-linux-musl --no-default-features --features ssr
 
-trunk:
-	trunk build
+leptos:
+	cargo leptos build
 
 container:
 	nix build .#dockerImage
