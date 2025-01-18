@@ -113,7 +113,7 @@ fn render(
     let canvas_ref = use_node_ref();
     let path = "/api/mandelbrot";
     info!("???");
-    let fallback = html! {<div>{"Rendering Mandelbrot On Server: {path}"}</div>};
+    let fallback = html! {<div>{"Rendering Mandelbrot On Server: "} {path}</div>};
     let request = serde_json::to_string(&MandelbrotRequest {
         bounds: *bounds,
         upper_left: *upper_left,

@@ -5,18 +5,16 @@
     nixpkgs-for-wasm-bindgen.url = "github:NixOS/nixpkgs/4e6868b1aa3766ab1de169922bb3826143941973";
     crane = {
       url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-utils.url = "github:numtide/flake-utils";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs = {
         nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
       };
     };
   };
-  outputs = { self, nixpkgs, crane, flake-utils, rust-overlay, nixpkgs-for-wasm-bindgen, ... }:
+  outputs = { nixpkgs, crane, flake-utils, rust-overlay, nixpkgs-for-wasm-bindgen, ... }:
     flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
         pkgs = import nixpkgs {
@@ -35,9 +33,7 @@
         nativeToolchain = pkgs.rust-bin.stable.latest.default.override {
           targets = [ "x86_64-unknown-linux-musl" ];
         };
-        wasmCraneLib = ((crane.mkLib pkgs).overrideToolchain wasmToolchain).overrideScope' (final: prev: {
-          inherit (import nixpkgs-for-wasm-bindgen { inherit system; }) wasm-bindgen-cli;
-        });
+        wasmCraneLib = ((crane.mkLib pkgs).overrideToolchain wasmToolchain);
         nativeCraneLib = (crane.mkLib pkgs).overrideToolchain nativeToolchain;
         src = lib.cleanSourceWith {
           src = ./.;
@@ -81,6 +77,7 @@
           pname = "brongan-com-client";
           cargoArtifacts = cargoArtifactsWasm;
           trunkIndexPath = "client/index.html";
+          inherit (import nixpkgs-for-wasm-bindgen { inherit system; }) wasm-bindgen-cli;
         });
         dockerImage = pkgs.dockerTools.streamLayeredImage {
           name = "brongan_com";
@@ -93,7 +90,8 @@
               "--port=8080"
               "--static-dir=/"
             ];
-            Env = with pkgs; [ "GEOLITE2_COUNTRY_DB=${clash-geoip}/etc/clash/Country.mmdb" ];
+            Env = with pkgs; [ "GEOLITE2_COUNTRY_DB=${dbip-country-lite}/share/dbip/dbip-country-lite.mmdb" ];
+            WorkingDir = "/";
           };
         };
       in

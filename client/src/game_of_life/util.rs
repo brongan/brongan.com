@@ -9,7 +9,7 @@ impl<'a> Timer<'a> {
     }
 }
 
-impl<'a> Drop for Timer<'a> {
+impl Drop for Timer<'_> {
     fn drop(&mut self) {
         web_sys::console::time_end_with_label(self.name);
     }

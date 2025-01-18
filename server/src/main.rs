@@ -36,9 +36,7 @@ use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::Subscriber
 #[derive(Parser, Debug)]
 #[clap(name = "server", about = "My server")]
 struct Opt {
-    #[clap(long)]
-    dev: bool,
-    #[clap(long, default_value = "/")]
+    #[clap(long, default_value = "client/dist")]
     static_dir: String,
     #[clap(long)]
     addr: Option<String>,
@@ -66,14 +64,14 @@ async fn create_server_state() -> Result<ServerState> {
     })
 }
 
-fn sentry_guard() -> Result<ClientInitGuard> {
-    Ok(sentry::init((
-        std::env::var("SENTRY_DSN")?,
+fn sentry_guard(dsn: String) -> ClientInitGuard {
+    sentry::init((
+        dsn,
         sentry::ClientOptions {
             release: sentry::release_name!(),
             ..Default::default()
         },
-    )))
+    ))
 }
 
 async fn rustls_config(cert_dir: &Path) -> RustlsConfig {
@@ -121,12 +119,10 @@ async fn redirect_http_to_https(http: SocketAddr, https: SocketAddr) {
 async fn main() {
     info!("Starting brongan.com");
     let opt = Opt::parse();
+    info!("Options: {opt:?}");
     info!("Creating Sentry and Honeyguard Hooks.");
-    let _guard = if opt.dev {
-        None
-    } else {
-        Some(sentry_guard().unwrap())
-    };
+    let _sentry = std::env::var("SENTRY_DSN").map(sentry_guard);
+
     let (_honeyguard, _tracer) = new_pipeline(
         std::env::var("HONEYCOMB_API_KEY").expect("$HONEYCOMB_API_KEY should be set"),
         "catscii".into(),
