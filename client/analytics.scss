@@ -1,0 +1,76 @@
+$primary-color: #4CAF50;  // Green for headers
+$hover-color: #e8f5e9;  // Lighter green for hover effect
+$accent-color: #007BFF;  // Blue for the visit count
+$highlight-color: #FF5733;  // Orange for country codes
+$background-color: #81C784;  // Light green background for the body
+$table-bg-color: white;  // Table's white background for contrast
+
+.analytics {
+  background-color: $table-bg-color;
+  border-radius: 8px;
+  padding: 20px;
+  width: 80%;
+  max-width: 1200px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+  h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 16px;
+
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: $primary-color;
+      color: white;
+    }
+
+    tr:hover {
+      background-color: $hover-color;
+    }
+  }
+
+  .count-cell {
+    text-align: center;
+    font-weight: bold;
+    color: $accent-color;
+  }
+
+  .country-cell {
+    text-align: center;
+    font-weight: bold;
+    color: $highlight-color;
+  }
+
+  .ip-cell {
+    text-align: center;
+    color: #555;
+  }
+
+  .url-cell {
+    text-align: left;
+    color: #555;
+  }
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: $background-color;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+

@@ -8,12 +8,12 @@ use yew::{function_component, Html};
 
 fn to_html(analytics: &Analytics) -> Html {
     html! {
-                <p>
-                    { &analytics.ip_address }
-                    { &analytics.path }
-                    { &analytics.iso_code }
-                    { &analytics.count }
-                </p>
+        <tr>
+            <th class="ip-cell">{ &analytics.ip_address }</th>
+            <th class="path-cell">{ &analytics.path }</th>
+            <th class="country-cell">{ &analytics.iso_code }</th>
+            <th class="count-cell">{ &analytics.count }</th>
+        </tr>
     }
 }
 
@@ -31,7 +31,17 @@ fn analytics_content() -> HtmlResult {
             let analytics: Html = res.iter().map(to_html).collect();
             Ok(html! {
                 <div class="analytics">
-                    { analytics }
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>{"IP Address"}</th>
+                                <th>{"URL Path"}</th>
+                                <th>{"Country"}</th>
+                                <th>{"Count"}</th>
+                            </tr>
+                        </thead>
+                        { analytics }
+                    </table>
                 </div>
             })
         }
