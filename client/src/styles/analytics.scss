@@ -1,0 +1,303 @@
+// Analytics Dashboard Styling
+// Inspired by Linear, Notion, and Stripe's design systems
+
+.analytics {
+  --chart-accent: #ff458a;
+  --chart-accent-alpha: rgba(255, 69, 138, 0.3);
+  --surface-raised: rgba(255, 255, 255, 0.07);
+  --surface-raised-hover: rgba(255, 255, 255, 0.09);
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --text-primary: rgba(255, 255, 255, 0.9);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  
+  padding: 1.5rem;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.1) 100%);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+}
+
+.analytics-charts {
+  display: grid;
+  gap: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.analytics-charts-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.analytics-chart-container {
+  position: relative;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 1.25rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom right,
+      rgba(255, 255, 255, 0.03),
+      transparent
+    );
+    pointer-events: none;
+  }
+
+  &:hover {
+    background: var(--surface-raised-hover);
+    transform: translateY(-1px);
+    box-shadow: 
+      0 4px 24px -6px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+}
+
+.analytics-chart-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text-secondary);
+  margin: 0 0 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-subtle);
+  }
+}
+
+.analytics-chart {
+  width: 100%;
+  height: auto;
+  min-height: 200px;
+
+  .analytics-chart-label {
+    fill: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 450;
+    letter-spacing: -0.01em;
+  }
+
+  .analytics-chart-value {
+    fill: var(--text-primary);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+  }
+
+  .analytics-grid-line {
+    stroke: var(--border-subtle);
+    stroke-width: 1;
+    stroke-dasharray: 4 4;
+  }
+
+  .analytics-data-point {
+    fill: var(--chart-accent);
+    r: 3;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 1px 2px var(--chart-accent-alpha));
+
+    &:hover {
+      r: 5;
+      filter: drop-shadow(0 2px 4px var(--chart-accent-alpha));
+    }
+  }
+
+  .analytics-trend-line {
+    stroke: var(--chart-accent);
+    stroke-width: 1.5;
+    fill: none;
+    filter: drop-shadow(0 1px 4px var(--chart-accent-alpha));
+  }
+}
+
+.analytics-pages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.analytics-page-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--surface-raised);
+  border-radius: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+
+  &:hover {
+    background: var(--surface-raised-hover);
+    border-color: var(--border-subtle);
+    transform: translateX(4px);
+  }
+}
+
+.analytics-page-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-right: 0.75rem;
+  background: var(--chart-accent);
+  color: white;
+  box-shadow: 0 2px 4px var(--chart-accent-alpha);
+}
+
+.analytics-page-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.analytics-page-path {
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  font-weight: 450;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.analytics-page-visits {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 450;
+}
+
+.no-data {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 160px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 450;
+  background: var(--surface-raised);
+  border-radius: 8px;
+  border: 1px dashed var(--border-subtle);
+}
+
+.ascii-globe {
+  position: relative;
+  margin: 2rem auto;
+  max-width: 600px;
+  
+  .globe-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    padding: 1.5rem;
+    background: var(--surface-raised);
+    border-radius: 12px;
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom right,
+        rgba(255, 255, 255, 0.03),
+        transparent
+      );
+      pointer-events: none;
+    }
+  }
+  
+  .globe-text {
+    font-family: "SF Mono", Menlo, Monaco, Consolas, monospace;
+    color: var(--text-secondary);
+    line-height: 1;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    font-size: 11px;
+    letter-spacing: 0;
+    white-space: pre;
+    transform: scale(1.2);
+    transform-origin: center;
+  }
+  
+  .visitor-dot {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+    
+    .visitor-pulse {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      background: inherit;
+      opacity: 0.2;
+      animation: pulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+    
+    &.active .visitor-pulse {
+      animation-duration: 1.5s;
+    }
+  }
+  
+  .globe-legend {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1rem;
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      
+      &.active .dot {
+        background: var(--chart-accent);
+      }
+      
+      &.recent .dot {
+        background: #7b5fff;
+      }
+    }
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scale(2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+} 
