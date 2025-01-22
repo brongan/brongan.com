@@ -64,13 +64,31 @@ body {
   color: $text-primary;
 }
 
+// Combined Analytics Dashboard Styling
+// Pride-inspired color palette with dark mode support
+
+:root {
+  // Light mode variables
+  --chart-accent: #{$accent-primary};
+  --chart-accent-alpha: rgba(255, 69, 138, 0.3);
+  --surface-raised: #{$bg-secondary};
+  --surface-raised-hover: #{$hover-color};
+  --border-subtle: #{$border-color};
+  --text-primary: #{$text-primary};
+  --text-secondary: #{$text-secondary};
+  --button-primary: var(--chart-accent);
+  --button-secondary: rgba(255, 69, 138, 0.1);
+  --button-hover: rgba(255, 69, 138, 0.15);
+  --shadow-sm: #{$shadow-sm};
+  --shadow-md: #{$shadow-md};
+  --shadow-lg: #{$shadow-lg};
+}
+
 .analytics {
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--surface-raised);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 
-    0 8px 32px rgba(123, 95, 255, 0.1),
-    0 2px 8px rgba(255, 69, 138, 0.1);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-md);
   border-radius: 16px;
   padding: 2rem;
   width: 95%;
@@ -99,7 +117,7 @@ body {
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
     opacity: 1;
-    box-shadow: 0 2px 12px rgba(255, 69, 138, 0.3);
+    box-shadow: 0 2px 12px var(--chart-accent-alpha);
   }
 
   .header {
@@ -142,6 +160,18 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.9);
     box-shadow: $shadow-sm;
 
+    .search-filter-group {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+
+      .search-group {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+    }
+
     .filter-group {
       display: flex;
       gap: 1rem;
@@ -152,60 +182,94 @@ body {
         color: $text-secondary;
         font-weight: 500;
       }
+    }
 
-      select, input {
-        padding: 0.5rem 0.75rem;
-        border-radius: 6px;
-        border: 1px solid rgba(255, 69, 138, 0.2);
-        background: rgba(255, 255, 255, 0.9);
-        color: $text-primary;
-        font-size: 0.875rem;
-        outline: none;
-        transition: all 0.2s ease;
+    select, input {
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 69, 138, 0.2);
+      background: rgba(255, 255, 255, 0.9);
+      color: $text-primary;
+      font-size: 0.875rem;
+      outline: none;
+      transition: all 0.2s ease;
 
-        &:focus {
-          border-color: $accent-primary;
-          box-shadow: 0 0 0 3px rgba(255, 69, 138, 0.15);
-        }
+      &:focus {
+        border-color: $accent-primary;
+        box-shadow: 0 0 0 3px rgba(255, 69, 138, 0.15);
       }
+
+      &:hover {
+        border-color: $accent-primary;
+        background: linear-gradient(135deg,
+          rgba(255, 69, 138, 0.05),
+          rgba(123, 95, 255, 0.05)
+        );
+      }
+    }
+
+    .view-controls {
+      display: flex;
+      gap: 1rem;
+      margin-left: auto;
+      align-items: center;
     }
 
     .view-toggle {
       display: flex;
       gap: 0.5rem;
-      margin-left: auto;
+    }
 
-      button {
-        padding: 0.5rem 0.75rem;
-        border-radius: 6px;
-        border: 1px solid rgba(255, 69, 138, 0.2);
-        background: rgba(255, 255, 255, 0.9);
-        color: $text-secondary;
-        font-size: 0.875rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
+    button {
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 69, 138, 0.2);
+      background: rgba(255, 255, 255, 0.9);
+      color: $text-secondary;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
 
-        &.active {
-          background: linear-gradient(135deg,
-            $accent-primary,
-            $accent-secondary
-          );
-          border: none;
-          color: white;
-          box-shadow: $shadow-sm;
-          
-          &:hover {
-            transform: translateY(-1px);
-          }
+      &.active {
+        background: linear-gradient(135deg,
+          $accent-primary,
+          $accent-secondary
+        );
+        border: none;
+        color: white;
+        box-shadow: $shadow-sm;
+        
+        &:hover {
+          transform: translateY(-1px);
         }
+      }
 
-        &:hover:not(.active) {
-          background: linear-gradient(135deg,
-            rgba(255, 69, 138, 0.1),
-            rgba(123, 95, 255, 0.1)
-          );
-          border-color: $accent-primary;
-        }
+      &:hover:not(.active) {
+        background: linear-gradient(135deg,
+          rgba(255, 69, 138, 0.1),
+          rgba(123, 95, 255, 0.1)
+        );
+        border-color: $accent-primary;
+      }
+    }
+
+    .export-button {
+      background: linear-gradient(135deg,
+        rgba(255, 69, 138, 0.1),
+        rgba(123, 95, 255, 0.1)
+      );
+      border: 1px solid $accent-primary;
+      color: $accent-primary;
+      font-weight: 500;
+
+      &:hover {
+        background: linear-gradient(135deg,
+          $accent-primary,
+          $accent-secondary
+        );
+        color: white;
+        transform: translateY(-1px);
       }
     }
   }
@@ -281,6 +345,38 @@ body {
         rgba(123, 95, 255, 0.08)
       );
       border-bottom: 2px solid rgba(255, 69, 138, 0.2);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: linear-gradient(135deg,
+          rgba(255, 69, 138, 0.12),
+          rgba(123, 95, 255, 0.12)
+        );
+      }
+
+      &.active {
+        background: linear-gradient(135deg,
+          rgba(255, 69, 138, 0.15),
+          rgba(123, 95, 255, 0.15)
+        );
+        
+        .sort-header {
+          color: $accent-primary;
+        }
+      }
+
+      .sort-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        
+        .sort-indicator {
+          font-size: 0.875rem;
+          opacity: 0.8;
+        }
+      }
     }
 
     tbody tr {
@@ -348,6 +444,60 @@ body {
       font-weight: 600;
       min-width: 1.5rem;
       text-align: center;
+    }
+  }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: linear-gradient(135deg,
+      rgba(255, 27, 141, 0.05),
+      rgba(123, 95, 255, 0.05)
+    );
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: $shadow-sm;
+
+    .pagination-button {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 69, 138, 0.2);
+      background: rgba(255, 255, 255, 0.9);
+      color: $text-secondary;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+
+      &:hover:not(:disabled) {
+        background: linear-gradient(135deg,
+          rgba(255, 69, 138, 0.1),
+          rgba(123, 95, 255, 0.1)
+        );
+        border-color: $accent-primary;
+        transform: translateY(-1px);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: rgba(255, 255, 255, 0.5);
+      }
+    }
+
+    .page-info {
+      font-size: 0.875rem;
+      color: $text-secondary;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 6px;
+      border: 1px solid rgba(255, 69, 138, 0.1);
     }
   }
 }
@@ -442,6 +592,185 @@ body {
   }
   100% {
     background-position: 0% 50%;
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% { 
+    background-position: 0% 50%;
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% { 
+    background-position: 100% 50%;
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pride-shimmer {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+
+.sparkle {
+  position: absolute;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    #{nth($pride-colors, 1)},
+    #{nth($pride-colors, 2)},
+    #{nth($pride-colors, 3)},
+    #{nth($pride-colors, 4)},
+    #{nth($pride-colors, 5)},
+    #{nth($pride-colors, 6)}
+  );
+  border-radius: 50%;
+  mix-blend-mode: screen;
+}
+
+@mixin pride-hover {
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    right: -50%;
+    bottom: -50%;
+    background: linear-gradient(
+      90deg,
+      #{nth($pride-colors, 1)} 0%,
+      #{nth($pride-colors, 2)} 20%,
+      #{nth($pride-colors, 3)} 40%,
+      #{nth($pride-colors, 4)} 60%,
+      #{nth($pride-colors, 5)} 80%,
+      #{nth($pride-colors, 6)} 100%
+    );
+    background-size: 200% 200%;
+    mix-blend-mode: screen;
+    opacity: 0;
+    transform: rotate(25deg);
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover::after {
+    opacity: 0.15;
+    animation: pride-shimmer 3s linear infinite;
+  }
+}
+
+// Apply pride hover effect to buttons
+button {
+  @include pride-hover;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 0 20px rgba(255, 69, 138, 0.2),
+      0 0 40px rgba(123, 95, 255, 0.1);
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      background: linear-gradient(
+        90deg,
+        #{nth($pride-colors, 1)},
+        #{nth($pride-colors, 2)},
+        #{nth($pride-colors, 3)},
+        #{nth($pride-colors, 4)},
+        #{nth($pride-colors, 5)},
+        #{nth($pride-colors, 6)}
+      );
+      background-size: 200% 200%;
+      border-radius: 8px;
+      z-index: -1;
+      animation: pride-shimmer 3s linear infinite;
+      opacity: 0.5;
+      filter: blur(8px);
+    }
+  }
+}
+
+// Apply to table headers
+th {
+  @include pride-hover;
+
+  &.active {
+    &::after {
+      opacity: 0.2;
+    }
+  }
+}
+
+// Apply to pagination
+.pagination {
+  .pagination-button {
+    &:not(:disabled) {
+      @include pride-hover;
+    }
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 
+        0 0 20px rgba(255, 69, 138, 0.2),
+        0 0 40px rgba(123, 95, 255, 0.1);
+    }
+  }
+
+  .page-info {
+    @include pride-hover;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 
+        0 0 20px rgba(255, 69, 138, 0.1),
+        0 0 40px rgba(123, 95, 255, 0.05);
+    }
+  }
+}
+
+// Apply to table rows
+tbody tr {
+  @include pride-hover;
+
+  &:hover {
+    td {
+      position: relative;
+      z-index: 1;
+    }
+  }
+}
+
+// Apply to search and filter inputs
+input, select {
+  @include pride-hover;
+
+  &:focus {
+    box-shadow: 
+      0 0 0 3px rgba(255, 69, 138, 0.15),
+      0 0 20px rgba(123, 95, 255, 0.1);
+  }
+}
+
+// Enhance the export button
+.export-button {
+  &:hover {
+    box-shadow: 
+      0 0 20px rgba(255, 69, 138, 0.3),
+      0 0 40px rgba(123, 95, 255, 0.2);
+    
+    &::before {
+      opacity: 0.8;
+    }
   }
 }
 
