@@ -123,11 +123,8 @@ async fn main() {
     info!("Creating Sentry and Honeyguard Hooks.");
     let _sentry = std::env::var("SENTRY_DSN").map(sentry_guard);
 
-    let _ = std::env::var("HONEYCOMB_API_KEY").map(|key| new_pipeline(
-            key,
-        "catscii".into(),
-    )
-    .install());
+    let _ =
+        std::env::var("HONEYCOMB_API_KEY").map(|key| new_pipeline(key, "catscii".into()).install());
 
     let filter = Targets::from_str(std::env::var("RUST_LOG").as_deref().unwrap_or("info"))
         .expect("RUST_LOG should be a valid tracing filter");

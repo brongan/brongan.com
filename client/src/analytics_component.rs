@@ -202,7 +202,7 @@ fn ascii_globe(props: &AsciiGlobeProps) -> Html {
                     // Use correct character size (4x8) for iteration
                     for i in 0..size_y / 8 {
                         for j in 0..size_x / 4 {
-                            globe_str.push_str(&canvas.matrix[i][j].to_string());
+                            globe_str.push(canvas.matrix[i][j]);
                         }
                         globe_str.push('\n');
                     }
@@ -246,7 +246,7 @@ fn ascii_globe(props: &AsciiGlobeProps) -> Html {
             {
                 // Adjust x position based on rotation
                 x = (x + *rotation * 20.0) % 100.0;
-                if x < 20.0 || x > 80.0 {
+                if !(20.0..=80.0).contains(&x) {
                     return html! {}; // Don't show dots on the "back" of the globe
                 }
 
@@ -262,7 +262,7 @@ fn ascii_globe(props: &AsciiGlobeProps) -> Html {
                     y,
                     background,
                     // Fade dots near the edges
-                    if x < 30.0 || x > 70.0 { 0.5 } else { 1.0 }
+                    if !(30.0..=70.0).contains(&x) { 0.5 } else { 1.0 }
                 );
 
                 html! {
@@ -320,7 +320,7 @@ fn analytics_content() -> HtmlResult {
                 .iter()
                 .filter(|a| {
                     let country_match =
-                        country_filter.is_empty() || &a.iso_code == &*country_filter;
+                        country_filter.is_empty() || a.iso_code == *country_filter;
                     let search_match = search_filter.is_empty()
                         || a.ip_address
                             .to_lowercase()
@@ -344,10 +344,10 @@ fn analytics_content() -> HtmlResult {
                 [start_idx.min(filtered_data.len())..end_idx.min(filtered_data.len())]
                 .to_vec();
 
-            let analytics_table = paginated_data.iter().map(|a| to_html(a)).collect::<Html>();
+            let analytics_table = paginated_data.iter().map(to_html).collect::<Html>();
 
             let sort_header = |field: SortField, label: &str| {
-                let is_active = &field == &*sort_field;
+                let is_active = field == *sort_field;
                 let direction = if is_active {
                     match *sort_direction {
                         SortDirection::Ascending => "↑",
@@ -362,7 +362,7 @@ fn analytics_content() -> HtmlResult {
                     let sort_direction = sort_direction.clone();
                     let field = field.clone();
                     Callback::from(move |_| {
-                        if &field == &*sort_field {
+                        if field == *sort_field {
                             sort_direction.set(match *sort_direction {
                                 SortDirection::Ascending => SortDirection::Descending,
                                 SortDirection::Descending => SortDirection::Ascending,
