@@ -38,13 +38,7 @@ www.brongan.com/mandelbrot
 
 #### Development Setup
 
-1. **Prerequisites**
-
-   - Rust toolchain
-   - [Just](https://github.com/casey/just) command runner
-   - [Trunk](https://trunkrs.dev/) and [wasm-pack](https://rustwasm.github.io/wasm-pack/) (will be automatically installed if missing)
-
-2. **Available Commands**
+1. **Available Commands**
 
    ```bash
    # List all available commands
@@ -72,11 +66,9 @@ www.brongan.com/mandelbrot
    just deploy
    ```
 
-3. **Development Environment Variables**
+2. **Development Environment Variables**
    Create a `.env` file in the root directory with:
 
    ```
    ANALYTICS_DB=path/to/your/local/analytics.db
    ```
-
-Note: The project uses workspace-level optimization settings for release builds, including link-time optimization and size optimization.
