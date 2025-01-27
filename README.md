@@ -43,27 +43,6 @@ www.brongan.com/mandelbrot
    ```bash
    # List all available commands
    just
-
-   # Start both frontend and backend servers with hot reload
-   just develop
-
-   # Build all packages
-   just build
-
-   # Format code and run linters
-   just format
-
-   # Run server locally with cargo
-   just local-run
-
-   # Build and run container
-   just container-run
-
-   # Run all checks before committing
-   just precommit
-
-   # Deploy to fly.io
-   just deploy
    ```
 
 2. **Development Environment Variables**
