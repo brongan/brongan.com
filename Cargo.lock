@@ -715,13 +715,16 @@ name = "client"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "colorous",
  "fixedbitset",
  "getrandom 0.2.15",
+ "globe",
  "gloo-events",
  "gloo-net 0.2.6",
  "gloo-timers 0.2.6",
  "image",
  "imageproc",
+ "itertools 0.12.1",
  "js-sys",
  "log",
  "nom",
@@ -788,6 +791,12 @@ dependencies = [
  "lazy_static",
  "windows-sys 0.59.0",
 ]
+
+[[package]]
+name = "colorous"
+version = "1.0.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b86f9fcf921b9f3be5b805d55ebe0184b24144bf8dbe2110c7920006836cf90"
 
 [[package]]
 name = "concurrent-queue"
@@ -1224,6 +1233,12 @@ name = "gimli"
 version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4271d37baee1b8c7e4b708028c57d816cf9d2434acb33a549475f78c181f6253"
+
+[[package]]
+name = "globe"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eece55abe8d42f0a4a2b68146415364c5063bc278cd6e7ffd2790e1ce018666a"
 
 [[package]]
 name = "gloo"
@@ -1831,7 +1846,7 @@ dependencies = [
  "approx",
  "conv",
  "image",
- "itertools",
+ "itertools 0.10.5",
  "nalgebra",
  "num",
  "rand 0.7.3",
@@ -1922,6 +1937,15 @@ name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
 dependencies = [
  "either",
 ]

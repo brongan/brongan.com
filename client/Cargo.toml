@@ -5,13 +5,16 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
+colorous = "1.0"
 fixedbitset = "0.4"
 getrandom = { version = "0.2", features = ["js"] }
+globe = "0.2.0"
 gloo-events = "0.1"
 gloo-net = "0.2"
 gloo-timers = "0.2"
 image = "0.24"
 imageproc = "0.23"
+itertools = "0.12"
 js-sys = "0.3"
 log = "0.4"
 nom = "7.0"
@@ -39,6 +42,7 @@ features = [
   'FormData',
   'HtmlCanvasElement',
   'HtmlFormElement',
+  'HtmlSelectElement',
   'ImageData',
   'Request',
   'SubmitEvent',
@@ -49,4 +53,3 @@ features = [
   'WebGlTexture',
   'WebGlUniformLocation',
 ]
-
