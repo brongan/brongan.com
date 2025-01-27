@@ -11,6 +11,7 @@ use yew::Suspense;
 use yew::{
     function_component, use_effect_with_deps, use_node_ref, use_state, Callback, Html, Properties,
 };
+use itertools::Itertools;
 
 fn format_count(count: &i32) -> Html {
     html! {
@@ -337,7 +338,7 @@ fn analytics_content() -> HtmlResult {
             sort_analytics(&mut filtered_data, &sort_field, &sort_direction);
 
             // Calculate pagination
-            let total_pages = (filtered_data.len() as f32 / items_per_page as f32).ceil() as usize;
+            let total_pages = (filtered_data.len() + (items_per_page - 1))/items_per_page;
             let start_idx = ((*current_page - 1) * items_per_page) as usize;
             let end_idx = start_idx + items_per_page;
             let paginated_data = filtered_data
@@ -480,14 +481,11 @@ fn analytics_content() -> HtmlResult {
 
 // Function to convert analytics data to CSV
 fn export_to_csv(data: &[Analytics]) -> String {
-    let mut csv = String::from("IP Address,Path,Country,Visits\n");
-    for analytics in data {
-        csv.push_str(&format!(
-            "{},{},{},{}\n",
-            analytics.ip_address, analytics.path, analytics.iso_code, analytics.count
-        ));
-    }
-    csv
+    let mut result = String::from("IP Address,Path,Country,Visits\n");
+    result.push_str(&data.iter()
+        .map(|a| format!("{},{},{},{}", a.ip_address, a.path, a.iso_code, a.count))
+        .join("\n"));
+    result
 }
 
 // Function to trigger CSV download
