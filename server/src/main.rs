@@ -1,67 +1,39 @@
-mod analytics;
-mod catscii;
-mod locat;
-mod mandelbrot;
-
-use crate::mandelbrot::mandelbrot_get;
-use analytics::{analytics_get, record_analytics};
-use anyhow::Result;
-use artem::util::fatal_error;
-use axum::body::{boxed, Body};
-use axum::extract::Host;
-use axum::handler::HandlerWithoutStateExt;
-use axum::http::{Response as HttpResponse, StatusCode};
-use axum::middleware;
-use axum::response::{Redirect, Response};
-use axum::routing::get;
-use axum::Router;
+use analytics::record_analytics;
+use app::*;
+use axum::{
+    extract::Host,
+    handler::HandlerWithoutStateExt,
+    http::{uri::Scheme, Uri},
+    middleware,
+    response::Redirect,
+    serve, Router,
+};
 use axum_server::tls_rustls::RustlsConfig;
-use catscii::catscii_get;
 use clap::Parser;
-use hyper::http::uri::Scheme;
-use hyper::Uri;
-use locat::Locat;
+use leptos::prelude::*;
+use leptos_axum::{generate_route_list, LeptosRoutes};
 use opentelemetry_honeycomb::new_pipeline;
+use reqwest::StatusCode;
 use sentry::ClientInitGuard;
-use std::net::{IpAddr, Ipv6Addr, SocketAddr};
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-use std::sync::Arc;
-use tokio::fs::read_to_string;
-use tower::ServiceExt;
-use tower_http::services::ServeDir;
-use tracing::{error, info, warn, Level};
-use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::SubscriberInitExt};
+use state::{create_server_state, ServerState};
+use std::{
+    net::SocketAddr,
+    path::{Path, PathBuf},
+};
+use tokio::net::TcpListener;
+use tracing::{info, warn, Level};
+use tracing_subscriber::{filter, prelude::*};
+
+mod analytics;
+mod fileserv;
 
 #[derive(Parser, Debug)]
 #[clap(name = "server", about = "My server")]
 struct Opt {
-    #[clap(long, default_value = "client/dist")]
-    static_dir: String,
-    #[clap(long)]
-    addr: Option<String>,
-    #[clap(long, default_value = "8080")]
-    port: u16,
     #[clap(long)]
     ssl_port: Option<u16>,
     #[clap(long)]
     cert_dir: Option<String>,
-}
-
-#[derive(Clone, Debug)]
-pub struct ServerState {
-    client: reqwest::Client,
-    locat: Arc<Locat>,
-}
-
-async fn create_server_state() -> Result<ServerState> {
-    let country_db_dev_path = "db/GeoLite2-Country.mmdb".to_string();
-    let country_db_path = std::env::var("GEOLITE2_COUNTRY_DB").unwrap_or(country_db_dev_path);
-    let db = std::env::var("DB").unwrap_or("db/sqlite.db".to_string());
-    Ok(ServerState {
-        locat: Arc::new(Locat::new(&country_db_path, db).await?),
-        client: Default::default(),
-    })
 }
 
 fn sentry_guard(dsn: String) -> ClientInitGuard {
@@ -72,6 +44,82 @@ fn sentry_guard(dsn: String) -> ClientInitGuard {
             ..Default::default()
         },
     ))
+}
+
+#[tokio::main]
+async fn main() {
+    info!("Starting brongan.com");
+    let conf = get_configuration(None).unwrap();
+    let addr = conf.leptos_options.site_addr;
+    let leptos_options = conf.leptos_options;
+    let routes = generate_route_list(App);
+    info!("Creating Server State with options: {leptos_options:?}");
+    let app_state = create_server_state(leptos_options.clone(), routes.clone())
+        .await
+        .expect("Set GEOLITE2_COUNTRY_DB and DB");
+
+    let opt = Opt::parse();
+    let _sentry = std::env::var("SENTRY_DSN").map(sentry_guard);
+    let (_honeyguard, _tracer) = new_pipeline(
+        std::env::var("HONEYCOMB_API_KEY").expect("$HONEYCOMB_API_KEY should be set"),
+        "catscii".into(),
+    )
+    .install()
+    .unwrap();
+
+    let filter = filter::Targets::new().with_target("brongan.com", Level::INFO);
+    tracing_subscriber::fmt()
+        .with_max_level(Level::TRACE)
+        .json()
+        .finish()
+        .with(filter)
+        .init();
+
+    let app = Router::new()
+        .leptos_routes_with_context(
+            &app_state,
+            routes,
+            {
+                let app_state = app_state.clone();
+                move || {
+                    provide_context(app_state.locat.clone());
+                    provide_context(app_state.client.clone());
+                }
+            },
+            move || shell(leptos_options.clone()),
+        )
+        .fallback(leptos_axum::file_and_error_handler::<ServerState, AnyView>(
+            shell,
+        ))
+        .layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            record_analytics,
+        ))
+        .with_state(app_state);
+
+    if let (Some(ssl_port), Some(cert_dir)) = (opt.ssl_port, opt.cert_dir) {
+        let https_addr = SocketAddr::from((addr.ip(), ssl_port));
+        info!("Binding handlers to sockets: ({addr}, {https_addr})",);
+        tokio::spawn(redirect_http_to_https(addr, https_addr));
+        info!("HTTPS listening at: {https_addr}");
+        axum_server::bind_rustls(https_addr, rustls_config(&PathBuf::from(&cert_dir)).await)
+            .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+            .await
+            .unwrap();
+    } else {
+        info!("Binding handler to socket: {}", addr);
+        let quit_sig = async {
+            _ = tokio::signal::ctrl_c().await;
+            warn!("Initiating graceful shutdown");
+        };
+        serve(
+            TcpListener::bind(addr).await.unwrap(),
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .with_graceful_shutdown(quit_sig)
+        .await
+        .unwrap();
+    }
 }
 
 async fn rustls_config(cert_dir: &Path) -> RustlsConfig {
@@ -113,102 +161,4 @@ async fn redirect_http_to_https(http: SocketAddr, https: SocketAddr) {
         .serve(redirect.into_make_service())
         .await
         .unwrap();
-}
-
-#[tokio::main]
-async fn main() {
-    info!("Starting brongan.com");
-    let opt = Opt::parse();
-    info!("Options: {opt:?}");
-    info!("Creating Sentry and Honeyguard Hooks.");
-    let _sentry = std::env::var("SENTRY_DSN").map(sentry_guard);
-
-    let _ = std::env::var("HONEYCOMB_API_KEY").map(|key| new_pipeline(
-            key,
-        "catscii".into(),
-    )
-    .install());
-
-    let filter = Targets::from_str(std::env::var("RUST_LOG").as_deref().unwrap_or("info"))
-        .expect("RUST_LOG should be a valid tracing filter");
-    tracing_subscriber::fmt()
-        .with_max_level(Level::TRACE)
-        .json()
-        .finish()
-        .with(filter)
-        .init();
-    info!("Creating Server State.");
-    let server_state = match create_server_state().await {
-        Ok(state) => state,
-        Err(e) => {
-            error!("{e}");
-            fatal_error("TERMINATING. Failed to get initial server state.", None);
-        }
-    };
-
-    let addr = if let Some(ip) = &opt.addr {
-        IpAddr::from_str(ip).unwrap()
-    } else {
-        IpAddr::V6(Ipv6Addr::LOCALHOST)
-    };
-
-    info!("Creating Router.");
-    let static_dir = PathBuf::from(&opt.static_dir);
-    let index_path = static_dir.join("index.html");
-    let index = match read_to_string(&index_path).await {
-        Ok(index) => index,
-        Err(err) => panic!("Failed to read index at {}: {err}", index_path.display()),
-    };
-    let api = Router::new()
-        .route("/catscii", get(catscii_get))
-        .route("/mandelbrot", get(mandelbrot_get))
-        .route("/analytics", get(analytics_get));
-    let app = Router::new()
-        .nest("/api", api)
-        .with_state(server_state.clone())
-        .fallback(get(|req| async move {
-            match ServeDir::new(static_dir).oneshot(req).await {
-                Ok(res) => {
-                    let status = res.status();
-                    match status {
-                        StatusCode::NOT_FOUND => HttpResponse::builder()
-                            .status(StatusCode::OK)
-                            .body(boxed(Body::from(index)))
-                            .unwrap(),
-                        _ => res.map(boxed),
-                    }
-                }
-                Err(err) => Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(boxed(Body::from(format!("error: {err}"))))
-                    .unwrap(),
-            }
-        }))
-        .layer(middleware::from_fn_with_state(
-            server_state,
-            record_analytics,
-        ));
-
-    let http_addr = SocketAddr::from((addr, opt.port));
-    if let (Some(ssl_port), Some(cert_dir)) = (opt.ssl_port, opt.cert_dir) {
-        let https_addr = SocketAddr::from((addr, ssl_port));
-        info!("Binding handlers to sockets: ({http_addr}, {https_addr})",);
-        tokio::spawn(redirect_http_to_https(http_addr, https_addr));
-        info!("HTTPS listening at: {https_addr}");
-        axum_server::bind_rustls(https_addr, rustls_config(&PathBuf::from(&cert_dir)).await)
-            .serve(app.into_make_service_with_connect_info::<SocketAddr>())
-            .await
-            .unwrap();
-    } else {
-        info!("Binding handler to socket: {}", http_addr);
-        let quit_sig = async {
-            _ = tokio::signal::ctrl_c().await;
-            warn!("Initiating graceful shutdown");
-        };
-        axum::Server::bind(&http_addr)
-            .serve(app.into_make_service_with_connect_info::<SocketAddr>())
-            .with_graceful_shutdown(quit_sig)
-            .await
-            .unwrap();
-    }
 }

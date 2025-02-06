@@ -27,10 +27,10 @@
             pkgs.pkgsStatic.stdenv;
         };
         inherit (pkgs) lib;
-        wasmToolchain = pkgs.rust-bin.stable.latest.default.override {
+        wasmToolchain = pkgs.rust-bin.nightly.latest.default.override {
           targets = [ "wasm32-unknown-unknown" ];
         };
-        nativeToolchain = pkgs.rust-bin.stable.latest.default.override {
+        nativeToolchain = pkgs.rust-bin.nightly.latest.default.override {
           targets = [ "x86_64-unknown-linux-musl" ];
         };
         wasmCraneLib = ((crane.mkLib pkgs).overrideToolchain wasmToolchain);
@@ -66,17 +66,17 @@
           CLIENT_DIST = myClient;
         });
         wasmArgs = commonArgs // {
-          pname = "client";
-          cargoExtraArgs = "--package=client";
+          pname = "frontend";
+          cargoExtraArgs = "--package=frontend";
           CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
         };
         cargoArtifactsWasm = wasmCraneLib.buildDepsOnly (wasmArgs // {
           doCheck = false;
         });
         myClient = wasmCraneLib.buildTrunkPackage (wasmArgs // {
-          pname = "brongan-com-client";
+          pname = "brongan-com-frontend";
           cargoArtifacts = cargoArtifactsWasm;
-          trunkIndexPath = "client/index.html";
+          # trunkIndexPath = "client/index.html";
           inherit (import nixpkgs-for-wasm-bindgen { inherit system; }) wasm-bindgen-cli;
         });
         dockerImage = pkgs.dockerTools.streamLayeredImage {

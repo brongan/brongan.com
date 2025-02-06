@@ -1,5 +1,0 @@
-[build]
-target = "client/index.html"
-watch = ["client"]
-dist = "client/dist/"
-

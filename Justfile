@@ -21,7 +21,7 @@ run:
 
 # run server with cargo
 local-run: build
-	cargo run --bin server -- --port 8081 --ssl-port 8443 --static-dir client/dist --cert-dir cert
+	cargo leptos serve
 
 # linters!
 format:
@@ -38,5 +38,5 @@ deploy: container
 
 # hotreload backend and frontend
 develop:
-	./develop.sh
+	cargo leptos watch
 

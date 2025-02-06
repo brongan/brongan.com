@@ -1,17 +1,12 @@
-use crate::ServerState;
+use app::state::ServerState;
 use axum::{
-    body::BoxBody,
+    body::Body,
     extract::{ConnectInfo, State},
-    http::Request,
+    http::{HeaderMap, Request},
     middleware::Next,
-    response::{IntoResponse, Response},
+    response::Response,
 };
-use hyper::{header::ACCEPT, HeaderMap};
-use opentelemetry::{
-    global,
-    trace::{get_active_span, FutureExt, TraceContextExt, Tracer},
-    Context, KeyValue,
-};
+use opentelemetry::{trace::get_active_span, KeyValue};
 use std::net::{IpAddr, SocketAddr};
 use std::path::Path;
 use tracing::{info, warn};
@@ -23,54 +18,30 @@ fn get_fly_client_addr(headers: &HeaderMap) -> Option<IpAddr> {
     Some(addr)
 }
 
-pub async fn analytics_get(
-    headers: HeaderMap,
-    State(state): State<ServerState>,
-) -> Response<BoxBody> {
-    let tracer = global::tracer("");
-    let span = tracer.start("analytics_get");
-    let analytics = state
-        .locat
-        .get_analytics()
-        .with_context(Context::current_with_span(span))
-        .await
-        .unwrap();
-    if let Some(content_type) = headers.get(ACCEPT) {
-        if content_type == "*/*" {
-            return serde_json::to_string(&analytics).unwrap().into_response();
-        }
-    }
-    analytics
-        .iter()
-        .map(|analytics| analytics.to_string())
-        .collect::<Vec<String>>()
-        .join("\n")
-        .into_response()
-}
-
-pub async fn record_analytics<B>(
+pub async fn record_analytics(
     State(state): State<ServerState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
-    request: Request<B>,
-    next: Next<B>,
+    request: Request<Body>,
+    next: Next,
 ) -> Response {
     if request.uri().path() == "/_trunk/ws" {
         return next.run(request).await;
     }
     let path = Path::new(request.uri().path());
 
-    if let Some("wasm" | "js" | "png" | "jpg" | "vert" | "scss" | "frag" | "css") =
+    if let Some("wasm" | "js" | "png" | "jpg" | "vert" | "scss" | "frag" | "css" | "ico") =
         path.extension().and_then(|os_str| os_str.to_str())
     {
         return next.run(request).await;
     }
 
     let ip = get_fly_client_addr(&headers).unwrap_or(addr.ip());
+
     let iso_code = if ip.is_loopback() {
         "DEV"
     } else {
-        let iso_code = state.locat.get_iso_code(ip).await;
+        let iso_code: anyhow::Result<&str> = state.locat.get_iso_code(ip).await;
         match &iso_code {
             Ok(country) => {
                 info!("Received request from {country}");
@@ -91,7 +62,7 @@ pub async fn record_analytics<B>(
         .record_request(ip, iso_code.to_owned(), request.uri().path().to_owned())
         .await
     {
-        Ok(_) => info!("Recorded request from {ip} for {}", request.uri().path()),
+        Ok(_) => info!("{ip} requested {:?}", request.uri()),
         Err(err) => warn!("Failed to record request from {ip}: {}", err),
     }
 

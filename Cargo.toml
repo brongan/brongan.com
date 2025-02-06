@@ -1,13 +1,121 @@
 [workspace]
-members = [
-  "client",
-  "server",
-  "shared",
-]
 resolver = "2"
+members = ["app", "frontend", "server"]
 
+# need to be applied only to wasm build
 [profile.release]
-debug = 1 # Include enough debug info for sentry to be useful
-opt-level = "z"  # Optimize for size.
-lto = true # Enable link-time optimization
+codegen-units = 1
+lto = true
+opt-level = 'z'
 
+[workspace.dependencies]
+leptos = { version = "0.7.3", features = ["nightly"] }
+leptos_meta = { version = "0.7.3"}
+leptos_router = { version = "0.7.3", features = ["nightly"] }
+leptos_axum = { version = "0.7.3" }
+
+anyhow = "1.0"
+artem = { version = "1.2", default-features = false }
+axum = { version = "0.7", features = ["macros"] }
+base64 = "0.13"
+cfg-if = "1"
+color-eyre = "0.6.2"
+console_error_panic_hook = "0.1.7"
+console_log = "1"
+fixedbitset = "0.4"
+http = "1"
+image = { version = "0.24" }
+imageproc = "0.23"
+log = "0.4.20"
+maxminddb = "0.23.0"
+nom = "7.0"
+num = { version = "0.4", features = ["serde"] }
+opentelemetry = { version = "0.18.0", features = ["rt-tokio"] }
+opentelemetry-honeycomb = { git = "https://github.com/fasterthanlime/opentelemetry-honeycomb-rs", branch = "simplified", version = "0.1.0" }
+rand = "0.8"
+rayon = { version = "1.7.0"}
+reqwest = { version = "0.11", default-features = false, features = ["json","rustls-tls-webpki-roots"]}
+rusqlite = { version = "0.29.0" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+simple_logger = "5.0.0"
+strum = "0.24"
+strum_macros = "0.24"
+thiserror = "2.0.11"
+tokio = { version = "1.33.0", features = ["full"] }
+tokio-rusqlite = { version = "0.4.0" }
+tower = { version = "0.5.2", features = ["full"] }
+tower-http = { version = "0.6.2", features = ["full"] }
+tracing = { version = "0.1" }
+wasm-bindgen = "=0.2.100"
+
+# See https://github.com/akesson/cargo-leptos for documentation of all the parameters.
+
+# A leptos project defines which workspace members
+# that are used together frontend (lib) & server (bin)
+[[workspace.metadata.leptos]]
+# this name is used for the wasm, js and css file names
+name = "start-axum-workspace"
+
+# the package in the workspace that contains the server binary (binary crate)
+bin-package = "server"
+
+# the package in the workspace that contains the frontend wasm binary (library crate)
+lib-package = "frontend"
+
+# The site root folder is where cargo-leptos generate all output. WARNING: all content of this folder will be erased on a rebuild. Use it in your server setup.
+site-root = "target/site"
+
+# The site-root relative folder where all compiled output (JS, WASM and CSS) is written
+# Defaults to pkg
+site-pkg-dir = "pkg"
+
+# [Optional] The source CSS file. If it ends with .sass or .scss then it will be compiled by dart-sass into CSS. The CSS is optimized by Lightning CSS before being written to <site-root>/<site-pkg>/app.css
+style-file = "style/main.scss"
+
+# Assets source dir. All files found here will be copied and synchronized to site-root.
+# The assets-dir cannot have a sub directory with the same name/path as site-pkg-dir.
+#
+# Optional. Env: LEPTOS_ASSETS_DIR.
+assets-dir = "public"
+
+# The IP and port (ex: 127.0.0.1:3000) where the server serves the content. Use it in your server setup.
+site-addr = "0.0.0.0:3000"
+
+# The port to use for automatic reload monitoring
+reload-port = 3001
+
+# [Optional] Command to use when running end2end tests. It will run in the end2end dir.
+#   [Windows] for non-WSL use "npx.cmd playwright test"
+#   This binary name can be checked in Powershell with Get-Command npx
+end2end-cmd = "npx playwright test"
+end2end-dir = "end2end"
+
+#  The browserlist query used for optimizing the CSS.
+browserquery = "defaults"
+
+# Set by cargo-leptos watch when building with that tool. Controls whether autoreload JS will be included in the head
+watch = false
+
+# The environment Leptos will run in, usually either "DEV" or "PROD"
+env = "DEV"
+
+# The features to use when compiling the bin target
+#
+# Optional. Can be over-ridden with the command line parameter --bin-features
+bin-features = []
+
+# If the --no-default-features flag should be used when compiling the bin target
+#
+# Optional. Defaults to false.
+bin-default-features = false
+
+# The features to use when compiling the lib target
+#
+# Optional. Can be over-ridden with the command line parameter --lib-features
+lib-features = []
+
+# If the --no-default-features flag should be used when compiling the lib target
+#
+# Optional. Defaults to false.
+lib-default-features = false
