@@ -43,6 +43,9 @@
             (lib.hasSuffix "\.frag" path) ||
             (lib.hasSuffix "\.vert" path) ||
             (lib.hasSuffix "\.ttf" path) ||
+            (lib.hasSuffix "\.ico" path) ||
+            (lib.hasSuffix "\.png" path) ||
+            (lib.hasSuffix "\.jpg" path) ||
             (lib.hasInfix "/img/" path) ||
             (lib.hasInfix "/resources/" path) ||
             (wasmCraneLib.filterCargoSources path type)
@@ -68,7 +71,7 @@
           CLIENT_DIST = myClient;
         });
         wasmArgs = commonArgs // {
-          pname = "frontend";
+          pname = "brongan_com";
           cargoExtraArgs = "--package=frontend --no-default-features";
           CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
         };
@@ -79,6 +82,10 @@
           pname = "brongan-com-frontend";
           doCheck = false;
           cargoArtifacts = cargoArtifactsWasm;
+		  postBuild = ''
+            mkdir -p $out/dist
+            cp -r ./public/* $out/dist
+          '';
           inherit (import nixpkgs-for-wasm-bindgen { inherit system; }) wasm-bindgen-cli;
         });
         dockerImage = pkgs.dockerTools.streamLayeredImage {
@@ -90,6 +97,7 @@
             Env = with pkgs; [
 				"GEOLITE2_COUNTRY_DB=${dbip-country-lite}/share/dbip/dbip-country-lite.mmdb"
 				"LEPTOS_SITE_ADDR=0.0.0.0:8080"
+				"LEPTOS_SITE_ROOT=/dist/"
 				"LEPTOS_ENV=PROD"
 				"LEPTOS_OUTPUT_NAME=brongan_com"
 				"DB=sqlite.db"
