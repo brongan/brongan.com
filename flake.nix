@@ -42,6 +42,7 @@
             (lib.hasSuffix "\.scss" path) ||
             (lib.hasSuffix "\.frag" path) ||
             (lib.hasSuffix "\.vert" path) ||
+            (lib.hasSuffix "\.ttf" path) ||
             (lib.hasInfix "/img/" path) ||
             (lib.hasInfix "/resources/" path) ||
             (wasmCraneLib.filterCargoSources path type)
@@ -56,6 +57,7 @@
         };
         nativeArgs = commonArgs // {
           pname = "server";
+          cargoExtraArgs = "--package=server --no-default-features";
           CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
           CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
           buildInputs = [ sqliteStatic ];
@@ -67,16 +69,16 @@
         });
         wasmArgs = commonArgs // {
           pname = "frontend";
-          cargoExtraArgs = "--package=frontend";
+          cargoExtraArgs = "--package=frontend --no-default-features";
           CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
         };
         cargoArtifactsWasm = wasmCraneLib.buildDepsOnly (wasmArgs // {
           doCheck = false;
         });
-        myClient = wasmCraneLib.buildTrunkPackage (wasmArgs // {
+        myClient = wasmCraneLib.buildPackage (wasmArgs // {
           pname = "brongan-com-frontend";
+          doCheck = false;
           cargoArtifacts = cargoArtifactsWasm;
-          # trunkIndexPath = "client/index.html";
           inherit (import nixpkgs-for-wasm-bindgen { inherit system; }) wasm-bindgen-cli;
         });
         dockerImage = pkgs.dockerTools.streamLayeredImage {

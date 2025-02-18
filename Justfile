@@ -28,7 +28,7 @@ format:
 	cargo fmt
 	cargo clippy --fix --allow-dirty
 
-# run this before pushing a commit!
+# This should succeed before commiting.
 precommit: format build container 
 
 # push to fly.io
