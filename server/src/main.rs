@@ -8,6 +8,7 @@ use axum::{
 };
 use axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
+use leptos::logging::log;
 use leptos::prelude::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use opentelemetry_honeycomb::new_pipeline;
@@ -18,8 +19,6 @@ use std::{
     path::{Path, PathBuf},
 };
 use tokio::net::TcpListener;
-use tracing::{info, warn, Level};
-use tracing_subscriber::{filter, prelude::*};
 
 mod analytics;
 mod fileserv;
@@ -45,12 +44,12 @@ fn sentry_guard(dsn: String) -> ClientInitGuard {
 
 #[tokio::main]
 async fn main() {
-    info!("Starting brongan.com");
-    let conf = get_configuration(None).unwrap();
-    let addr = conf.leptos_options.site_addr;
-    let leptos_options = conf.leptos_options;
+    log!("Starting brongan.com");
+    let leptos_options =
+        get_configuration(None).map_or(LeptosOptions::default(), |conf| conf.leptos_options);
+    let addr = leptos_options.site_addr;
     let routes = generate_route_list(App);
-    info!("Creating Server State with options: {leptos_options:?}");
+    log!("Creating Server State with options: {leptos_options:?}");
     let app_state = create_server_state(leptos_options.clone(), routes.clone())
         .await
         .expect("Set GEOLITE2_COUNTRY_DB and DB");
@@ -63,14 +62,6 @@ async fn main() {
     )
     .install()
     .unwrap();
-
-    let filter = filter::Targets::new().with_target("brongan.com", Level::INFO);
-    tracing_subscriber::fmt()
-        .with_max_level(Level::TRACE)
-        .json()
-        .finish()
-        .with(filter)
-        .init();
 
     let app = Router::new()
         .leptos_routes_with_context(
@@ -96,18 +87,18 @@ async fn main() {
 
     if let (Some(ssl_port), Some(cert_dir)) = (opt.ssl_port, opt.cert_dir) {
         let https_addr = SocketAddr::from((addr.ip(), ssl_port));
-        info!("Binding handlers to sockets: ({addr}, {https_addr})",);
+        log!("Binding handlers to sockets: ({addr}, {https_addr})",);
         tokio::spawn(http_server(addr));
-        info!("HTTPS listening at: {https_addr}");
+        log!("HTTPS listening at: {https_addr}");
         axum_server::bind_rustls(https_addr, rustls_config(&PathBuf::from(&cert_dir)).await)
             .serve(app.into_make_service_with_connect_info::<SocketAddr>())
             .await
             .unwrap();
     } else {
-        info!("Binding handler to socket: {}", addr);
+        log!("Binding handler to socket: {}", addr);
         let quit_sig = async {
             _ = tokio::signal::ctrl_c().await;
-            warn!("Initiating graceful shutdown");
+            log!("Initiating graceful shutdown");
         };
         serve(
             TcpListener::bind(addr).await.unwrap(),

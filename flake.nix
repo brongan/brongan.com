@@ -86,13 +86,14 @@
           tag = "latest";
           contents = [ myServer myClient ];
           config = {
-            Cmd = [
-              "${myServer}/bin/server"
-              "--addr=0.0.0.0"
-              "--port=8080"
-              "--static-dir=/"
-            ];
-            Env = with pkgs; [ "GEOLITE2_COUNTRY_DB=${dbip-country-lite}/share/dbip/dbip-country-lite.mmdb" ];
+            Cmd = [ "${myServer}/bin/server" ];
+            Env = with pkgs; [
+				"GEOLITE2_COUNTRY_DB=${dbip-country-lite}/share/dbip/dbip-country-lite.mmdb"
+				"LEPTOS_SITE_ADDR=0.0.0.0:8080"
+				"LEPTOS_ENV=PROD"
+				"LEPTOS_OUTPUT_NAME=brongan_com"
+				"DB=sqlite.db"
+			];
             WorkingDir = "/";
           };
         };
