@@ -1,11 +1,9 @@
 use analytics::record_analytics;
 use app::*;
 use axum::{
-    extract::Host,
-    handler::HandlerWithoutStateExt,
-    http::{uri::Scheme, Uri},
-    middleware,
-    response::Redirect,
+    http::{uri::Scheme, Request, StatusCode, Uri},
+    middleware::{self, Next},
+    response::Response,
     serve, Router,
 };
 use axum_server::tls_rustls::RustlsConfig;
@@ -13,7 +11,6 @@ use clap::Parser;
 use leptos::prelude::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use opentelemetry_honeycomb::new_pipeline;
-use reqwest::StatusCode;
 use sentry::ClientInitGuard;
 use state::{create_server_state, ServerState};
 use std::{
@@ -100,7 +97,7 @@ async fn main() {
     if let (Some(ssl_port), Some(cert_dir)) = (opt.ssl_port, opt.cert_dir) {
         let https_addr = SocketAddr::from((addr.ip(), ssl_port));
         info!("Binding handlers to sockets: ({addr}, {https_addr})",);
-        tokio::spawn(redirect_http_to_https(addr, https_addr));
+        tokio::spawn(http_server(addr));
         info!("HTTPS listening at: {https_addr}");
         axum_server::bind_rustls(https_addr, rustls_config(&PathBuf::from(&cert_dir)).await)
             .serve(app.into_make_service_with_connect_info::<SocketAddr>())
@@ -135,30 +132,39 @@ async fn rustls_config(cert_dir: &Path) -> RustlsConfig {
     }
 }
 
-async fn redirect_http_to_https(http: SocketAddr, https: SocketAddr) {
-    fn make_https(host: String, uri: Uri, http: u16, https: u16) -> Result<Uri> {
-        let mut parts = uri.into_parts();
-        parts.scheme = Some(Scheme::HTTPS);
-        if parts.path_and_query.is_none() {
-            parts.path_and_query = Some("/".parse().unwrap());
-        }
-        let https_host = host.replace(&http.to_string(), &https.to_string());
-        parts.authority = Some(https_host.parse()?);
-        Ok(Uri::from_parts(parts)?)
-    }
+async fn http_server(addr: SocketAddr) {
+    let app = Router::new().layer(axum::middleware::from_fn(redirect_http_to_https));
 
-    let redirect = move |Host(host): Host, uri: Uri| async move {
-        match make_https(host, uri, http.port(), https.port()) {
-            Ok(uri) => Ok(Redirect::permanent(&uri.to_string())),
-            Err(error) => {
-                warn!(%error, "failed to convert URI to HTTPS");
-                Err(StatusCode::BAD_REQUEST)
-            }
-        }
-    };
-    info!("HTTP Redirect listening at: {http}");
-    axum_server::bind(http)
-        .serve(redirect.into_make_service())
+    println!("http listening on {}", addr);
+    axum_server::bind(addr)
+        .serve(app.into_make_service())
         .await
         .unwrap();
+}
+
+async fn redirect_http_to_https<B>(req: Request<B>, _next: Next) -> Response {
+    let uri = req.uri();
+    let mut parts = uri.clone().into_parts();
+    parts.scheme = Some(Scheme::HTTPS);
+
+    let port = match uri.port_u16() {
+        Some(80 | 443) => uri.port_u16(),
+        _ => None,
+    };
+
+    let host = parts.authority.as_ref().map_or("", |auth| auth.host());
+    let path_and_query = parts.path_and_query.as_ref().map_or("/", |pq| pq.as_str());
+
+    let new_uri = match port {
+        Some(p) => format!("https://{}:{}{}", host, p, path_and_query),
+        None => format!("https://{}{}", host, path_and_query),
+    }
+    .parse::<Uri>()
+    .unwrap();
+
+    Response::builder()
+        .status(StatusCode::PERMANENT_REDIRECT)
+        .header("Location", new_uri.to_string())
+        .body(().into())
+        .unwrap()
 }
