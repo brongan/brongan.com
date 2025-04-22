@@ -78,7 +78,7 @@
         cargoArtifactsWasm = wasmCraneLib.buildDepsOnly (wasmArgs // {
           doCheck = false;
         });
-        myClient = wasmCraneLib.buildPackage (wasmArgs // {
+        myClient = wasmCraneLib.buildTrunkPackage (wasmArgs // {
           pname = "brongan-com-frontend";
           doCheck = false;
           cargoArtifacts = cargoArtifactsWasm;

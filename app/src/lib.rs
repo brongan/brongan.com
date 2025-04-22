@@ -46,7 +46,7 @@ pub fn shell(options: LeptosOptions) -> AnyView {
 pub fn App() -> impl IntoView {
     provide_meta_context();
     view! {
-        <Stylesheet href="/pkg/start-axum-workspace.css"/>
+        <Stylesheet href="/pkg/brongan_com.css"/>
         <Title text="brongan.com" />
         <Router>
             <main class="main-panel">
