@@ -39,10 +39,10 @@ pub fn ishihara_input(
     let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();
         let form = form_element.get().expect("form should be mounted");
-        set_data(IshiharaArgs::from(
+        set_data.set(IshiharaArgs::from(
             FormData::new_with_form(&form).expect("good form."),
         ));
-        toggle_display(true);
+        toggle_display.set(true);
     };
 
     view! {

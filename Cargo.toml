@@ -9,45 +9,46 @@ lto = true
 opt-level = 'z'
 
 [workspace.dependencies]
-leptos = { version = "0.7.3", features = ["nightly"] }
-leptos_meta = { version = "0.7.3"}
-leptos_router = { version = "0.7.3", features = ["nightly"] }
-leptos_axum = { version = "0.7.3" }
+leptos = { version = "0.8", features = ["nightly"] }
+leptos_meta = { version = "0.8"}
+leptos_router = { version = "0.8", features = ["nightly"] }
+leptos_axum = { version = "0.8" }
 
 anyhow = "1.0"
-artem = { version = "1.2", default-features = false }
-axum = { version = "0.7", features = ["macros"] }
-base64 = "0.13"
+artem = { version = "3.0", default-features = false }
+axum = { version = "0.8", features = ["macros"] }
+base64 = "0.22"
 cfg-if = "1"
-color-eyre = "0.6.2"
+color-eyre = "0.6.5"
 console_error_panic_hook = "0.1.7"
 console_log = "1"
-fixedbitset = "0.4"
+fixedbitset = "0.5"
 http = "1"
-image = { version = "0.24" }
-imageproc = "0.23"
-log = "0.4.20"
-maxminddb = "0.23.0"
+image = { version = "0.25" }
+imageproc = "0.25"
+log = "0.4.28"
+maxminddb = "0.27.0"
 nom = "7.0"
 num = { version = "0.4", features = ["serde"] }
-opentelemetry = { version = "0.18.0", features = ["rt-tokio"] }
-opentelemetry-honeycomb = { git = "https://github.com/fasterthanlime/opentelemetry-honeycomb-rs", branch = "simplified", version = "0.1.0" }
-rand = "0.8"
-rayon = { version = "1.7.0"}
-reqwest = { version = "0.11", default-features = false, features = ["json","rustls-tls-webpki-roots"]}
-rusqlite = { version = "0.29.0" }
+opentelemetry = { version = "0.31.0" }
+opentelemetry-otlp = "0.31.0"
+opentelemetry_sdk = "0.31.0"
+rand = "0.9"
+rayon = { version = "1.11.0"}
+reqwest = { version = "0.12", default-features = false, features = ["json","rustls-tls-webpki-roots"]}
+rusqlite = { version = "0.37.0" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-simple_logger = "5.0.0"
-strum = "0.24"
-strum_macros = "0.24"
-thiserror = "2.0.11"
-tokio = { version = "1.33.0", features = ["full"] }
-tokio-rusqlite = { version = "0.4.0" }
+simple_logger = "5.1.0"
+strum = "0.27"
+strum_macros = "0.27"
+thiserror = "2.0.17"
+tokio = { version = "1.48.0", features = ["full"] }
+tokio-rusqlite = { version = "0.7.0" }
 tower = { version = "0.5.2", features = ["full"] }
-tower-http = { version = "0.6.2", features = ["full"] }
+tower-http = { version = "0.6.7", features = ["full"] }
 tracing = { version = "0.1" }
-wasm-bindgen = "=0.2.100"
+wasm-bindgen = "=0.2.104"
 
 # See https://github.com/akesson/cargo-leptos for documentation of all the parameters.
 

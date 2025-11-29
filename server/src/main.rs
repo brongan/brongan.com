@@ -11,10 +11,13 @@ use clap::Parser;
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
-use opentelemetry_honeycomb::new_pipeline;
+use opentelemetry::global;
+use opentelemetry_otlp::{SpanExporter, WithHttpConfig};
+use opentelemetry_sdk::trace::SdkTracerProvider;
 use sentry::ClientInitGuard;
 use state::{create_server_state, ServerState};
 use std::{
+    collections::HashMap,
     net::SocketAddr,
     path::{Path, PathBuf},
 };
@@ -45,8 +48,7 @@ fn sentry_guard(dsn: String) -> ClientInitGuard {
 #[tokio::main]
 async fn main() {
     log!("Starting brongan.com");
-    let leptos_options =
-        get_configuration(None).map_or(LeptosOptions::default(), |conf| conf.leptos_options);
+    let leptos_options = get_configuration(None).unwrap().leptos_options;
     let addr = leptos_options.site_addr;
     let routes = generate_route_list(App);
     log!("Creating Server State with options: {leptos_options:?}");
@@ -56,12 +58,17 @@ async fn main() {
 
     let opt = Opt::parse();
     let _sentry = std::env::var("SENTRY_DSN").map(sentry_guard);
-    let (_honeyguard, _tracer) = new_pipeline(
-        std::env::var("HONEYCOMB_API_KEY").expect("$HONEYCOMB_API_KEY should be set"),
-        "catscii".into(),
-    )
-    .install()
-    .unwrap();
+
+    let api_key = std::env::var("HONEYCOMB_API_KEY").expect("$HONEYCOMB_API_KEY should be set");
+    let oltp_exporter = SpanExporter::builder()
+        .with_http()
+        .with_headers(HashMap::from([(String::from("x-honeycomb-team"), api_key)]))
+        .build()
+        .expect("Failed to create OLTP exporter.");
+    let tracer_provider = SdkTracerProvider::builder()
+        .with_batch_exporter(oltp_exporter)
+        .build();
+    global::set_tracer_provider(tracer_provider);
 
     let app = Router::new()
         .leptos_routes_with_context(

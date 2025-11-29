@@ -1,5 +1,6 @@
 use anyhow::Context;
 use leptos::prelude::*;
+use maxminddb::geoip2;
 use opentelemetry::global;
 use opentelemetry::trace::{FutureExt, TraceContextExt, Tracer};
 use serde::{Deserialize, Serialize};
@@ -30,7 +31,7 @@ struct AnalyticsKey {
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("maxminddb error: {0}")]
-    MaxMindDb(#[from] maxminddb::MaxMindDBError),
+    MaxMindDb(#[from] maxminddb::MaxMindDbError),
 
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
@@ -62,12 +63,13 @@ impl Locat {
     pub async fn get_iso_code(&self, addr: std::net::IpAddr) -> anyhow::Result<&str> {
         let tracer = global::tracer("");
         tracer.in_span("maxminddb::geoip2::Country::lookup", |_| {
-            self.geoip
-                .lookup::<maxminddb::geoip2::Country>(addr)?
-                .country
+            let result = self.geoip.lookup(addr)?;
+            result
+                .decode::<geoip2::Country>()?
                 .context("MaxMindDB missing country for ip")?
+                .country
                 .iso_code
-                .context("MaxMindDB missing ISO code")
+                .context("MaxMindDB missing iso_code for ip")
         })
     }
 
@@ -89,7 +91,7 @@ impl Locat {
     }
 
     /// Returns a map of country codes to number of requests
-    pub async fn get_analytics(&self) -> Result<Vec<crate::analytics::Analytics>> {
+    pub async fn get_analytics(&self) -> anyhow::Result<Vec<crate::analytics::Analytics>> {
         let tracer = global::tracer("");
         Ok(self
             .analytics

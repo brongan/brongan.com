@@ -1,6 +1,5 @@
 use fixedbitset::FixedBitSet;
-use rand::distributions::{Bernoulli, Distribution};
-use rand::thread_rng;
+use rand::distr::{Bernoulli, Distribution};
 use std::fmt;
 
 use crate::mandelbrot::Bounds;
@@ -128,7 +127,7 @@ impl Universe {
     }
 
     fn create_cells(width: u32, height: u32) -> FixedBitSet {
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
         let size = (width * height) as usize;
         let d = Bernoulli::new(0.5).unwrap();
         let mut cells = FixedBitSet::with_capacity(size);
@@ -160,7 +159,7 @@ impl Universe {
     }
 
     #[allow(dead_code)]
-    pub fn cells(&self) -> *const u32 {
+    pub fn cells(&self) -> *const usize {
         self.cells.as_slice().as_ptr()
     }
 

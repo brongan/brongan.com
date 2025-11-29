@@ -68,7 +68,7 @@ pub fn game_of_life() -> impl IntoView {
         resume,
     } = use_interval(16);
 
-    match button() {
+    match button.get() {
         Some(Msg::ToggleCell(x, y)) => {
             set_universe.update(|universe| universe.toggle_cell(x, y));
         }
@@ -117,7 +117,7 @@ pub fn game_of_life() -> impl IntoView {
                     y: event.y(),
                 },
             );
-            press_button(Some(if event.shift_key() {
+            press_button.set(Some(if event.shift_key() {
                 Msg::InsertPulsar(x, y)
             } else if event.ctrl_key() {
                 Msg::InsertGlider(x, y)

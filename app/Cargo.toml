@@ -17,7 +17,7 @@ http.workspace = true
 image.workspace = true
 imageproc.workspace = true
 js-sys = { version = "0.3"}
-leptos-use = "0.15.5"
+leptos-use = "0.16.3"
 log.workspace = true
 nom.workspace = true
 num.workspace = true

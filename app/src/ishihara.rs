@@ -6,10 +6,10 @@ use image::{DynamicImage, Rgba, RgbaImage};
 use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut};
 use leptos::html::Canvas;
 use leptos::prelude::*;
-use rand::distributions::uniform::Uniform;
-use rand::distributions::Distribution;
+use rand::distr::uniform::Uniform;
+use rand::distr::Distribution;
 use rand::rngs::ThreadRng;
-use rand::seq::SliceRandom;
+use rand::seq::IndexedRandom;
 use rusttype::{point, Font, Scale};
 use std::fmt;
 use strum_macros::EnumIter;
@@ -161,7 +161,8 @@ impl Circle {
                 x: x as i32,
                 y: y as i32,
             },
-        );
+        )
+        .unwrap();
 
         //Create circles with random coordinates and radii with size based on its distance from the closest circle
         while area < goal_area {
@@ -270,7 +271,7 @@ pub fn generate_plate(text: &str, blindness: Blindness) -> RgbaImage {
     log::info!("Generating Plate: {}", text);
     // Get an image buffer from rendering the text
     let mut image = render_text(text);
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     // Create circles based based on the image buffer's dimensions
     let (x, y) = image.dimensions();

@@ -11,18 +11,19 @@ leptos = { workspace = true, features = [ "ssr" ]}
 leptos_axum.workspace = true
 
 anyhow.workspace = true
-async-rustls = { version = "0.4.0" }
-axum-server = { version = "0.6", features = ["tls-rustls"] }
+async-rustls = { version = "0.4.2" }
+axum-server = { version = "0.7", features = ["tls-rustls"] }
 axum.workspace = true
-clap = { version = "4.2", features = ["derive"] }
+clap = { version = "4.5", features = ["derive"] }
 leptos_router.workspace = true
 log.workspace = true
 nom.workspace = true
-opentelemetry-honeycomb.workspace = true
+opentelemetry-otlp.workspace = true
 opentelemetry.workspace = true
+opentelemetry_sdk.workspace = true
 reqwest.workspace = true
 rusqlite.workspace = true
-sentry = { version = "0.31", default-features = false, features = ["reqwest", "rustls", "backtrace", "contexts", "panic"] }
+sentry = { version = "0.46", default-features = false, features = ["reqwest", "rustls", "backtrace", "contexts", "panic"] }
 serde.workspace = true
 simple_logger.workspace = true
 tokio.workspace = true

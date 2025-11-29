@@ -20,7 +20,7 @@ impl Display for Analytics {
     }
 }
 
-#[server(GetAnalytics, "/api", "Url", "analytics")]
+#[server(GetAnalytics, "/api")]
 pub async fn get_analytics() -> Result<Vec<Analytics>, ServerFnError> {
     let locat = crate::locat::locat()?;
     locat

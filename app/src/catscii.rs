@@ -10,10 +10,11 @@ pub fn client() -> Result<reqwest::Client, ServerFnError> {
         .ok_or_else(|| ServerFnError::ServerError("Reqwest Client missing.".into()))
 }
 
-#[server(GetCatscii, "/api", "Url", "catscii")]
+#[server(GetCatscii, "/api")]
 pub async fn get_catscii() -> Result<String, ServerFnError> {
     let client = client()?;
-    use artem::options::{OptionBuilder, TargetType::HtmlFile};
+    use artem::config::TargetType::HtmlFile;
+    use artem::ConfigBuilder;
     use opentelemetry::{
         global,
         trace::{FutureExt, TraceContextExt, Tracer},
@@ -43,10 +44,7 @@ pub async fn get_catscii() -> Result<String, ServerFnError> {
         .map_err(|e: ImageError| ServerFnError::<NoCustomError>::ServerError(e.to_string()))?;
 
     let ascii_art = tracer.in_span("artem::convert", |_cx| {
-        artem::convert(
-            image,
-            OptionBuilder::new().target(HtmlFile(true, true)).build(),
-        )
+        artem::convert(image, &ConfigBuilder::new().target(HtmlFile).build())
     });
     Ok(ascii_art)
 }
@@ -104,7 +102,7 @@ async fn get_cat_url(client: &reqwest::Client) -> anyhow::Result<String> {
         .url)
 }
 
-async fn download_file(url: &str, client: &reqwest::Client) -> Result<Vec<u8>> {
+async fn download_file(url: &str, client: &reqwest::Client) -> anyhow::Result<Vec<u8>> {
     Ok(client
         .get(url)
         .send()

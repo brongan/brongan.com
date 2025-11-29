@@ -1,5 +1,5 @@
-use rand::distributions::uniform::{SampleBorrow, SampleUniform, Uniform, UniformSampler};
-use rand::distributions::Distribution;
+use rand::distr::uniform::{SampleBorrow, SampleUniform, Uniform, UniformSampler};
+use rand::distr::Distribution;
 use rand::Rng;
 use std::fmt;
 
@@ -14,23 +14,25 @@ pub struct UniformPoint2D(Uniform<i32>, Uniform<i32>);
 
 impl UniformSampler for UniformPoint2D {
     type X = Point2D<i32>;
-    fn new<B1, B2>(low: B1, high: B2) -> Self
+    fn new<B1, B2>(low: B1, high: B2) -> Result<Self, rand::distr::uniform::Error>
     where
         B1: SampleBorrow<Self::X> + Sized,
         B2: SampleBorrow<Self::X> + Sized,
     {
-        UniformPoint2D(
-            Uniform::new(low.borrow().x, high.borrow().x),
-            Uniform::new(low.borrow().y, high.borrow().y),
-        )
+        Ok(UniformPoint2D(
+            Uniform::new(low.borrow().x, high.borrow().x)?,
+            Uniform::new(low.borrow().y, high.borrow().y)?,
+        ))
     }
-    fn new_inclusive<B1, B2>(low: B1, high: B2) -> Self
+
+    fn new_inclusive<B1, B2>(low: B1, high: B2) -> Result<Self, rand::distr::uniform::Error>
     where
         B1: SampleBorrow<Self::X> + Sized,
         B2: SampleBorrow<Self::X> + Sized,
     {
         UniformSampler::new(low, high)
     }
+
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Self::X {
         Point2D {
             x: self.0.sample(rng),
