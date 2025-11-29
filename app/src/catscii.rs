@@ -44,7 +44,13 @@ pub async fn get_catscii() -> Result<String, ServerFnError> {
         .map_err(|e: ImageError| ServerFnError::<NoCustomError>::ServerError(e.to_string()))?;
 
     let ascii_art = tracer.in_span("artem::convert", |_cx| {
-        artem::convert(image, &ConfigBuilder::new().target(HtmlFile).build())
+        artem::convert(
+            image,
+            &ConfigBuilder::new()
+                .target(HtmlFile)
+                .background_color(true)
+                .build(),
+        )
     });
     Ok(ascii_art)
 }
