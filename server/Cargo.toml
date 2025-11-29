@@ -19,8 +19,9 @@ image = "0.24"
 libsqlite3-sys = { version = "*", features = []}
 maxminddb = "0.23.0"
 num = "0.4"
-opentelemetry = { version = "0.18.0", features = ["rt-tokio"] }
-opentelemetry-honeycomb = { git = "https://github.com/fasterthanlime/opentelemetry-honeycomb-rs", branch = "simplified", version = "0.1.0" }
+opentelemetry = { version = "0.31.0" }
+opentelemetry-otlp = "0.31.0"
+opentelemetry_sdk = "0.31.0"
 pretty-hex = "0.3.0"
 reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls-webpki-roots"] }
 rusqlite = { version = "0.29.0" }

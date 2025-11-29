@@ -21,8 +21,10 @@ use clap::Parser;
 use hyper::http::uri::Scheme;
 use hyper::Uri;
 use locat::Locat;
-use opentelemetry_honeycomb::new_pipeline;
+use opentelemetry::global;
+use opentelemetry_otlp::WithHttpConfig;
 use sentry::ClientInitGuard;
+use std::collections::HashMap;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -31,7 +33,8 @@ use tokio::fs::read_to_string;
 use tower::ServiceExt;
 use tower_http::services::ServeDir;
 use tracing::{error, info, warn, Level};
-use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::filter::Targets;
+use tracing_subscriber::prelude::*;
 
 #[derive(Parser, Debug)]
 #[clap(name = "server", about = "My server")]
@@ -123,20 +126,30 @@ async fn main() {
     info!("Creating Sentry and Honeyguard Hooks.");
     let _sentry = std::env::var("SENTRY_DSN").map(sentry_guard);
 
-    let _ = std::env::var("HONEYCOMB_API_KEY").map(|key| new_pipeline(
-            key,
-        "catscii".into(),
-    )
-    .install());
+    let _ = std::env::var("HONEYCOMB_API_KEY").map(|api_key| {
+        let oltp_exporter = opentelemetry_otlp::SpanExporter::builder()
+            .with_http()
+            .with_headers(HashMap::from([(String::from("x-honeycomb-team"), api_key)]))
+            .build()
+            .expect("Failed to create OTLP exporter");
+
+        let tracer_provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
+            .with_batch_exporter(oltp_exporter)
+            .build();
+
+        global::set_tracer_provider(tracer_provider);
+    });
 
     let filter = Targets::from_str(std::env::var("RUST_LOG").as_deref().unwrap_or("info"))
         .expect("RUST_LOG should be a valid tracing filter");
+
     tracing_subscriber::fmt()
         .with_max_level(Level::TRACE)
         .json()
         .finish()
         .with(filter)
         .init();
+
     info!("Creating Server State.");
     let server_state = match create_server_state().await {
         Ok(state) => state,
