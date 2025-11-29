@@ -13,8 +13,16 @@
       };
     };
   };
-  outputs = { nixpkgs, crane, flake-utils, rust-overlay, ... }:
-    flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
+  outputs =
+    {
+      nixpkgs,
+      crane,
+      flake-utils,
+      rust-overlay,
+      ...
+    }:
+    flake-utils.lib.eachSystem [ "x86_64-linux" ] (
+      system:
       let
         pkgs = import nixpkgs {
           inherit system;
@@ -22,26 +30,26 @@
           overlays = [ (import rust-overlay) ];
         };
         inherit (pkgs) lib;
-		cross = import nixpkgs {
-			localSystem = "x86_64-linux";
-			crossSystem = "x86_64-unknown-linux-musl";
-			config.allowUnfree = true;
-			overlays = [ (import rust-overlay) ];
-		};
-		wasmCraneLib = (crane.mkLib pkgs).overrideToolchain (
+        cross = import nixpkgs {
+          localSystem = "x86_64-linux";
+          crossSystem = "x86_64-unknown-linux-musl";
+          config.allowUnfree = true;
+          overlays = [ (import rust-overlay) ];
+        };
+        wasmCraneLib = (crane.mkLib pkgs).overrideToolchain (
           p:
           p.rust-bin.stable.latest.default.override {
             targets = [ "wasm32-unknown-unknown" ];
           }
         );
-		nativeCraneLib = (crane.mkLib cross).overrideToolchain (
-			p:
-			p.rust-bin.stable.latest.default.override {
-				targets = [ "x86_64-unknown-linux-musl" ];
-			}
-		);
-		unfilteredRoot = ./.;
-		src = lib.fileset.toSource {
+        nativeCraneLib = (crane.mkLib cross).overrideToolchain (
+          p:
+          p.rust-bin.stable.latest.default.override {
+            targets = [ "x86_64-unknown-linux-musl" ];
+          }
+        );
+        unfilteredRoot = ./.;
+        src = lib.fileset.toSource {
           root = unfilteredRoot;
           fileset = lib.fileset.unions [
             # Default files from crane (Rust and cargo files)
@@ -51,13 +59,13 @@
               lib.any file.hasExt [
                 "html"
                 "scss"
-				"css"
-				"frag"
-				"vert"
-				"ttf"
-				"ico"
-				"png"
-				"jpg"
+                "css"
+                "frag"
+                "vert"
+                "ttf"
+                "ico"
+                "png"
+                "jpg"
               ]
             ) unfilteredRoot)
             (lib.fileset.maybeMissing ./image)
@@ -79,32 +87,40 @@
           buildInputs = [ pkgs.pkgsStatic.sqlite ];
         };
         cargoArtifacts = nativeCraneLib.buildDepsOnly nativeArgs;
-        myServer = nativeCraneLib.buildPackage (nativeArgs // {
-          inherit cargoArtifacts;
-          CLIENT_DIST = myClient;
-        });
+        myServer = nativeCraneLib.buildPackage (
+          nativeArgs
+          // {
+            inherit cargoArtifacts;
+            CLIENT_DIST = myClient;
+          }
+        );
         wasmArgs = commonArgs // {
           pname = "brongan_com";
           cargoExtraArgs = "--package=frontend --no-default-features";
           CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
         };
-        cargoArtifactsWasm = wasmCraneLib.buildDepsOnly (wasmArgs // {
-          doCheck = false;
-        });
-        myClient = wasmCraneLib.buildTrunkPackage (wasmArgs // {
-          pname = "brongan-com-frontend";
-          doCheck = false;
-          cargoArtifacts = cargoArtifactsWasm;
-			preBuild = ''
+        cargoArtifactsWasm = wasmCraneLib.buildDepsOnly (
+          wasmArgs
+          // {
+            doCheck = false;
+          }
+        );
+        myClient = wasmCraneLib.buildTrunkPackage (
+          wasmArgs
+          // {
+            pname = "brongan-com-frontend";
+            doCheck = false;
+            cargoArtifacts = cargoArtifactsWasm;
+            preBuild = ''
               cd ./frontend
             '';
-		  postBuild = ''
-			mkdir -p $out/dist
-			if [ -d "frontend/public" ]; then
-			  cp -r frontend/public/. $out/dist/
-			fi
-		  '';
-		   wasm-bindgen-cli = pkgs.buildWasmBindgenCli rec {
+            postBuild = ''
+              mkdir -p $out/dist
+              if [ -d "frontend/public" ]; then
+                cp -r frontend/public/. $out/dist/
+              fi
+            '';
+            wasm-bindgen-cli = pkgs.buildWasmBindgenCli rec {
               src = pkgs.fetchCrate {
                 pname = "wasm-bindgen-cli";
                 version = "0.2.104";
@@ -119,21 +135,25 @@
                 # hash = lib.fakeHash;
               };
             };
-        });
+          }
+        );
         dockerImage = pkgs.dockerTools.streamLayeredImage {
           name = "brongan_com";
           tag = "latest";
-          contents = [ myServer myClient ];
+          contents = [
+            myServer
+            myClient
+          ];
           config = {
             Cmd = [ "${myServer}/bin/server" ];
             Env = with pkgs; [
-				"GEOLITE2_COUNTRY_DB=${dbip-country-lite}/share/dbip/dbip-country-lite.mmdb"
-				"LEPTOS_SITE_ADDR=0.0.0.0:8080"
-				"LEPTOS_SITE_ROOT=/dist/"
-				"LEPTOS_ENV=PROD"
-				"LEPTOS_OUTPUT_NAME=brongan_com"
-				"DB=sqlite.db"
-			];
+              "GEOLITE2_COUNTRY_DB=${dbip-country-lite}/share/dbip/dbip-country-lite.mmdb"
+              "LEPTOS_SITE_ADDR=0.0.0.0:8080"
+              "LEPTOS_SITE_ROOT=/dist/"
+              "LEPTOS_ENV=PROD"
+              "LEPTOS_OUTPUT_NAME=brongan_com"
+              "DB=sqlite.db"
+            ];
             WorkingDir = "/";
           };
         };
