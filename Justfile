@@ -8,7 +8,7 @@ build:
 
 # nix build and pipe into podman
 container:
-	nix build .#dockerImage
+	nix build .#docker
 	./result | podman load
 
 # run podman container (docker filesystem)
