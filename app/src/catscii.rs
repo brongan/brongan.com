@@ -1,17 +1,34 @@
-use anyhow::anyhow;
 use image::DynamicImage;
-use image::ImageError;
 use leptos::prelude::*;
-use serde::Deserialize;
-use server_fn::error::NoCustomError;
+use serde::{Deserialize, Serialize};
+use std::str::FromStr;
+use thiserror::Error;
 
-pub fn client() -> Result<reqwest::Client, ServerFnError> {
+#[derive(Debug, Error, Serialize, Deserialize)]
+pub enum CatsciiError {
+    #[error("cat api error: {0}")]
+    ApiError(String),
+    #[error("cat api did not return cats")]
+    NoCatsFound,
+    #[error("failed to decode image")]
+    ImageError,
+}
+
+impl FromStr for CatsciiError {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(CatsciiError::ApiError(s.to_string()))
+    }
+}
+
+pub fn client() -> Result<reqwest::Client, ServerFnError<CatsciiError>> {
     use_context::<reqwest::Client>()
         .ok_or_else(|| ServerFnError::ServerError("Reqwest Client missing.".into()))
 }
 
 #[server(GetCatscii, "/api")]
-pub async fn get_catscii() -> Result<String, ServerFnError> {
+pub async fn get_catscii() -> Result<String, ServerFnError<CatsciiError>> {
     let client = client()?;
     use artem::config::TargetType::HtmlFile;
     use artem::ConfigBuilder;
@@ -25,12 +42,13 @@ pub async fn get_catscii() -> Result<String, ServerFnError> {
     let image = get_cat_url(&client)
         .with_context(Context::current_with_span(tracer.start("get_cat_url")))
         .await
-        .map_err(|e: anyhow::Error| ServerFnError::<NoCustomError>::ServerError(e.to_string()))?;
+        .map_err(|e| CatsciiError::ApiError(e.to_string()))?
+        .ok_or(CatsciiError::NoCatsFound)?;
 
     let image = download_file(&image, &client)
         .with_context(Context::current_with_span(tracer.start("download_file")))
         .await
-        .map_err(|e| ServerFnError::<NoCustomError>::ServerError(e.to_string()))?;
+        .map_err(|e: reqwest::Error| CatsciiError::ApiError(e.to_string()))?;
 
     let image: DynamicImage = tracer
         .in_span("image::load_from_memory", |cx| {
@@ -41,7 +59,7 @@ pub async fn get_catscii() -> Result<String, ServerFnError> {
                 .set_attribute(KeyValue::new("height", img.height() as i64));
             Ok(img)
         })
-        .map_err(|e: ImageError| ServerFnError::<NoCustomError>::ServerError(e.to_string()))?;
+        .map_err(|_e: image::ImageError| CatsciiError::ImageError)?;
 
     let ascii_art = tracer.in_span("artem::convert", |_cx| {
         artem::convert(
@@ -89,7 +107,7 @@ pub fn catscii() -> impl IntoView {
     }
 }
 
-async fn get_cat_url(client: &reqwest::Client) -> anyhow::Result<String> {
+async fn get_cat_url(client: &reqwest::Client) -> Result<Option<String>, reqwest::Error> {
     let api_url = "https://api.thecatapi.com/v1/images/search";
     #[derive(Deserialize)]
     struct CatImage {
@@ -104,11 +122,10 @@ async fn get_cat_url(client: &reqwest::Client) -> anyhow::Result<String> {
         .json::<Vec<CatImage>>()
         .await?
         .pop()
-        .ok_or_else(|| anyhow!("The cat API returned no images."))?
-        .url)
+        .map(|x| x.url))
 }
 
-async fn download_file(url: &str, client: &reqwest::Client) -> anyhow::Result<Vec<u8>> {
+async fn download_file(url: &str, client: &reqwest::Client) -> Result<Vec<u8>, reqwest::Error> {
     Ok(client
         .get(url)
         .send()
