@@ -12,8 +12,8 @@ use rand::rngs::ThreadRng;
 use rand::seq::IndexedRandom;
 use rusttype::{point, Font, Scale};
 use std::fmt;
-use strum_macros::EnumIter;
-use strum_macros::EnumString;
+use strum::EnumIter;
+use strum::EnumString;
 use wasm_bindgen::{Clamped, JsCast};
 use web_sys::{CanvasRenderingContext2d, ImageData};
 
@@ -137,9 +137,7 @@ fn get_color(color: IshiharaColor, blindness: Blindness, rng: &mut ThreadRng) ->
     }
 }
 
-#[derive(
-    EnumIter, Clone, Copy, strum_macros::Display, Eq, PartialEq, EnumString, Default, Debug,
-)]
+#[derive(EnumIter, Clone, Copy, strum::Display, Eq, PartialEq, EnumString, Default, Debug)]
 pub enum Blindness {
     Demonstration,
     #[default]
