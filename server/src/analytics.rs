@@ -30,7 +30,7 @@ pub async fn record_analytics(
     }
     let path = Path::new(request.uri().path());
 
-    if let Some("wasm" | "js" | "png" | "jpg" | "vert" | "scss" | "frag" | "css" | "ico") =
+    if let Some("wasm" | "js" | "webp" | "png" | "jpg" | "vert" | "scss" | "frag" | "css" | "ico") =
         path.extension().and_then(|os_str| os_str.to_str())
     {
         return next.run(request).await;

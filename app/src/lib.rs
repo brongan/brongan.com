@@ -110,32 +110,32 @@ pub fn navigation() -> impl IntoView {
         NavItem {
             title: "Home",
             route: "/",
-            thumbnail: "brongan.jpg",
+            thumbnail: "brongan.webp",
         },
         NavItem {
             title: "Ishihara",
             route: "/ishihara",
-            thumbnail: "color-blind-test.png",
+            thumbnail: "color-blind-test.webp",
         },
         NavItem {
             title: "Game of Life",
             route: "/game-of-life",
-            thumbnail: "game-of-life.png",
+            thumbnail: "game-of-life.webp",
         },
         NavItem {
             title: "Mandelbrot",
             route: "/mandelbrot",
-            thumbnail: "mandelbrot.png",
+            thumbnail: "mandelbrot.webp",
         },
         NavItem {
             title: "Catscii",
             route: "/catscii",
-            thumbnail: "catscii.png",
+            thumbnail: "catscii.webp",
         },
         NavItem {
             title: "Analytics",
             route: "/analytics",
-            thumbnail: "analytics.png",
+            thumbnail: "analytics.webp",
         },
     ];
 
