@@ -1,5 +1,6 @@
 use analytics::AnalyticsComponent;
 use catscii::Catscii;
+use chip8::Chip8;
 use game_of_life::GameOfLife;
 use ishihara::IshiharaPlate;
 use leptos::prelude::*;
@@ -12,6 +13,7 @@ use mandelbrot::Mandelbrot;
 
 mod analytics;
 mod catscii;
+mod chip8;
 mod color;
 mod game_of_life;
 mod ishihara;
@@ -56,6 +58,7 @@ pub fn App() -> impl IntoView {
                     <Route path=StaticSegment("/game-of-life") view=GameOfLife/>
                     <Route path=StaticSegment("/mandelbrot") view=Mandelbrot />
                     <Route path=StaticSegment("/catscii") view=Catscii />
+                    <Route path=StaticSegment("/chip8") view=Chip8 />
                     <Route path=StaticSegment("/analytics") view=AnalyticsComponent />
                 </Routes>
             </main>
@@ -131,6 +134,11 @@ pub fn navigation() -> impl IntoView {
             title: "Catscii",
             route: "/catscii",
             thumbnail: "catscii.webp",
+        },
+        NavItem {
+            title: "Chip-8",
+            route: "/chip8",
+            thumbnail: "chip8.webp",
         },
         NavItem {
             title: "Analytics",
