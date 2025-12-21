@@ -66,5 +66,5 @@ features = [
 [features]
 default = []
 hydrate = ["leptos/hydrate"]
-ssr = ["leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:leptos_axum", "dep:tokio", "dep:rusqlite", "dep:maxminddb", "dep:opentelemetry", "dep:tokio-rusqlite", "dep:artem", "dep:rayon", "dep:axum"]
+ssr = ["leptos/ssr", "leptos-use/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:leptos_axum", "dep:tokio", "dep:rusqlite", "dep:maxminddb", "dep:opentelemetry", "dep:tokio-rusqlite", "dep:artem", "dep:rayon", "dep:axum"]
 
