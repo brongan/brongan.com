@@ -161,3 +161,60 @@ body {
 	align-items: flex-start; /* Adjust vertical alignment */
     height: 100vh;
 }
+
+// Chip-8 Styles
+.chip8-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+}
+
+.chip8-controls {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 20px;
+
+    .btn {
+        background: #F03E3E;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background 0.2s;
+
+        &:hover {
+            background: darken(#F03E3E, 10%);
+        }
+    }
+}
+
+.chip8-canvas {
+    background-color: #000;
+    border-radius: 4px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    border: 2px solid #333;
+}
+
+.chip8-instructions {
+    color: #ccc;
+    background: rgba(0,0,0,0.5);
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+    text-align: center;
+
+    .key-grid {
+        font-family: monospace;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        max-width: 300px;
+        margin: 10px auto 0;
+        text-align: left;
+    }
+}
