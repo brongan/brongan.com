@@ -13,11 +13,12 @@ anyhow.workspace = true
 cfg-if.workspace = true
 color-eyre.workspace = true
 fixedbitset.workspace = true
+gloo-file.workspace = true
 http.workspace = true
 image.workspace = true
 imageproc.workspace = true
 js-sys = { version = "0.3"}
-leptos-use = "0.16.3"
+leptos-use.workspace = true
 log.workspace = true
 nom.workspace = true
 num.workspace = true
@@ -44,6 +45,17 @@ tokio-rusqlite = { workspace = true, optional = true }
 [dependencies.web-sys]
 version = "0.3"
 features = [
+  "AudioContext",
+  "AudioContextState",
+  "AudioDestinationNode",
+  "AudioParam",
+  "Blob",
+  "File",
+  "FileList",
+  "GainNode",
+  "HtmlInputElement",
+  "OscillatorNode",
+  "OscillatorType",
   'CanvasRenderingContext2d',
   'Document',
   'DomRect',

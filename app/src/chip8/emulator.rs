@@ -53,6 +53,10 @@ impl Emulator {
         &self.cpu
     }
 
+    pub fn is_beep(&self) -> bool {
+        self.cpu.is_beep()
+    }
+
     pub fn screen(&self) -> &Screen {
         if self.quirks.display_wait {
             &self.vsync_screen

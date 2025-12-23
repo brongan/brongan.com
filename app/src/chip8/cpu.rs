@@ -609,4 +609,8 @@ impl Keypad {
     pub fn enable_key(&mut self, key_index: u8) {
         self.0 |= 1 << key_index;
     }
+
+    pub fn disable_key(&mut self, key_index: u8) {
+        self.0 &= !(1 << key_index);
+    }
 }
