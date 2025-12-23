@@ -11,27 +11,25 @@
     };
   };
 
-  outputs =
-    {
-      self,
-      nixpkgs,
-      crane,
-      flake-utils,
-      rust-overlay,
-      ...
-    }:
-    flake-utils.lib.eachSystem [ "x86_64-linux" ] (
-      system:
-      let
+  outputs = {
+    self,
+    nixpkgs,
+    crane,
+    flake-utils,
+    rust-overlay,
+    ...
+  }:
+    flake-utils.lib.eachSystem ["x86_64-linux"] (
+      system: let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ (import rust-overlay) ];
+          overlays = [(import rust-overlay)];
         };
 
         crossPkgs = import nixpkgs {
           inherit system;
           crossSystem = "x86_64-unknown-linux-musl";
-          overlays = [ (import rust-overlay) ];
+          overlays = [(import rust-overlay)];
         };
 
         inherit (pkgs) lib;
@@ -43,17 +41,18 @@
           fileset = lib.fileset.unions [
             (baseCraneLib.fileset.commonCargoSources ./.)
             (lib.fileset.fileFilter (
-              file:
-              lib.any file.hasExt [
-                "html"
-                "scss"
-                "css"
-                "json"
-                "ttf"
-                "frag"
-                "vert"
-              ]
-            ) ./.)
+                file:
+                  lib.any file.hasExt [
+                    "html"
+                    "scss"
+                    "css"
+                    "json"
+                    "ttf"
+                    "frag"
+                    "vert"
+                  ]
+              )
+              ./.)
           ];
         };
 
@@ -66,31 +65,33 @@
 
         wasmCraneLib = baseCraneLib.overrideToolchain (
           p:
-          p.rust-bin.stable.latest.default.override {
-            targets = [ "wasm32-unknown-unknown" ];
-          }
+            p.rust-bin.stable.latest.default.override {
+              targets = ["wasm32-unknown-unknown"];
+            }
         );
 
         wasmBindgenCli = pkgs.buildWasmBindgenCli rec {
           src = pkgs.fetchCrate {
             pname = "wasm-bindgen-cli";
-            version = "0.2.106";
-            hash = "sha256-zLPFFgnqAWq5R2KkaTGAYqVQswfBEYm9x3OPjx8DJRY=";
+            version = "0.2.104";
+            hash = "sha256-9kW+a7IreBcZ3dlUdsXjTKnclVW1C1TocYfY8gUgewE=";
           };
           cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
             inherit src;
             inherit (src) pname version;
-            hash = "sha256-a2X9bzwnMWNt0fTf30qAiJ4noal/ET1jEtf5fBFj5OU=";
+            hash = "sha256-V0AV5jkve37a5B/UvJ9B3kwOW72vWblST8Zxs8oDctE=";
           };
         };
 
-        wasmArgs = commonArgs // {
-          pname = "brongan-client";
-          cargoExtraArgs = "--package=frontend --no-default-features";
-          CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
-          doCheck = false;
-          nativeBuildInputs = [ pkgs.pkg-config ];
-        };
+        wasmArgs =
+          commonArgs
+          // {
+            pname = "brongan-client";
+            cargoExtraArgs = "--package=frontend --no-default-features";
+            CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+            doCheck = false;
+            nativeBuildInputs = [pkgs.pkg-config];
+          };
 
         cargoArtifactsWasm = wasmCraneLib.buildDepsOnly wasmArgs;
 
@@ -121,24 +122,26 @@
 
         crossCraneLib = (crane.mkLib crossPkgs).overrideToolchain (
           p:
-          p.rust-bin.stable.latest.default.override {
-            targets = [ "x86_64-unknown-linux-musl" ];
-          }
+            p.rust-bin.stable.latest.default.override {
+              targets = ["x86_64-unknown-linux-musl"];
+            }
         );
 
-        nativeArgs = commonArgs // {
-          pname = "server";
-          cargoExtraArgs = "--package=server --no-default-features";
-          CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
-          CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
+        nativeArgs =
+          commonArgs
+          // {
+            pname = "server";
+            cargoExtraArgs = "--package=server --no-default-features";
+            CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
+            CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
 
-          nativeBuildInputs = [
-            crossPkgs.buildPackages.pkg-config
-            crossPkgs.buildPackages.cmake
-          ];
+            nativeBuildInputs = [
+              crossPkgs.buildPackages.pkg-config
+              crossPkgs.buildPackages.cmake
+            ];
 
-          buildInputs = [ crossPkgs.sqlite ];
-        };
+            buildInputs = [crossPkgs.sqlite];
+          };
 
         cargoArtifactsServer = crossCraneLib.buildDepsOnly nativeArgs;
 
@@ -152,13 +155,13 @@
 
         myAssets =
           pkgs.runCommand "brongan-assets"
-            {
-              src = ./public;
-            }
-            ''
-              mkdir -p $out/site
-              cp -r $src/* $out/site/
-            '';
+          {
+            src = ./public;
+          }
+          ''
+            mkdir -p $out/site
+            cp -r $src/* $out/site/
+          '';
 
         dockerImage = pkgs.dockerTools.streamLayeredImage {
           name = "brongan_com";
@@ -169,7 +172,7 @@
             myAssets
           ];
           config = {
-            Cmd = [ "${myServer}/bin/server" ];
+            Cmd = ["${myServer}/bin/server"];
             Env = [
               "GEOLITE2_COUNTRY_DB=${pkgs.dbip-country-lite}/share/dbip/dbip-country-lite.mmdb"
               "LEPTOS_SITE_ADDR=0.0.0.0:8080"
@@ -181,12 +184,11 @@
             ];
             WorkingDir = "/";
             ExposedPorts = {
-              "8080/tcp" = { };
+              "8080/tcp" = {};
             };
           };
         };
-      in
-      {
+      in {
         packages = {
           default = myServer;
           client = myClient;

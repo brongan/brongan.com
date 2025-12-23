@@ -47,7 +47,7 @@ tokio-rusqlite = { version = "0.7.0" }
 tower = { version = "0.5.2", features = ["full"] }
 tower-http = { version = "0.6.7", features = ["full"] }
 tracing = { version = "0.1" }
-wasm-bindgen = "=0.2.105"
+wasm-bindgen = "=0.2.104"
 
 # See https://github.com/akesson/cargo-leptos for documentation of all the parameters.
 
