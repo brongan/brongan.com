@@ -1,6 +1,6 @@
 use analytics::AnalyticsComponent;
 use catscii::Catscii;
-use chip8::Chip8;
+use chip8::Debugger;
 use game_of_life::GameOfLife;
 use ishihara::IshiharaPlate;
 use leptos::prelude::*;
@@ -58,7 +58,7 @@ pub fn App() -> impl IntoView {
                     <Route path=StaticSegment("/game-of-life") view=GameOfLife/>
                     <Route path=StaticSegment("/mandelbrot") view=Mandelbrot />
                     <Route path=StaticSegment("/catscii") view=Catscii />
-                    <Route path=StaticSegment("/chip8") view=Chip8 />
+                    <Route path=StaticSegment("/chip8") view=Debugger />
                     <Route path=StaticSegment("/analytics") view=AnalyticsComponent />
                 </Routes>
             </main>

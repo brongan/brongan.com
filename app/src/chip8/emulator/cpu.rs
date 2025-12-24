@@ -1,8 +1,8 @@
 use rand::prelude::*;
 use std::fmt::{self, Display};
 
-use crate::chip8::quirks::Quirks;
-use crate::chip8::screen::Screen;
+use super::quirks::Quirks;
+use super::screen::Screen;
 
 #[derive(Default, Debug, Clone)]
 pub struct CPU {
