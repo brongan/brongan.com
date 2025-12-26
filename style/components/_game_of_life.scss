@@ -24,13 +24,14 @@
             display: flex;
             justify-content: center;
             width: 100%;
-            overflow: auto;
 
             canvas {
                 border-radius: 8px;
                 box-shadow: $shadow-input;
                 border: 1px solid $gray-light;
                 cursor: crosshair;
+                max-width: 100%;
+                height: auto;
             }
         }
     }
@@ -67,7 +68,7 @@
 
     .life-instructions {
         text-align: left;
-        color: $text-main;
+        color: $gray-darkest;
         background-color: $gray-lighter;
         padding: 16px 24px;
         border-radius: 8px;

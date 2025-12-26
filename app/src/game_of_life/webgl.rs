@@ -23,12 +23,8 @@ impl UniverseRenderer for WebGLRenderer {
         let canvas_left = (p.x as f64 - bounding_rect.origin.x) * scale_x;
         let canvas_top = (p.y as f64 - bounding_rect.origin.y) * scale_y;
 
-        let row = (canvas_top / (WebGLRenderer::CELL_SIZE + 1) as f64)
-            .floor()
-            .min((bounds.height - 1) as f64);
-        let col = (canvas_left / (WebGLRenderer::CELL_SIZE + 1) as f64)
-            .floor()
-            .min((bounds.width - 1) as f64);
+        let row = canvas_top.floor().min((bounds.height - 1) as f64);
+        let col = canvas_left.floor().min((bounds.width - 1) as f64);
         (bounds.height - 1 - row as u32, col as u32)
     }
 

@@ -11,16 +11,10 @@ use crate::Footer;
 use leptos::html::Canvas;
 use leptos::logging::log;
 use leptos::prelude::*;
-use leptos_use::{use_interval, UseIntervalReturn};
+use leptos_use::use_raf_fn;
+use leptos_use::utils::Pausable;
 use universe::DomBounds;
 use web_sys::MouseEvent;
-
-#[derive(Clone)]
-pub enum Msg {
-    ToggleCell(u32, u32),
-    InsertGlider(u32, u32),
-    InsertPulsar(u32, u32),
-}
 
 #[component]
 pub fn instructions() -> impl IntoView {
@@ -47,7 +41,7 @@ pub fn instructions() -> impl IntoView {
 pub fn game_of_life() -> impl IntoView {
     let width = 128;
     let height = 64;
-    let (button, press_button) = signal(None);
+
     let (universe, set_universe) = signal(Universe::new(width, height));
 
     let canvas: NodeRef<Canvas> = NodeRef::new();
@@ -60,31 +54,12 @@ pub fn game_of_life() -> impl IntoView {
         }
     });
 
-    let UseIntervalReturn {
-        counter,
-        reset: _,
-        is_active: _,
+    let Pausable {
         pause,
         resume,
-    } = use_interval(16);
-
-    match button.get() {
-        Some(Msg::ToggleCell(x, y)) => {
-            set_universe.update(|universe| universe.toggle_cell(x, y));
-        }
-        Some(Msg::InsertGlider(x, y)) => {
-            set_universe.update(|universe| universe.insert_glider(x, y));
-        }
-        Some(Msg::InsertPulsar(x, y)) => {
-            set_universe.update(|universe| universe.insert_pulsar(x, y));
-        }
-        _ => (),
-    };
-
-    Effect::new(move |_| {
-        if counter.get() > 0 {
-            set_universe.update(|universe: &mut Universe| universe.tick());
-        }
+        is_active,
+    } = use_raf_fn(move |_| {
+        set_universe.update(|universe: &mut Universe| universe.tick());
     });
 
     let tick = move |_| {
@@ -117,13 +92,16 @@ pub fn game_of_life() -> impl IntoView {
                     y: event.y(),
                 },
             );
-            press_button.set(Some(if event.shift_key() {
-                Msg::InsertPulsar(x, y)
-            } else if event.ctrl_key() {
-                Msg::InsertGlider(x, y)
-            } else {
-                Msg::ToggleCell(x, y)
-            }));
+
+            set_universe.update(|universe| {
+                if event.shift_key() {
+                    universe.insert_pulsar(x, y);
+                } else if event.ctrl_key() {
+                    universe.insert_glider(x, y);
+                } else {
+                    universe.toggle_cell(x, y);
+                }
+            });
         }
     };
 
@@ -138,8 +116,16 @@ pub fn game_of_life() -> impl IntoView {
                         <canvas node_ref=canvas on:click=on_click />
                     </div>
                     <div class="life-buttons">
-                        <button class="game-button" on:click=move |_| {resume();}>{ "Start" }</button>
-                        <button class="game-button" on:click=move |_| {pause();}>{ "Stop" }</button>
+                        <Show when=move || { !is_active.get() }
+                              fallback=move || {
+                                  let pause = pause.clone();
+                                  view! { <button class="game-button" on:click=move |_| pause()>{ "Stop" }</button> }
+                              }>
+                            {
+                                let resume = resume.clone();
+                                view! { <button class="game-button" on:click=move |_| resume()>{ "Start" }</button> }
+                            }
+                        </Show>
                         <button class="game-button" on:click=tick >{ "Tick" }</button>
                         <button class="game-button" on:click=reset >{ "Reset" }</button>
                         <button class="game-button" on:click=kill_all >{ "KillAll" }</button>
