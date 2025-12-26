@@ -1,17 +1,9 @@
-// 1. Themes / Abstract
-@use 'themes/variables';
-
-// 2. Base
 @use 'base/typography';
-
-// 3. Layout
-@use 'layout/layout';
-
-// 4. Components
-@use 'components/navigation';
 @use 'components/analytics';
 @use 'components/catscii';
-@use 'components/ishihara';
 @use 'components/chip8';
-
-// 5. Pages
+@use 'components/game_of_life';
+@use 'components/ishihara';
+@use 'components/navigation';
+@use 'layout/layout';
+@use 'themes/variables';

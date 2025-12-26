@@ -73,7 +73,7 @@ fn HomePage() -> impl IntoView {
         <header class="header">
             <h1 class="title">{ "Welcome to brongan.com" }</h1>
         </header>
-        <p>{"Hello my name is Brennan I like Rust"}</p>
+        <p class="home-intro">{"Hello my name is Brennan I like Rust"}</p>
         <Navigation/>
     }
 }

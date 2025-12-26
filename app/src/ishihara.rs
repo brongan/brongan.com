@@ -82,9 +82,7 @@ pub fn ishihara_plate() -> impl IntoView {
             <p style="display:inline"> { "Randomly Generates a Colorblindness Test Image in your browser! See: "} </p>
             <a href="https://en.wikipedia.org/wiki/Ishihara_test"> {"wikipedia.org/wiki/Ishihara_test"} </a>
         </div>
-        <div class="input">
-            <IshiharaInput set_data={set_ishihara_args} toggle_display={set_display}/>
-        </div>
+        <IshiharaInput set_data={set_ishihara_args} toggle_display={set_display}/>
         <Show
             when=move || { display.get() }
             fallback=|| view! {}>
@@ -93,7 +91,7 @@ pub fn ishihara_plate() -> impl IntoView {
             </div>
         </Show>
         <footer class="footnote">
-            <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
+            <p><a href="https://github.com/brongan/brongan.com" target="_blank">{ "source" }</a></p>
         </footer>
     }
 }

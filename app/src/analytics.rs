@@ -70,7 +70,7 @@ pub fn analytics() -> impl IntoView {
     let (_pending, set_pending) = signal(false);
 
     view! {
-        <div>
+        <div class="analytics-container">
             <Transition
                 fallback=move || view! {  <p>"Loading..."</p>}
                 set_pending
@@ -92,8 +92,6 @@ pub fn analytics_component() -> impl IntoView {
         <header class="header">
             <h1 class="title">{ "Analytics" }</h1>
         </header>
-        <div class="analytics">
-            <Analytics />
-        </div>
+        <Analytics />
     }
 }

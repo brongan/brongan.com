@@ -1,0 +1,36 @@
+@use '../themes/variables' as *;
+
+.life-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .life-area {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        canvas {
+            border: 1px solid $border-color;
+        }
+    }
+
+    .life-buttons {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+
+        .game-button {
+            background-color: $btn-primary-bg;
+            color: $btn-primary-text;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 4px;
+
+            &:hover {
+                background-color: $btn-hover-bg;
+            }
+        }
+    }
+}
