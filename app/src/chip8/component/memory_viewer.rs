@@ -20,7 +20,13 @@ pub fn MemoryViewer(memory: ReadSignal<Vec<u8>>, pc: ReadSignal<u16>) -> impl In
 
                 let ascii_str = chunk
                     .iter()
-                    .map(|&b| if (32..=126).contains(&b) { b as char } else { '.' })
+                    .map(|&b| {
+                        if (32..=126).contains(&b) {
+                            b as char
+                        } else {
+                            '.'
+                        }
+                    })
                     .collect::<String>();
 
                 view! {
