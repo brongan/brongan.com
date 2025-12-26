@@ -456,52 +456,53 @@ $border-color: #333;
 		padding: 10px;
 
 		.color-grid {
-			display: flex;
-			flex-direction: column;
-			gap: 8px;
+			display: grid;
+			// Column 1: Labels (takes available space)
+			// Column 2: Controls (takes strictly what it needs)
+			grid-template-columns: 1fr auto; 
+			gap: 8px 10px; // Row Gap: 8px, Column Gap: 10px
 			padding-top: 5px;
+			align-items: center; // Vertically center everything
 
-			.color-row {
-				display: flex;
-				justify-content: space_between;
-				align_items: center;
+			label {
+				cursor: pointer;
 				font-size: 11px;
 				color: #ccc;
+			}
 
-				label {
+			.picker-wrapper {
+				display: flex;
+				align-items: center;
+				justify-content: flex-end;
+				gap: 8px;
+
+				input[type="color"] {
+					-webkit-appearance: none;
+					border: none;
+					width: 24px;
+					height: 24px;
+					padding: 0;
+					background: none;
 					cursor: pointer;
+					border-radius: 2px;
+					overflow: hidden;
+
+					vertical-align: middle; 
+
+					&::-webkit-color-swatch-wrapper { padding: 0; }
+					&::-webkit-color-swatch { border: 1px solid #444; border-radius: 2px; }
 				}
 
-				.picker-wrapper {
-					display: flex;
-					align-items: center;
-					gap: 8px;
-
-					input[type="color"] {
-						-webkit-appearance: none;
-						border: none;
-						width: 24px;
-						height: 24px;
-						padding: 0;
-						background: none;
-						cursor: pointer;
-						border-radius: 2px;
-						overflow: hidden;
-
-						// Webkit (Chrome/Safari) specific swatch style
-						&::-webkit-color-swatch-wrapper { padding: 0; }
-						&::-webkit-color-swatch { border: 1px solid #444; border-radius: 2px; }
-					}
-
-					.hex-label {
-						font-family: 'Consolas', monospace;
-						font-size: 10px;
-						color: #888;
-						width: 50px; // Fixed width to prevent jumping
-					}
+				.hex-label {
+					font-family: 'Consolas', monospace;
+					font-size: 10px;
+					color: #888;
+					width: 50px;
+					text-align: right;
 				}
 			}
 		}
+		
 	}
 }
 
