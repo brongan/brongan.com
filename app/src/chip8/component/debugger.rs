@@ -16,7 +16,7 @@ use super::colors::ColorSettings;
 use super::controls::Controls;
 use super::cpu_state::CpuState;
 use super::emulator_info::EmulatorInfo;
-use super::keypad_viewer::KeypadViewer;
+use super::keypad_component::KeypadComponent;
 use super::memory_viewer::MemoryViewer;
 use super::quirk_settings::QuirkSettings;
 use super::stack_viewer::StackViewer;
@@ -229,7 +229,7 @@ pub fn Debugger() -> impl IntoView {
 
                 <div class="panel-header">"Input"</div>
 
-                <KeypadViewer keypad />
+                <KeypadComponent keypad />
             </div>
 
             // --- COL DISASSEMBLY ---
