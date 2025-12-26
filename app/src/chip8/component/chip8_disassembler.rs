@@ -8,7 +8,7 @@ pub fn Disassembler(memory: ReadSignal<Vec<u8>>, pc: ReadSignal<u16>) -> impl In
         let mem = memory.get();
         let current_pc = pc.get() as usize;
         let start_idx = std::cmp::min(current_pc.saturating_sub(10 * 2), 0x200);
-        let end_idx = (current_pc + 20 * 2).min(mem.len());
+        let end_idx = (current_pc + 40 * 2).min(mem.len());
 
         (start_idx..end_idx)
             .step_by(2)
