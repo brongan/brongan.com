@@ -7,6 +7,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_use::{use_raf_fn, utils::Pausable, UseRafFnCallbackArgs};
 use std::time::Duration;
+use gloo_net::http::Request;
 use wasm_bindgen::prelude::*;
 use web_sys::CanvasRenderingContext2d;
 
@@ -120,9 +121,12 @@ pub fn Debugger() -> impl IntoView {
         }
     });
 
+    let selected_rom_url = RwSignal::new(String::new());
+
     let file_input = NodeRef::<Input>::new();
     let on_file_upload = move |ev: ev::Event| {
         let input = event_target::<web_sys::HtmlInputElement>(&ev);
+        selected_rom_url.set(String::new());
 
         if let Some(file) = input.files().and_then(|files| files.get(0)).map(File::from) {
             spawn_local(async move {
@@ -167,27 +171,44 @@ pub fn Debugger() -> impl IntoView {
         sync();
     };
 
-    let roms: Vec<(&'static str, &'static str)> = vec![];
+    let roms: Vec<(&'static str, &'static str)> = vec![
+        ("IBM Logo", "/roms/IBMLogo.ch8"),
+        ("Pong", "/roms/Pong.ch8"),
+        ("Brix", "/roms/Brix.ch8"),
+    ];
 
-    let on_rom_select = move |url: String| {
-        spawn_local(async move {
-            match reqwest::get(&url).await {
-                Ok(res) => {
-                     match res.bytes().await {
-                         Ok(bytes) => {
-                             let bytes = bytes.to_vec();
-                             set_rom_name(Some(url));
-                             emulator.update_value(|emulator| {
-                                 emulator.reset();
-                                 emulator.update_rom(bytes);
-                             });
-                         },
-                         Err(e) => leptos::logging::error!("Failed to get bytes: {:?}", e),
-                     }
-                },
-                Err(e) => leptos::logging::error!("Failed to fetch ROM: {:?}", e),
-            }
-        });
+    let on_rom_select = {
+        let resume = resume.clone();
+        let init_audio = init_audio.clone();
+
+        move |url: String| {
+            let resume = resume.clone();
+            init_audio();
+            selected_rom_url.set(url.clone());
+
+            spawn_local(async move {
+                match Request::get(&url).send().await {
+                     Ok(res) => {
+                          if !res.ok() {
+                               leptos::logging::error!("Failed to fetch ROM: Status {}", res.status());
+                               return;
+                          }
+                          match res.binary().await {
+                              Ok(bytes) => {
+                                  set_rom_name(Some(url));
+                                  emulator.update_value(|emulator| {
+                                      emulator.reset();
+                                      emulator.update_rom(bytes);
+                                  });
+                                  resume();
+                              },
+                              Err(e) => leptos::logging::error!("Failed to get bytes: {:?}", e),
+                          }
+                     },
+                     Err(e) => leptos::logging::error!("Failed to fetch ROM: {:?}", e),
+                }
+            });
+        }
     };
 
     view! {
@@ -238,6 +259,7 @@ pub fn Debugger() -> impl IntoView {
                 <Controls is_active pause resume step reset
                 roms=roms
                 on_rom_select
+                selected_rom_url
                 debug_mode
                 load=move |_| {
                     init_audio();

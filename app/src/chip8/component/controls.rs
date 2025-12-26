@@ -10,6 +10,7 @@ pub fn Controls(
     #[prop(into)] load: Callback<()>,
     #[prop(into)] roms: Vec<(&'static str, &'static str)>,
     #[prop(into)] on_rom_select: Callback<String>,
+    #[prop(into)] selected_rom_url: RwSignal<String>,
     #[prop(into)] debug_mode: RwSignal<bool>,
 ) -> impl IntoView {
     view! {
@@ -17,6 +18,7 @@ pub fn Controls(
             <div class="control-row">
                  <select
                     class="rom-select"
+                    prop:value=move || selected_rom_url.get()
                     on:change=move |ev| {
                         let val = event_target_value(&ev);
                         if !val.is_empty() {
