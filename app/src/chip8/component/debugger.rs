@@ -155,7 +155,7 @@ pub fn Debugger() -> impl IntoView {
         });
     };
 
-    let (show_debug, _set_debug) = signal(true);
+    let debug_mode = RwSignal::new(false);
 
     let reset = move || {
         emulator.update_value(|e| e.reset());
@@ -167,20 +167,45 @@ pub fn Debugger() -> impl IntoView {
         sync();
     };
 
+    let roms: Vec<(&'static str, &'static str)> = vec![];
+
+    let on_rom_select = move |url: String| {
+        spawn_local(async move {
+            match reqwest::get(&url).await {
+                Ok(res) => {
+                     match res.bytes().await {
+                         Ok(bytes) => {
+                             let bytes = bytes.to_vec();
+                             set_rom_name(Some(url));
+                             emulator.update_value(|emulator| {
+                                 emulator.reset();
+                                 emulator.update_rom(bytes);
+                             });
+                         },
+                         Err(e) => leptos::logging::error!("Failed to get bytes: {:?}", e),
+                     }
+                },
+                Err(e) => leptos::logging::error!("Failed to fetch ROM: {:?}", e),
+            }
+        });
+    };
+
     view! {
         <div
             class="debugger-app"
-            class:mode-debug=move || show_debug.get()
-            class:mode-game=move || !show_debug.get()
+            class:mode-debug=move || debug_mode.get()
+            class:mode-game=move || !debug_mode.get()
         >
             // --- COL STATE ---
-            <div class="panel col-state">
-                <EmulatorInfo is_active rom_name fps frame_time instruction_count beep />
-                <hr class="divider"/>
-                <CpuState pc registers index delay_timer sound_timer memory />
-                <hr class="divider"/>
-                <StackViewer stack sp />
-            </div>
+            <Show when=move || debug_mode.get()>
+                <div class="panel col-state">
+                    <EmulatorInfo is_active rom_name fps frame_time instruction_count beep />
+                    <hr class="divider"/>
+                    <CpuState pc registers index delay_timer sound_timer memory />
+                    <hr class="divider"/>
+                    <StackViewer stack sp />
+                </div>
+            </Show>
 
             // --- COL SCREEN & MEMORY ---
             <div class="panel col-canvas">
@@ -193,9 +218,11 @@ pub fn Debugger() -> impl IntoView {
                     />
                 </div>
                 <hr class="divider"/>
-                <div class="memory-wrapper">
-                    <MemoryViewer memory pc />
-                </div>
+                <Show when=move || debug_mode.get()>
+                     <div class="memory-wrapper">
+                        <MemoryViewer memory pc />
+                     </div>
+                </Show>
             </div>
 
             // --- COL CONTROLS ---
@@ -209,6 +236,9 @@ pub fn Debugger() -> impl IntoView {
                     accept=".ch8,.rom"
                 />
                 <Controls is_active pause resume step reset
+                roms=roms
+                on_rom_select
+                debug_mode
                 load=move |_| {
                     init_audio();
                     if let Some(input) = file_input.get() {
@@ -219,13 +249,12 @@ pub fn Debugger() -> impl IntoView {
 
                 <hr class="divider"/>
 
-                <QuirkSettings quirks />
-
-                <hr class="divider"/>
-
-                <ColorSettings on_color off_color />
-
-                <hr class="divider"/>
+                <Show when=move || debug_mode.get()>
+                    <QuirkSettings quirks />
+                    <hr class="divider"/>
+                    <ColorSettings on_color off_color />
+                    <hr class="divider"/>
+                </Show>
 
                 <div class="panel-header">"Input"</div>
 
@@ -233,9 +262,11 @@ pub fn Debugger() -> impl IntoView {
             </div>
 
             // --- COL DISASSEMBLY ---
-            <div class="panel col-disassembly">
-                <Disassembler memory pc />
-            </div>
+            <Show when=move || debug_mode.get()>
+                <div class="panel col-disassembly">
+                    <Disassembler memory pc />
+                </div>
+            </Show>
         </div>
     }
 }

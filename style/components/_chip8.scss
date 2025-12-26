@@ -64,7 +64,61 @@
     }
 
     &.mode-game {
-        grid-template-columns: 0px 0px 1fr 0px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 40px;
+        padding: 40px;
+        overflow-y: auto;
+
+        .panel {
+            border: none;
+            overflow: visible;
+        }
+
+        .col-canvas {
+            flex: 0 0 auto;
+
+            .screen-wrapper {
+                background: transparent;
+                padding: 0;
+
+                canvas {
+                    width: 960px;
+                    height: 480px;
+                    image-rendering: pixelated;
+                    border-radius: 4px;
+                    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+                    border: 4px solid #222;
+                }
+            }
+
+            .divider {
+                display: none;
+            }
+        }
+
+        .col-controls {
+            flex: 0 0 320px;
+            background: rgba($gray-darker, 0.5);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid $border-color;
+            backdrop-filter: blur(10px);
+
+            .panel-header {
+                background: transparent;
+                border: none;
+                padding-left: 0;
+                font-size: 14px;
+                margin-bottom: 10px;
+                color: $gray-light;
+            }
+
+            .divider {
+                display: none;
+            }
+        }
     }
 }
 
@@ -257,117 +311,203 @@
     .controls-panel {
         padding: 10px;
 
-        .button-grid {
-            display: grid;
-            grid-template-columns: 1fr;
+        .control-row {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
             gap: 8px;
-            margin-bottom: 10px;
 
-            button {
+            .rom-select {
+                flex: 1;
                 padding: 6px;
+                border-radius: 4px;
                 background: $gray-dark;
-                color: $gray-light;
+                color: $white;
                 border: 1px solid $border-color;
                 cursor: pointer;
+                font-family: inherit;
 
-                &:hover {
-                    background: $border-color;
-                }
-
-                &.active {
-                    border-left: 3px solid $syntax-teal;
+                option {
+                    background: $gray-dark;
                 }
             }
-        }
-    }
 
-    .quirks-panel {
-        padding: 10px;
-
-        .settings-list {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            padding: 5px 0;
-
-            .checkbox-row {
+            .debug-label {
+                color: $gray-light;
+                font-size: 0.9rem;
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                font-size: 11px;
-                color: $gray-light;
                 cursor: pointer;
                 user-select: none;
+
+                input {
+                    margin-right: 8px;
+                    accent-color: $syntax-blue;
+                    cursor: pointer;
+                }
 
                 &:hover {
                     color: $white;
                 }
+            }
+        }
 
-                input {
-                    margin: 0;
-                    cursor: pointer;
-                    accent-color: $syntax-blue;
+        padding: 6px;
+        background: $gray-dark;
+        color: $gray-light;
+        border: 1px solid $border-color;
+        cursor: pointer;
+
+        &:hover {
+            background: $border-color;
+        }
+
+        &.active {
+            border-left: 3px solid $syntax-teal;
+        }
+
+        .button-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .btn-control {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid $border-color;
+            border-radius: 6px;
+            color: $gray-light;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            font-size: 13px;
+
+            &:hover:not(:disabled) {
+                background: $gray-darker;
+                border-color: $white;
+                color: $white;
+                transform: translateX(2px);
+            }
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            &.btn-danger {
+                border-color: rgba($syntax-stop, 0.5);
+                color: $syntax-stop;
+
+                &:hover {
+                    background: rgba($syntax-stop, 0.1);
+                    border-color: $syntax-stop;
                 }
+            }
 
-                label {
-                    cursor: pointer;
-                    flex: 1;
+            &.active {
+                border-color: $syntax-teal;
+                color: $syntax-teal;
+                background: rgba($syntax-teal, 0.05);
+
+                &:hover {
+                    background: rgba($syntax-teal, 0.1);
                 }
             }
         }
     }
+}
 
-    .colors-panel {
-        padding: 10px;
+.quirks-panel {
+    padding: 10px;
 
-        .color-grid {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 8px 10px;
-            padding-top: 5px;
+    .settings-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 5px 0;
+
+        .checkbox-row {
+            display: flex;
             align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: $gray-light;
+            cursor: pointer;
+            user-select: none;
+
+            &:hover {
+                color: $white;
+            }
+
+            input {
+                margin: 0;
+                cursor: pointer;
+                accent-color: $syntax-blue;
+            }
 
             label {
                 cursor: pointer;
-                font-size: 11px;
-                color: $gray-light;
+                flex: 1;
+            }
+        }
+    }
+}
+
+.colors-panel {
+    padding: 10px;
+
+    .color-grid {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px 10px;
+        padding-top: 5px;
+        align-items: center;
+
+        label {
+            cursor: pointer;
+            font-size: 11px;
+            color: $gray-light;
+        }
+
+        .picker-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+
+            input[type="color"] {
+                -webkit-appearance: none;
+                border: none;
+                width: 24px;
+                height: 24px;
+                padding: 0;
+                background: none;
+                cursor: pointer;
+                border-radius: 2px;
+                overflow: hidden;
+                vertical-align: middle;
+
+                &::-webkit-color-swatch-wrapper {
+                    padding: 0;
+                }
+
+                &::-webkit-color-swatch {
+                    border: 1px solid $gray-dark;
+                    border-radius: 2px;
+                }
             }
 
-            .picker-wrapper {
-                display: flex;
-                align-items: center;
-                justify-content: flex-end;
-                gap: 8px;
-
-                input[type="color"] {
-                    -webkit-appearance: none;
-                    border: none;
-                    width: 24px;
-                    height: 24px;
-                    padding: 0;
-                    background: none;
-                    cursor: pointer;
-                    border-radius: 2px;
-                    overflow: hidden;
-                    vertical-align: middle;
-
-                    &::-webkit-color-swatch-wrapper {
-                        padding: 0;
-                    }
-
-                    &::-webkit-color-swatch {
-                        border: 1px solid $gray-dark;
-                        border-radius: 2px;
-                    }
-                }
-
-                .hex-label {
-                    font-family: 'Consolas', monospace;
-                    font-size: 10px;
-                    color: $gray-medium;
-                    width: 50px;
-                    text-align: right;
-                }
+            .hex-label {
+                font-family: 'Consolas', monospace;
+                font-size: 10px;
+                color: $gray-medium;
+                width: 50px;
+                text-align: right;
             }
         }
     }

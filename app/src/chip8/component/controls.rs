@@ -8,9 +8,42 @@ pub fn Controls(
     #[prop(into)] step: Callback<u32>,
     #[prop(into)] reset: Callback<()>,
     #[prop(into)] load: Callback<()>,
+    #[prop(into)] roms: Vec<(&'static str, &'static str)>,
+    #[prop(into)] on_rom_select: Callback<String>,
+    #[prop(into)] debug_mode: RwSignal<bool>,
 ) -> impl IntoView {
     view! {
         <div class="controls-panel">
+            <div class="control-row">
+                 <select
+                    class="rom-select"
+                    on:change=move |ev| {
+                        let val = event_target_value(&ev);
+                        if !val.is_empty() {
+                            on_rom_select.run(val);
+                        }
+                    }
+                 >
+                    <option value="" selected disabled>"Select ROM..."</option>
+                    {roms.into_iter().map(|(name, url)| {
+                        view! {
+                            <option value=url>{name}</option>
+                        }
+                    }).collect_view()}
+                 </select>
+            </div>
+
+            <div class="control-row">
+                 <label class="debug-label">
+                    <input
+                        type="checkbox"
+                        prop:checked=move || debug_mode.get()
+                        on:change=move |_| debug_mode.update(|d| *d = !*d)
+                    />
+                    "Debug Mode"
+                 </label>
+            </div>
+
             <div class="button-grid">
                 <button
                     class="btn-control"
@@ -41,23 +74,25 @@ pub fn Controls(
                     {move || if is_active.get() { "⏸ Pause" } else { "▶ Resume" }}
                 </button>
 
-                <button
-                    class="btn-control"
-                    disabled=move || is_active.get()
-                    on:click=move |_| step.run(1)
-                    title="Step 1 Instruction"
-                >
-                    "⤵ Step"
-                </button>
+                <Show when=move || debug_mode.get()>
+                    <button
+                        class="btn-control"
+                        disabled=move || is_active.get()
+                        on:click=move |_| step.run(1)
+                        title="Step 1 Instruction"
+                    >
+                        "⤵ Step"
+                    </button>
 
-                <button
-                    class="btn-control"
-                    disabled=move || is_active.get()
-                    on:click=move |_| step.run(10)
-                    title="Step 10 Instructions"
-                >
-                    "⤵⤵ Step 10"
-                </button>
+                    <button
+                        class="btn-control"
+                        disabled=move || is_active.get()
+                        on:click=move |_| step.run(10)
+                        title="Step 10 Instructions"
+                    >
+                        "⤵⤵ Step 10"
+                    </button>
+                </Show>
             </div>
         </div>
     }
