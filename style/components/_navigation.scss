@@ -1,0 +1,56 @@
+@use '../themes/variables' as *;
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 200px;
+    padding: 20px;
+    box-sizing: border-box;
+
+    nav {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1em;
+    }
+
+    @media (max-width: 768px) {
+        width: 100%;
+        padding: 10px;
+        position: relative;
+        height: auto;
+    }
+}
+
+.nav {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1em;
+}
+
+.nav-item {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    img {
+        width: 125px;
+        height: 125px;
+        object-fit: cover;
+        border-radius: 50%;
+        transition: transform 0.2s;
+
+        &:hover {
+            transform: scale(1.05);
+        }
+    }
+
+    h3 {
+        margin-top: 10px;
+        color: $white;
+    }
+}

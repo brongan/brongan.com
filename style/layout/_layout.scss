@@ -1,0 +1,37 @@
+@use '../themes/variables' as *;
+
+.root {
+    display: flex;
+}
+
+.main-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    width: max-content;
+    min-height: 100vh;
+}
+
+.header {
+    color: $white;
+    font: normal normal bold 36px/72px Open Sans;
+    letter-spacing: 0px;
+    opacity: 0.75;
+    text-align: center;
+    width: 20em;
+}
+
+.app-footer {
+    padding: 20px;
+    text-align: center;
+    color: $white;
+
+    a {
+        text-decoration: underline;
+    }
+}

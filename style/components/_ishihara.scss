@@ -1,0 +1,28 @@
+@use '../themes/variables' as *;
+
+.blindness-selector {
+    margin: 0 10px 0 10px;
+
+    input {
+        visibility: hidden;
+    }
+
+    label {
+        background: rgba($gray-medium, 0.17) 0% 0% no-repeat padding-box;
+        border-radius: 11px;
+        color: rgba(255, 252, 252, 0.75);
+        cursor: pointer;
+        font: normal normal 16px/22px $font-stack-main;
+        height: 3em;
+        letter-spacing: 0px;
+        padding: 14px 28px;
+        text-align: center;
+        user-select: none;
+    }
+
+    input:checked+label {
+        border: 3px solid $white;
+        color: $white;
+        font: normal normal bold 16px/22px $font-stack-main;
+    }
+}

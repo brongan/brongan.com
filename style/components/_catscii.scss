@@ -1,0 +1,11 @@
+@use '../themes/variables' as *;
+
+.ascii-art {
+    font-family: $font-stack-mono;
+    font-size: 8px;
+    line-height: 8px;
+    background-color: $white;
+    color: $black;
+    padding: 10px;
+    border-radius: 5px;
+}
