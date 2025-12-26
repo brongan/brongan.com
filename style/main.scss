@@ -55,11 +55,11 @@
 }
 
 .main-panel {
-	position: absolute; 
-	left: 0; 
-	right: 0; 
-	margin-left: auto; 
-	margin-right: auto; 
+	position: absolute;
+	left: 0;
+	right: 0;
+	margin-left: auto;
+	margin-right: auto;
 	display: flex;
 	align-items: center;
 	flex-direction: column;
@@ -370,18 +370,18 @@ $border-color: #333;
             padding: 2px 8px;
             border-bottom: 1px solid #222;
 
-            .idx { 
-                color: #666; 
-                font-weight: bold; 
-                text-align: right; 
-                padding-right: 8px; 
+            .idx {
+                color: #666;
+                font-weight: bold;
+                text-align: right;
+                padding-right: 8px;
                 border-right: 1px solid #333;
             }
 
-            .val { 
-                color: #555; 
-                padding-left: 8px; 
-                font-family: monospace; 
+            .val {
+                color: #555;
+                padding-left: 8px;
+                font-family: monospace;
             }
 
             &.row-stored {
@@ -404,7 +404,7 @@ $border-color: #333;
 	.controls-panel {
 		padding: 10px;
 		.button-grid {
-			display: grid; 
+			display: grid;
 			grid-template-columns: 1fr; // Vertical Stack
 			gap: 8px;
 			margin-bottom: 10px;
@@ -459,7 +459,7 @@ $border-color: #333;
 			display: grid;
 			// Column 1: Labels (takes available space)
 			// Column 2: Controls (takes strictly what it needs)
-			grid-template-columns: 1fr auto; 
+			grid-template-columns: 1fr auto;
 			gap: 8px 10px; // Row Gap: 8px, Column Gap: 10px
 			padding-top: 5px;
 			align-items: center; // Vertically center everything
@@ -487,7 +487,7 @@ $border-color: #333;
 					border-radius: 2px;
 					overflow: hidden;
 
-					vertical-align: middle; 
+					vertical-align: middle;
 
 					&::-webkit-color-swatch-wrapper { padding: 0; }
 					&::-webkit-color-swatch { border: 1px solid #444; border-radius: 2px; }
@@ -502,7 +502,7 @@ $border-color: #333;
 				}
 			}
 		}
-		
+
 	}
 }
 
@@ -520,7 +520,7 @@ $border-color: #333;
 	}
 
 	.memory-wrapper {
-		overflow: hidden; 
+		overflow: hidden;
 		.memory-viewer {
 			height: 100%;
 			display: flex;
@@ -534,7 +534,7 @@ $border-color: #333;
 				// The Rows
 				.memory-row {
 					display: grid;
-					grid-template-columns: 60px max-content max-content; 
+					grid-template-columns: 60px max-content max-content;
 					gap: 10px;
 					white-space: nowrap;
 					padding: 2px 10px;
@@ -565,8 +565,8 @@ $border-color: #333;
 				cursor: default;
 				border-left: 3px solid transparent;
 				&:hover { background-color: rgba(255,255,255,0.05); }
-				&.active { 
-					background-color: $bg-active; 
+				&.active {
+					background-color: $bg-active;
 					border-left-color: $text-blue;
 					opacity: 1;
 				}
