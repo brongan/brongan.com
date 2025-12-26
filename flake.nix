@@ -65,7 +65,7 @@
 
         wasmCraneLib = baseCraneLib.overrideToolchain (
           p:
-            p.rust-bin.stable.latest.default.override {
+            p.rust-bin.nightly.latest.default.override {
               targets = ["wasm32-unknown-unknown"];
             }
         );
@@ -122,7 +122,7 @@
 
         crossCraneLib = (crane.mkLib crossPkgs).overrideToolchain (
           p:
-            p.rust-bin.stable.latest.default.override {
+            p.rust-bin.nightly.latest.default.override {
               targets = ["x86_64-unknown-linux-musl"];
             }
         );
