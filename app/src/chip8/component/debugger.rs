@@ -121,6 +121,18 @@ pub fn Debugger() -> impl IntoView {
         }
     });
 
+    Effect::new(move |_| {
+        let on = on_color.get();
+        let off = off_color.get();
+        ctx_ref.with_value(|ctx| {
+            if let Some(ctx) = ctx {
+                emulator.with_value(|emu| {
+                    draw_screen(ctx, emu.screen(), on.clone(), off.clone());
+                });
+            }
+        });
+    });
+
     let selected_rom_url = RwSignal::new(String::new());
 
     let file_input = NodeRef::<Input>::new();

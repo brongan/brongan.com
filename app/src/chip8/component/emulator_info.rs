@@ -23,7 +23,7 @@ pub fn EmulatorInfo(
                 <dd>{move || format!("{:.1}", fps.get())}</dd>
                 <dt>"Frame Time:"</dt>
                 <dd>{move || format!("{:.1} ms", frame_time.get().as_millis())}</dd>
-                <dt>"Current State:"</dt>
+                <dt>"Current:"</dt>
                 <dd
                     class:state-running=move || is_active.get()
                     class:state-stopped=move || !is_active.get()
