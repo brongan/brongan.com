@@ -5,8 +5,6 @@ use leptos::prelude::*;
 pub fn QuirkSettings(#[prop(into)] quirks: RwSignal<Quirks>) -> impl IntoView {
     view! {
         <div class="quirks-panel">
-            <div class="panel-header">"Quirks / Compatibility"</div>
-
             <div class="settings-list">
                 // 1. Shift Vy
                 <div class="checkbox-row" title="On: Vx = Vy >> 1. Off: Vx = Vx >> 1 (Original)">

@@ -247,18 +247,16 @@ pub fn Debugger() -> impl IntoView {
                 }
                 />
 
-                <hr class="divider"/>
+                <KeypadComponent keypad />
 
                 <Show when=move || debug_mode.get()>
+                    <hr class="divider"/>
+                    <div class="panel-header">"Quirks / Compatibility"</div>
                     <QuirkSettings quirks />
                     <hr class="divider"/>
+                    <div class="panel-header">"Display Colors"</div>
                     <ColorSettings on_color off_color />
-                    <hr class="divider"/>
                 </Show>
-
-                <div class="panel-header">"Input"</div>
-
-                <KeypadComponent keypad />
             </div>
 
             // --- COL DISASSEMBLY ---
