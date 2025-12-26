@@ -1,3 +1,4 @@
+#[cfg(feature = "ssr")]
 use image::DynamicImage;
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -22,6 +23,7 @@ impl FromStr for CatsciiError {
     }
 }
 
+#[cfg(feature = "ssr")]
 pub fn client() -> Result<reqwest::Client, ServerFnError<CatsciiError>> {
     use_context::<reqwest::Client>()
         .ok_or_else(|| ServerFnError::ServerError("Reqwest Client missing.".into()))
@@ -101,12 +103,13 @@ pub fn catscii() -> impl IntoView {
         <header class="header">
             <h1 class="title">{ "Catscii" }</h1>
         </header>
-        <div class="content">
+        <div class="catscii-container">
             <CatsciiAscii/>
         </div>
     }
 }
 
+#[cfg(feature = "ssr")]
 async fn get_cat_url(client: &reqwest::Client) -> Result<Option<String>, reqwest::Error> {
     let api_url = "https://api.thecatapi.com/v1/images/search";
     #[derive(Deserialize)]
@@ -125,6 +128,7 @@ async fn get_cat_url(client: &reqwest::Client) -> Result<Option<String>, reqwest
         .map(|x| x.url))
 }
 
+#[cfg(feature = "ssr")]
 async fn download_file(url: &str, client: &reqwest::Client) -> Result<Vec<u8>, reqwest::Error> {
     Ok(client
         .get(url)

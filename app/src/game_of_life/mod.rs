@@ -144,6 +144,7 @@ pub fn game_of_life() -> impl IntoView {
                         <button class="game-button" on:click=reset >{ "Reset" }</button>
                         <button class="game-button" on:click=kill_all >{ "KillAll" }</button>
                     </div>
+                    <Instructions />
                 </section>
             </section>
             <Footer text=String::from("Game of Life - a rust experiment ")/>

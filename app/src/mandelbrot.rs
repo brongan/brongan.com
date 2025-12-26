@@ -1,6 +1,6 @@
 use crate::point2d::Point2D;
 use anyhow::anyhow;
-use image::{DynamicImage, GrayImage, RgbaImage};
+use image::{DynamicImage, RgbaImage};
 use leptos::html::Canvas;
 use leptos::logging::log;
 use leptos::prelude::*;
@@ -95,15 +95,20 @@ pub fn mandelbrot_model(bounds: Bounds) -> impl IntoView {
     let lower_right = Complex::<f64> { re: -1.0, im: 0.20 };
 
     view! {
-        <header class="header">
-            <h1> { "Mandelbrot" } </h1>
-        </header>
-        <div class="readout">
-            <RenderMandelbrot bounds={bounds} upper_left={upper_left} lower_right={lower_right} />
+        <div class="mandelbrot-container">
+            <header class="header">
+                <h1> { "Mandelbrot" } </h1>
+            </header>
+            <div class="mandelbrot-viewer">
+                <RenderMandelbrot bounds={bounds} upper_left={upper_left} lower_right={lower_right} />
+            </div>
+            <p class="mandelbrot-caption">
+                "Visualizing the set of complex numbers c for which the function f_c(z) = z^2 + c does not diverge."
+            </p>
+            <footer class="mandelbrot-footer">
+                <p><a href="https://github.com/brongan/brongan.com" target="_blank">{ "source" }</a></p>
+            </footer>
         </div>
-        <footer class="footnote">
-            <p><a href="https://github.com/brongan/brongan.com" target="_blank">{ "source" }</a></p>
-        </footer>
     }
 }
 

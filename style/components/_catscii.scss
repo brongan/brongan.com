@@ -1,11 +1,43 @@
 @use '../themes/variables' as *;
 
-.ascii-art {
-    font-family: $font-stack-mono;
-    font-size: 8px;
-    line-height: 8px;
-    background-color: transparent;
-    color: $white;
-    padding: 10px;
-    border-radius: 5px;
+.catscii-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 20px auto 40px auto;
+    max-width: 1200px;
+    padding: 0 20px;
+
+    .ascii-art {
+        font-family: $font-stack-mono;
+        font-size: 8px;
+        line-height: 8px;
+        background-color: $gray-darkest;
+        color: $white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: $shadow-3;
+        overflow: auto;
+        max-width: 100%;
+        max-height: 80vh;
+        border: 1px solid $gray-dark;
+
+        &::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: $gray-darkest;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: $scrollbar-thumb;
+            border-radius: 5px;
+
+            &:hover {
+                background: $scrollbar-thumb-hover;
+            }
+        }
+    }
 }

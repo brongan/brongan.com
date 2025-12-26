@@ -4,32 +4,83 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100%;
+    margin: 20px auto 40px auto;
+    max-width: 900px;
+    padding: 0 20px;
 
     .life-area {
         display: flex;
         flex-direction: column;
         align-items: center;
+        background-color: $white;
+        padding: 30px;
+        border-radius: 16px;
+        box-shadow: $shadow-2;
+        width: 100%;
+        gap: 24px;
 
-        canvas {
-            border: 1px solid $border-color;
+        .game-of-life {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            overflow: auto;
+
+            canvas {
+                border-radius: 8px;
+                box-shadow: $shadow-input;
+                border: 1px solid $gray-light;
+                cursor: crosshair;
+            }
         }
     }
 
     .life-buttons {
-        margin-top: 10px;
         display: flex;
-        gap: 10px;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: center;
 
         .game-button {
             background-color: $btn-primary-bg;
             color: $btn-primary-text;
             border: none;
-            padding: 8px 16px;
+            padding: 10px 20px;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            box-shadow: $btn-shadow;
 
             &:hover {
                 background-color: $btn-hover-bg;
+                box-shadow: $btn-hover-shadow;
+                transform: translateY(-2px);
+            }
+
+            &:active {
+                transform: translateY(0);
+            }
+        }
+    }
+
+    .life-instructions {
+        text-align: left;
+        color: $text-main;
+        background-color: $gray-lighter;
+        padding: 16px 24px;
+        border-radius: 8px;
+        width: 100%;
+        font-size: 0.9rem;
+
+        ul {
+            margin: 0;
+            padding-left: 20px;
+
+            li {
+                margin-bottom: 6px;
+                font-family: $font-stack-mono;
             }
         }
     }

@@ -10,7 +10,7 @@
     label {
         background: rgba($gray-medium, 0.17) 0% 0% no-repeat padding-box;
         border-radius: 11px;
-        color: rgba(255, 252, 252, 0.75);
+        color: rgba($white, 0.75);
         cursor: pointer;
         font: normal normal 16px/22px $font-stack-main;
         height: 3em;
@@ -111,7 +111,7 @@
     font-size: 0.8em;
 
     a {
-        color: #0000EE;
+        color: $link-blue;
         text-decoration: none;
 
         &:hover {

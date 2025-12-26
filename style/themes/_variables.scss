@@ -34,13 +34,20 @@ $btn-primary-text: $white;
 $btn-hover-bg: #bd3232;
 $table-bg: $white;
 $table-hover-bg: #f5f5f5;
+$led-active: #00ff00;
+$scrollbar-track: $gray-darkest;
+$scrollbar-thumb: #555555;
+$scrollbar-thumb-hover: #777777;
+$scrollbar-border: $gray-dark;
+$link-blue: #0000EE;
 
 // Typography
 $font-stack-main: 'Roboto', 'Open Sans', sans-serif;
-$font-stack-mono: 'Consolas', 'Monaco', monospace;
+$font-stack-mono: 'Fira Code Retina', 'Fira Code', 'Consolas', 'Monaco', monospace;
 
 // Shadows
 $shadow-input: inset -4px 7px 7px -3px rgba(0, 0, 0, 0.36);
+$shadow-1: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
 $shadow-2: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
 $shadow-3: 0 19px 38px rgba(0, 0, 0, 0.30), 0 15px 12px rgba(0, 0, 0, 0.22);
 $btn-shadow: -4px 7px 9px -1px rgba(0, 0, 0, 0.36);

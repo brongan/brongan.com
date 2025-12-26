@@ -1,4 +1,54 @@
+@use 'sass:color';
 @use '../themes/variables' as *;
+
+.key {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(145deg, color.adjust($gray-dark, $lightness: 5%), color.adjust($gray-dark, $lightness: -5%));
+    border-radius: 6px;
+    border: 1px solid color.adjust($gray-dark, $lightness: 10%);
+    border-bottom-color: color.adjust($gray-dark, $lightness: -10%);
+    box-shadow: 0 4px 0 color.adjust($gray-dark, $lightness: -15%), 0 5px 10px rgba(0, 0, 0, 0.3);
+    transition: all 0.1s ease;
+    cursor: pointer;
+    position: relative;
+    top: 0;
+
+    .key-label {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: $white;
+        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+    }
+
+    .hex-label {
+        font-size: 0.7rem;
+        color: $gray-medium;
+        margin-top: -2px;
+    }
+
+    &:active,
+    &.pressed {
+        top: 4px;
+        box-shadow: 0 0 0 color.adjust($gray-dark, $lightness: -15%), inset 0 2px 5px rgba(0, 0, 0, 0.4);
+        background: $gray-dark;
+        border-color: $gray-dark;
+
+        background: linear-gradient(145deg, color.adjust($led-active, $lightness: -10%), $led-active);
+        box-shadow: 0 0 15px rgba(0, 255, 0, 0.6), inset 0 2px 5px rgba(0, 0, 0, 0.2);
+        border: 1px solid $led-active;
+
+        .key-label,
+        .hex-label {
+            color: $black;
+            text-shadow: none;
+        }
+    }
+}
 
 .debugger-app {
     background: $gray-darkest;
@@ -10,7 +60,6 @@
     overflow: hidden;
 
     &.mode-debug {
-        // [1] State    [2] Game/Mem     [3] Control    [4] Disasm
         grid-template-columns: 260px 642px 260px 1fr;
     }
 
@@ -307,7 +356,7 @@
                     }
 
                     &::-webkit-color-swatch {
-                        border: 1px solid #444;
+                        border: 1px solid $gray-dark;
                         border-radius: 2px;
                     }
                 }
@@ -449,42 +498,4 @@
     padding: 15px;
     border-radius: 8px;
     border: 1px solid $border-color;
-}
-
-.key {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 50px;
-    height: 50px;
-    background: $gray-dark;
-    border-radius: 6px;
-    border: 1px solid $border-color;
-    transition: all 0.1s ease;
-    cursor: default;
-
-    .key-label {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: $white;
-    }
-
-    .hex-label {
-        font-size: 0.7rem;
-        color: $gray-medium;
-        margin-top: -2px;
-    }
-
-    &.pressed {
-        background: #00ff00;
-        box-shadow: 0 0 10px #00ff00;
-        border-color: #00ff00;
-        transform: scale(0.95);
-
-        .key-label,
-        .hex-label {
-            color: $black;
-        }
-    }
 }

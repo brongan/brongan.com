@@ -1,45 +1,78 @@
+@use 'sass:color';
 @use '../themes/variables' as *;
 
 .analytics-container {
     display: flex;
     justify-content: center;
-    padding: 20px;
     width: 95%;
+    margin: 20px auto 40px auto;
     max-width: 1000px;
-    margin: 0 auto;
+    background-color: $white;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: $shadow-2;
+    overflow: hidden;
 
     table {
         width: 100%;
-        border-collapse: collapse;
-        background-color: $table-bg;
-        border-radius: 8px;
-        overflow: hidden;
+        border-collapse: separate;
+        border-spacing: 0;
 
-        th,
-        td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid $border-color;
-            color: $black;
+        thead {
+            th {
+                text-align: left;
+                padding: 16px;
+                color: $gray-medium;
+                text-transform: uppercase;
+                font-size: 0.8rem;
+                letter-spacing: 1px;
+                font-weight: 600;
+                border-bottom: 2px solid $gray-lighter;
+                white-space: nowrap;
+            }
         }
 
-        th {
-            background-color: $gray-lighter;
-            font-weight: bold;
-        }
+        tbody {
+            tr {
+                transition: background-color 0.2s;
 
-        tr:hover {
-            background-color: $table-hover-bg;
+                &:hover {
+                    background-color: lighten($gray-lighter, 2%);
+                }
+
+                td {
+                    padding: 14px 16px;
+                    color: $gray-dark;
+                    border-bottom: 1px solid $gray-lighter;
+                    font-size: 0.95rem;
+
+                    &:first-child,
+                    &:last-child {
+                        font-feature-settings: "tnum";
+                        font-variant-numeric: tabular-nums;
+                        font-family: $font-stack-mono;
+                        font-size: 0.85rem;
+                    }
+                }
+
+                &:last-child td {
+                    border-bottom: none;
+                }
+            }
         }
 
         .iso-code {
             text-align: center;
-            width: 70px;
+            width: 80px;
         }
 
         .count {
-            text-align: center;
+            text-align: right;
             width: 100px;
+        }
+
+        .ip-address {
+            width: 160px;
         }
     }
 }

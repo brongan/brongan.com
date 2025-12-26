@@ -101,9 +101,9 @@ fn nav_button(nav_item: NavItem) -> impl IntoView {
     view! {
         <div class="nav-item">
             <a href={nav_item.route}>
-                <img src={nav_item.thumbnail} />
+                <img src={nav_item.thumbnail} alt={nav_item.title}/>
+                <h3>{ nav_item.title }</h3>
             </a>
-            <h3>{ nav_item.title }</h3>
         </div>
     }
 }
