@@ -588,7 +588,7 @@
 
         .code-window {
             flex: 1;
-            overflow-y: auto;
+            overflow: auto;
             padding: 5px 0;
 
             .code-row {
@@ -597,6 +597,7 @@
                 padding: 2px 8px;
                 cursor: default;
                 border-left: 3px solid transparent;
+                white-space: nowrap;
 
                 &:hover {
                     background-color: rgba(255, 255, 255, 0.05);
