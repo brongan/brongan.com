@@ -78,7 +78,7 @@ pub fn Debugger() -> impl IntoView {
         resume,
         is_active,
     } = use_raf_fn({
-        let emulator = emulator.clone();
+        let emulator = emulator;
 
         move |args: UseRafFnCallbackArgs| {
             let dt = Duration::from_secs_f64(args.delta / 1000.0);
@@ -155,7 +155,7 @@ pub fn Debugger() -> impl IntoView {
         });
     };
 
-    let (show_debug, set_debug) = signal(true);
+    let (show_debug, _set_debug) = signal(true);
 
     let reset = move || {
         emulator.update_value(|e| e.reset());

@@ -84,7 +84,7 @@ pub fn KeypadComponent(keypad: RwSignal<Keypad>) -> impl IntoView {
                             on:mouseleave=move |_| {
                                 keypad.update(|k| k.disable_key(*val));
                             }
-                            on:touchstart=move |e| {
+                            on:touchstart=move |_e| {
                                 keypad.update(|k| k.enable_key(*val));
                             }
                             on:touchend=move |_| {
