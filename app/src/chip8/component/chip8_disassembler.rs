@@ -7,8 +7,11 @@ pub fn Disassembler(memory: ReadSignal<Vec<u8>>, pc: ReadSignal<u16>) -> impl In
     let instruction_rows = move || {
         let mem = memory.get();
         let current_pc = pc.get() as usize;
-        let start_idx = std::cmp::min(current_pc.saturating_sub(10 * 2), 0x200);
-        let end_idx = (current_pc + 40 * 2).min(mem.len());
+        
+        // Sliding window: ~25 instructions before and after
+        let window_size = 25;
+        let start_idx = current_pc.saturating_sub(window_size * 2);
+        let end_idx = (current_pc + window_size * 2).min(mem.len());
 
         (start_idx..end_idx)
             .step_by(2)
