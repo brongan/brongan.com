@@ -123,6 +123,7 @@ pub async fn mandelbrot_get(
     upper_left: Complex<f64>,
     lower_right: Complex<f64>,
 ) -> Result<(), ServerFnError> {
+    use image::GrayImage;
     use opentelemetry::global;
     use opentelemetry::trace::Tracer;
     use rayon::iter::IndexedParallelIterator;
