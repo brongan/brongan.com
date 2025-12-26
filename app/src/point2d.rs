@@ -3,7 +3,7 @@ use rand::distr::Distribution;
 use rand::Rng;
 use std::fmt;
 
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Default, Clone, Copy)]
 pub struct Point2D<T> {
     pub x: T,
     pub y: T,

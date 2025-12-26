@@ -1,17 +1,22 @@
 use crate::color::{hex_color, Color};
 use crate::ishihara_form::IshiharaArgs;
 use crate::ishihara_form::IshiharaInput;
-use crate::point2d::Point2D;
+use crate::point2d::{Point2D, UniformPoint2D};
 use image::{DynamicImage, Rgba, RgbaImage};
 use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut};
 use leptos::html::Canvas;
 use leptos::prelude::*;
+use rand::Rng;
 use rand::distr::uniform::Uniform;
 use rand::distr::Distribution;
-use rand::rngs::ThreadRng;
+use rand::rngs::{StdRng, ThreadRng};
 use rand::seq::IndexedRandom;
 use rusttype::{point, Font, Scale};
+use simple_profiler::profile_macro::{self, profile};
+use std::collections::VecDeque;
 use std::fmt;
+use std::sync::Mutex;
+use std::sync::atomic::AtomicU64;
 use strum::EnumIter;
 use strum::EnumString;
 use wasm_bindgen::{Clamped, JsCast};
@@ -292,4 +297,216 @@ pub fn generate_plate(text: &str, blindness: Blindness) -> RgbaImage {
         .iter()
         .for_each(|circle| circle.draw(&mut image, &mut rng, blindness));
     image
+}
+
+struct CircleGrid {
+    pixel_width: u32,
+    pixel_height: u32,
+    padding: f64,
+    cell_size: u32,
+    rows: u32,
+    columns: u32,
+    cells: Box<[Option<f64>]>
+}
+
+impl CircleGrid {
+    pub fn new(width: u32, height: u32, cell_size: u32, padding: f64) -> CircleGrid {
+        let columns = width.div_ceil(cell_size);
+        let rows = height.div_ceil(cell_size);
+
+        println!("rows: {}, columns: {}", rows, columns);
+
+        let cells = vec![None; (rows * columns) as usize].into_boxed_slice();
+
+        CircleGrid { pixel_width: width, pixel_height: height, padding, cell_size, rows, columns, cells }
+    }
+
+    fn fill(&mut self, row: i32, column: i32, circle: Circle2, max_distance: f64) {
+        let mut visited = vec![false; (self.rows * self.columns) as usize];
+        let mut queue = VecDeque::new();
+        queue.push_back((row, column));
+
+        while queue.len() > 0 {
+            let (row, column) = queue.pop_front().unwrap();
+
+            if row < 0 || column < 0 || row as u32 >= self.rows || column as u32 >= self.columns {
+                continue;
+            }
+
+            let i = self.index(row as u32, column as u32);
+            if visited[i] {
+                continue;
+            }
+
+            visited[i] = true;
+
+            let cell_center = Point2d {
+                x: column * self.cell_size as i32 + self.cell_size as i32 / 2,
+                y: row * self.cell_size as i32 + self.cell_size as i32 / 2
+            };
+
+            // Distance from edge, inside being 0.
+            let distance = (circle.center.distance(&cell_center) - circle.radius).max(0.0);
+
+            // Replace distance if current distance is None or new distance is less.
+            if self.cells[i].map_or(true, |cell_distance| distance < cell_distance && distance <= max_distance) {
+                self.cells[i] = Some(distance);
+
+                // Only spread when distance gets replaced
+                queue.push_back((row + 1, column));
+                queue.push_back((row, column + 1));
+                queue.push_back((row - 1, column));
+                queue.push_back((row, column - 1));
+            }
+        }
+    }
+
+    fn index(&self, row: u32, column: u32) -> usize {
+        (self.columns * row + column) as usize
+    }
+
+    pub fn max_radius(&self, point: Point2d) -> f64 {
+        if point.x < 0 || point.y < 0 || point.x >= self.pixel_width as i32 || point.y >= self.pixel_height as i32 {
+            panic!("Circle out of bounds: center: ({}, {}), canvas size: ({} , {})", point.x, point.y, self.pixel_width, self.pixel_height);
+        }
+
+        let row = point.y as u32/ self.cell_size;
+        let column = point.x as u32 / self.cell_size;
+        let i = self.index(row, column);
+
+        return self.cells[i].map_or(f64::MAX, |distance| distance - self.padding)
+    }
+
+    pub fn insert_circle(&mut self, circle: Circle2, max_distance: f64) -> bool {
+        if circle.center.x < 0 || circle.center.y < 0 || circle.center.x >= self.pixel_width as i32 || circle.center.y >= self.pixel_height as i32 {
+            panic!("Circle out of bounds: center: ({}, {}), canvas size: ({} , {})", circle.center.x, circle.center.y, self.pixel_width, self.pixel_height);
+        }
+
+        let row = circle.center.y as u32/ self.cell_size;
+        let column = circle.center.x as u32 / self.cell_size;
+        let i = self.index(row, column);
+
+        // Add circle if the nearest circle is < radius + padding away
+        if self.cells[i].map_or(true, |distance| distance >= circle.radius + self.padding) {
+            self.fill(row as i32, column as i32, circle, max_distance);
+
+            return true;
+        };
+
+        false
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct Circle2 {
+    center: Point2d,
+    radius: f64
+}
+
+impl Circle2 {
+    pub fn generate_circles(width: u32, height: u32, min_radius: f64, max_radius: f64, padding: f64, coverage: f64, rng: &mut StdRng) -> Vec<Circle2> {
+        assert!(coverage >= 0.0 && coverage <= 1.0, "coverage must be between 0 and 1.");
+
+        const MAX_MISSES: usize = 1000;
+        const SIZE_VARIATION: f64 = 0.5;
+
+        let total_area = (width * height) as f64;
+
+        let mut grid = CircleGrid::new(width, height, 1, padding);
+        let uniform = Uniform::new(
+            Point2d { x: 0, y: 0 },
+            Point2d {
+                x: width as i32,
+                y: height as i32,
+            },
+        )
+        .unwrap();
+
+        let mut circles = Vec::new();
+        let mut area = 0.0;
+        let mut missed = 0;
+        let mut count = 0;
+        while area / total_area <= coverage && missed < MAX_MISSES {
+
+            count += 1;
+            // println!("count: {}", count);
+            let center = uniform.sample(rng);
+            let max_radius = f64::min(grid.max_radius(center), max_radius);
+            let min_radius = f64::max(max_radius * SIZE_VARIATION, min_radius);
+
+            if max_radius < min_radius {
+                missed += 1;
+                continue;
+            }
+            let radius = rng.random_range(min_radius..max_radius);
+            let circle = Circle2 { center, radius };
+
+            if grid.insert_circle(circle, max_radius + padding * 2.0) {
+                circles.push(circle);
+                area += std::f64::consts::PI * radius * radius;
+                missed = 0;
+            } else {
+                missed += 1;
+            }
+        }
+
+        // TODO: Probably remove this
+        #[cfg(test)]
+        {
+            println!("target coverage: {}", coverage);
+            println!("actual coverage: {}", area / total_area);
+        }
+
+        return circles;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{fs::create_dir_all, path::Path};
+
+    use image::{Rgba, RgbaImage};
+    use imageproc::{drawing::{draw_filled_circle_mut, draw_filled_rect_mut}, rect::Rect};
+    use rand::{SeedableRng, rngs::StdRng};
+    use simple_profiler::profile_macro::profile;
+
+    use crate::ishihara::Circle2;
+
+    static TEST_DIR: &str = "../test artifacts/";
+
+    type Circles = Vec<Circle2>;
+
+    const WIDTH: u32 = 1920;
+    const HEIGHT: u32 = 1080;
+
+    #[profile]
+    fn circles() -> Circles {
+        let mut rng = StdRng::seed_from_u64(0);
+
+        Circle2::generate_circles(1920, 1080, 8.0, 16.0, 2.0, 0.5, &mut rng)
+    }
+
+    #[test]
+    pub fn circle_generator() -> Result<(), Box<dyn std::error::Error>> {
+        println!("test dir: {:?}", std::path::absolute(Path::new(TEST_DIR))?.as_os_str());
+        create_dir_all(TEST_DIR)?;
+
+        let output_file = Path::new(TEST_DIR).join("circle_generator_output.png");
+
+        let circles = circles();
+
+        simple_profiler::profiler::profile_current_thread(simple_profiler::analysis::Sort::TotalTime, simple_profiler::analysis::Unit::Millisecond);
+
+        let mut canvas = RgbaImage::new(WIDTH, HEIGHT);
+        draw_filled_rect_mut(&mut canvas, Rect::at(0, 0).of_size(WIDTH, HEIGHT), Rgba([255, 255, 255, 255]));
+
+        for circle in circles {
+            let center = (circle.center.x, circle.center.y);
+            draw_filled_circle_mut(&mut canvas, center, circle.radius as i32, Rgba([0, 0, 0, 255]));
+        }
+
+        canvas.save(output_file)?;
+
+        Ok(())
+    }
 }

@@ -9,3 +9,5 @@ perf.*
 dist/
 result
 db/
+
+/test artifacts
