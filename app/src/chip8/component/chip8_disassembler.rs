@@ -3,7 +3,7 @@ use leptos::prelude::*;
 use crate::chip8::emulator::cpu::Instruction;
 
 #[component]
-pub fn Disassembler(memory: RwSignal<Vec<u8>>, pc: RwSignal<u16>) -> impl IntoView {
+pub fn Disassembler(memory: ReadSignal<Vec<u8>>, pc: ReadSignal<u16>) -> impl IntoView {
     let instruction_rows = move || {
         let mem = memory.get();
         let current_pc = pc.get() as usize;

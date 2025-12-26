@@ -70,7 +70,6 @@ pub fn KeypadViewer(keypad: RwSignal<Keypad>) -> impl IntoView {
 
     view! {
         <div class="chip8-instructions">
-            <p><strong>"Keypad Mapping"</strong></p>
             <div class="key-grid"> {
                 KEYS.iter().map(|(label, val)| {
                     let is_pressed = move || keypad.get().is_pressed(*val);

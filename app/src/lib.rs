@@ -1,3 +1,4 @@
+#![feature(duration_millis_float)]
 use analytics::AnalyticsComponent;
 use catscii::Catscii;
 use chip8::Debugger;

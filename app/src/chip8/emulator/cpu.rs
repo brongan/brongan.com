@@ -8,7 +8,8 @@ use super::screen::Screen;
 pub struct CPU {
     pc: u16,
     index: u16,
-    stack: Vec<u16>,
+    stack: [u16; 16],
+    sp: usize,
     delay_timer: Timer,
     sound_timer: Timer,
     registers: Registers,
@@ -79,8 +80,12 @@ impl CPU {
         self.index
     }
 
-    pub fn get_stack(&self) -> &[u16] {
-        &self.stack
+    pub fn get_stack(&self) -> [u16; 16] {
+        self.stack
+    }
+
+    pub fn get_sp(&self) -> usize {
+        self.sp
     }
 
     pub fn get_memory(&self) -> &[u8] {
@@ -172,7 +177,8 @@ impl CPU {
             }
             Call(addr) => return addr,
             CallSubroutine(addr) => {
-                self.stack.push(self.pc + 2);
+                self.stack[self.sp] = self.pc + 2;
+                self.sp += 1;
                 return addr;
             }
             CondSkip(cond) => {
@@ -241,7 +247,10 @@ impl CPU {
                 }
             }
             Rand(vx, nn) => self.registers.set(vx, rand::rng().random::<u8>() & nn),
-            Return => return self.stack.pop().unwrap(),
+            Return => {
+                self.sp -= 1;
+                return self.stack[self.sp];
+            }
             SetDelay(vx) => self.delay_timer.set(self.get_register(vx)),
             SetIndex(val) => self.index = val,
             SetRegister(vx, val) => self.registers.set(vx, val),
