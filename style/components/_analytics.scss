@@ -2,8 +2,7 @@
 @use '../themes/variables' as *;
 
 .analytics-container {
-    display: flex;
-    justify-content: center;
+    display: block;
     width: 95%;
     margin: 20px auto 40px auto;
     max-width: 1000px;
@@ -13,6 +12,14 @@
     box-shadow: $shadow-2;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+
+    @media (max-width: 600px) {
+        padding: 15px;
+        width: 100%;
+        border-radius: 0; // Full width often looks better without rounded corners on small mobile
+        box-shadow: none; // cleaner on mobile
+        margin-top: 20px;
+    }
 
     table {
         width: 100%;
@@ -73,7 +80,20 @@
         }
 
         .ip-address {
-            width: 160px;
+            min-width: 200px; // Ensure full IPv6 or long addresses fit
+            white-space: nowrap;
+        }
+
+        @media (max-width: 600px) {
+            thead th {
+                padding: 10px;
+                font-size: 0.7rem;
+            }
+
+            tbody td {
+                padding: 10px;
+                font-size: 0.8rem;
+            }
         }
     }
 }
