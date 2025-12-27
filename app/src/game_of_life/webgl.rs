@@ -37,6 +37,9 @@ impl UniverseRenderer for WebGLRenderer {
             .dyn_into::<GL>()
             .unwrap();
 
+        // Ensure the viewport matches the drawing buffer size
+        gl.viewport(0, 0, self.canvas.width() as i32, self.canvas.height() as i32);
+
         let _timer = Timer::new("Rendering Frame");
         self.update_texture(&gl, universe);
 
@@ -163,8 +166,7 @@ impl WebGLRenderer {
                 (WebGLRenderer::CELL_SIZE + 1) as f32,
             ],
         );
-        let offset_loc = gl.get_uniform_location(&program, "offset");
-        gl.uniform2fv_with_f32_array(offset_loc.as_ref(), &[1.0, 1.0]);
+
         let vpw_loc = gl.get_uniform_location(&program, "vpw");
         gl.uniform1f(vpw_loc.as_ref(), canvas.width() as f32);
         let vph_loc = gl.get_uniform_location(&program, "vph");
