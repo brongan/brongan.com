@@ -59,20 +59,26 @@ pub fn Debugger() -> impl IntoView {
     let (beep, set_beep) = signal(false);
     let on_color = RwSignal::new("#000000".to_string());
     let off_color = RwSignal::new("#FFFFFF".to_string());
+    let debug_mode = RwSignal::new(false);
 
     let sync = move || {
-        emulator.update_value(|emulator| {
+        emulator.with_value(|emulator| {
             set_pc(emulator.cpu().get_pc());
-            set_registers(emulator.cpu().get_registers().to_owned());
-            set_index(emulator.cpu().get_index());
-            set_delay_timer(emulator.cpu().get_delay_timer());
-            set_sound_timer(emulator.cpu().get_sound_timer());
-            set_stack(emulator.cpu().get_stack());
-            set_sp(emulator.cpu().get_sp());
-            set_memory(emulator.cpu().get_memory().to_owned());
             set_instruction_count(emulator.instruction_counter());
+
+            if debug_mode.get() {
+                set_registers(emulator.cpu().get_registers().to_owned());
+                set_index(emulator.cpu().get_index());
+                set_delay_timer(emulator.cpu().get_delay_timer());
+                set_sound_timer(emulator.cpu().get_sound_timer());
+                set_stack(emulator.cpu().get_stack());
+                set_sp(emulator.cpu().get_sp());
+                set_memory(emulator.cpu().get_memory().to_owned());
+            }
         });
     };
+
+
 
     let Pausable {
         pause,
@@ -102,6 +108,13 @@ pub fn Debugger() -> impl IntoView {
                     }
                 });
             });
+            sync();
+        }
+    });
+
+    // When switching to debug mode while paused, ensure we sync once
+    Effect::new(move |_| {
+        if debug_mode.get() && !is_active.get() {
             sync();
         }
     });
@@ -171,7 +184,7 @@ pub fn Debugger() -> impl IntoView {
         });
     };
 
-    let debug_mode = RwSignal::new(false);
+
 
     let reset = move || {
         emulator.update_value(|e| e.reset());
