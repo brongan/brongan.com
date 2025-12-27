@@ -71,6 +71,13 @@
         padding: 40px;
         overflow-y: auto;
 
+        @media (max-width: 1024px) {
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            gap: 20px;
+        }
+
         .panel {
             border: none;
             overflow: visible;
@@ -78,6 +85,9 @@
 
         .col-canvas {
             flex: 0 0 auto;
+            width: 100%;
+            display: flex;
+            justify-content: center;
 
             .screen-wrapper {
                 background: transparent;
@@ -86,6 +96,9 @@
                 canvas {
                     width: 960px;
                     height: 480px;
+                    max-width: 100%;
+                    height: auto;
+                    aspect-ratio: 2 / 1;
                     image-rendering: pixelated;
                     border-radius: 4px;
                     box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
@@ -105,6 +118,12 @@
             border-radius: 12px;
             border: 1px solid $border-color;
             backdrop-filter: blur(10px);
+
+            @media (max-width: 1024px) {
+                width: 100%;
+                flex: none;
+                order: 3; // Ensure controls are at the bottom if keypad is separate
+            }
 
             .panel-header {
                 background: transparent;
