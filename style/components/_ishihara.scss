@@ -1,29 +1,44 @@
 @use '../themes/variables' as *;
 
 .blindness-selector {
-    margin: 0 10px 0 10px;
+    margin: 20px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
 
     input {
-        visibility: hidden;
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
     }
 
     label {
-        background: rgba($gray-medium, 0.17) 0% 0% no-repeat padding-box;
+        background: rgba($gray-medium, 0.17);
         border-radius: 11px;
         color: rgba($white, 0.75);
         cursor: pointer;
         font: normal normal 16px/22px $font-stack-main;
-        height: 3em;
-        letter-spacing: 0px;
         padding: 14px 28px;
         text-align: center;
         user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid transparent; // Pre-allocate border space
+        transition: all 0.2s ease;
+
+        &:hover {
+            background: rgba($gray-medium, 0.25);
+            color: $white;
+        }
     }
 
     input:checked+label {
-        border: 3px solid $white;
+        border-color: $white;
         color: $white;
-        font: normal normal bold 16px/22px $font-stack-main;
+        font-weight: bold;
+        background: rgba($gray-medium, 0.3);
     }
 }
 
@@ -61,7 +76,8 @@
         background-color: $white;
         color: $black;
         font-size: 1rem;
-        width: 560px;
+        width: 100%;
+        max-width: 560px;
         box-shadow: $shadow-input;
         transition: all 0.3s cubic-bezier(.25, .8, .25, 1);
 
@@ -102,6 +118,8 @@
     canvas {
         border: 1px solid $white;
         box-shadow: $shadow-3;
+        max-width: 100%;
+        height: auto;
     }
 }
 

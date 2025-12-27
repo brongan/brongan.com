@@ -25,6 +25,11 @@
         overflow: hidden;
         cursor: pointer;
 
+        @media (max-width: 480px) {
+            width: 100%;
+            max-width: 320px;
+        }
+
         &:hover {
             transform: translateY(-5px);
             background: rgba(255, 255, 255, 0.2);
