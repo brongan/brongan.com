@@ -41,19 +41,20 @@ body,
     color: $white;
     font-family: $font-stack-main;
     font-weight: 700;
-    font-size: 3rem;
+    font-size: 2rem;
     line-height: 1.2;
     letter-spacing: -0.5px;
     opacity: 1;
     text-align: center;
     width: 100%;
-    margin-top: 60px;
+    margin-top: 40px;
     margin-bottom: 20px;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 
     @media (max-width: 600px) {
-        font-size: 2rem;
-        margin-top: 30px;
+        font-size: 1.25rem;
+        margin-top: 20px;
+        margin-bottom: 15px;
     }
 }
 
