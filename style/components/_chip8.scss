@@ -61,6 +61,31 @@
 
     &.mode-debug {
         grid-template-columns: 260px 642px 260px 1fr;
+
+        @media (max-width: 1200px) {
+            display: flex;
+            flex-direction: column;
+            height: auto;
+            min-height: 100vh;
+            padding-bottom: 40px;
+            overflow-y: auto;
+
+            // Adjust panel heights/styles for stacked view if needed
+            .panel {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid $border-color;
+                flex: none;
+                height: auto;
+                min-height: 300px; // Ensure panels have space
+            }
+
+            // Ensure canvas scales
+            .col-canvas canvas {
+                max-width: 100%;
+                height: auto;
+            }
+        }
     }
 
     &.mode-game {
