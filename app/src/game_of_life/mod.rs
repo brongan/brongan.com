@@ -1,15 +1,12 @@
 mod universe;
-mod util;
 mod webgl;
 
 use crate::game_of_life::universe::{Universe, UniverseRenderer};
-use crate::game_of_life::util::Timer;
 use crate::game_of_life::webgl::WebGLRenderer;
 use crate::mandelbrot::Bounds;
 use crate::point2d::Point2D;
 use crate::Footer;
 use leptos::html::Canvas;
-use leptos::logging::log;
 use leptos::prelude::*;
 use leptos_use::use_raf_fn;
 use leptos_use::utils::Pausable;
@@ -53,7 +50,6 @@ pub fn game_of_life() -> impl IntoView {
             } else {
                 Err(())
             } {
-                log!("Context lost or renderer missing! Recreating...");
                 if let Some(canvas_ref) = canvas.get() {
                     let mut new_renderer = WebGLRenderer::new(canvas_ref, width, height);
                     let _ = universe.with_value(|u| new_renderer.render(u));
@@ -97,7 +93,6 @@ pub fn game_of_life() -> impl IntoView {
 
     let on_click = move |event: MouseEvent| {
         if let Some(canvas) = canvas.get() {
-            log!("On Click!");
             let rect = canvas.get_bounding_client_rect();
             let bounding_rect = DomBounds {
                 origin: Point2D {

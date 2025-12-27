@@ -1,7 +1,6 @@
 use super::universe::DomBounds;
 use crate::game_of_life::universe::Universe;
 use crate::game_of_life::universe::UniverseRenderer;
-use crate::game_of_life::Timer;
 use crate::mandelbrot::Bounds;
 use crate::point2d::Point2D;
 use wasm_bindgen::JsCast;
@@ -45,7 +44,6 @@ impl UniverseRenderer for WebGLRenderer {
             self.canvas.height() as i32,
         );
 
-        let _timer = Timer::new("Rendering Frame");
         self.update_texture(universe);
 
         gl.bind_buffer(GL::ARRAY_BUFFER, Some(&self.buffer));
@@ -83,8 +81,6 @@ impl WebGLRenderer {
 
     pub fn update_texture(&mut self, universe: &Universe) {
         let level = 0;
-        let internal_format = GL::LUMINANCE;
-        let border = 0;
         let src_format = GL::LUMINANCE;
         let src_type = GL::UNSIGNED_BYTE;
         let width = self.width;
@@ -213,7 +209,6 @@ impl WebGLRenderer {
 }
 
 pub fn compile_shader(gl: &GL, shader_type: u32, source: &str) -> Result<WebGlShader, String> {
-    log::info!("Compiling Shader");
     let shader = gl
         .create_shader(shader_type)
         .ok_or_else(|| String::from("Unable to create shader object"))?;
