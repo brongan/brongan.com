@@ -42,15 +42,25 @@ pub fn game_of_life() -> impl IntoView {
     let width = 128;
     let height = 64;
 
-    let (universe, set_universe) = signal(Universe::new(width, height));
-
+    let universe = StoredValue::new_local(Universe::new(width, height));
+    let renderer = StoredValue::new_local(None::<WebGLRenderer>);
     let canvas: NodeRef<Canvas> = NodeRef::new();
+
+    let render = move || {
+        renderer.update_value(|r| {
+            if let Some(r) = r {
+                universe.with_value(|u| r.render(u));
+            }
+        });
+    };
+
     Effect::new(move |_| {
         if let Some(canvas) = canvas.get() {
-            log!("Creating renderer");
-            let mut renderer = WebGLRenderer::new(canvas, width, height);
-            universe.with(|universe| renderer.render(universe));
-            log!("Created renderer");
+            let is_none = renderer.with_value(|r| r.is_none());
+            if is_none {
+                renderer.set_value(Some(WebGLRenderer::new(canvas, width, height)));
+                render();
+            }
         }
     });
 
@@ -59,17 +69,21 @@ pub fn game_of_life() -> impl IntoView {
         resume,
         is_active,
     } = use_raf_fn(move |_| {
-        set_universe.update(|universe: &mut Universe| universe.tick());
+        universe.update_value(|universe| universe.tick());
+        render();
     });
 
     let tick = move |_| {
-        set_universe.update(|universe: &mut Universe| universe.tick());
+        universe.update_value(|universe| universe.tick());
+        render();
     };
     let reset = move |_| {
-        set_universe.update(|universe| universe.reset());
+        universe.update_value(|universe| universe.reset());
+        render();
     };
     let kill_all = move |_| {
-        set_universe.update(|universe| universe.kill_all());
+        universe.update_value(|universe| universe.kill_all());
+        render();
     };
 
     let on_click = move |event: MouseEvent| {
@@ -93,7 +107,7 @@ pub fn game_of_life() -> impl IntoView {
                 },
             );
 
-            set_universe.update(|universe| {
+            universe.update_value(|universe| {
                 if event.shift_key() {
                     universe.insert_pulsar(x, y);
                 } else if event.ctrl_key() {
@@ -102,6 +116,7 @@ pub fn game_of_life() -> impl IntoView {
                     universe.toggle_cell(x, y);
                 }
             });
+            render();
         }
     };
 
