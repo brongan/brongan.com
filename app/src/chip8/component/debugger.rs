@@ -78,8 +78,6 @@ pub fn Debugger() -> impl IntoView {
         });
     };
 
-
-
     let Pausable {
         pause,
         resume,
@@ -183,8 +181,6 @@ pub fn Debugger() -> impl IntoView {
             }
         });
     };
-
-
 
     let reset = move || {
         emulator.update_value(|e| e.reset());
