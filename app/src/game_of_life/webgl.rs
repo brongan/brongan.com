@@ -30,8 +30,12 @@ impl UniverseRenderer for WebGLRenderer {
         (bounds.height - 1 - row as u32, col as u32)
     }
 
-    fn render(&mut self, universe: &Universe) {
+    fn render(&mut self, universe: &Universe) -> Result<(), ()> {
         let gl = self.gl.clone();
+
+        if gl.is_context_lost() {
+            return Err(());
+        }
 
         // Ensure the viewport matches the drawing buffer size
         gl.viewport(
@@ -55,6 +59,8 @@ impl UniverseRenderer for WebGLRenderer {
         gl.clear(GL::COLOR_BUFFER_BIT);
 
         gl.draw_arrays(GL::TRIANGLE_STRIP, 0, 4);
+
+        Ok(())
     }
 }
 
@@ -86,13 +92,13 @@ impl WebGLRenderer {
         let pixel = update_universe_image(&mut self.texture, &universe);
         assert!(pixel.len() == (width * height) as usize);
         self.gl
-            .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+            .tex_sub_image_2d_with_i32_and_i32_and_u32_and_type_and_opt_u8_array(
                 GL::TEXTURE_2D,
                 level,
-                internal_format as i32,
+                0, // xoffset
+                0, // yoffset
                 width as i32,
                 height as i32,
-                border,
                 src_format,
                 src_type,
                 Some(pixel),
@@ -163,6 +169,21 @@ impl WebGLRenderer {
         let webgl_texture = gl.create_texture();
         gl.bind_texture(GL::TEXTURE_2D, webgl_texture.as_ref());
 
+        // Allocate texture memory
+        let initial_pixels = vec![255u8; size]; // Start with all dead cells (white)
+        gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+            GL::TEXTURE_2D,
+            0,                    // level
+            GL::LUMINANCE as i32, // internal format
+            width as i32,
+            height as i32,
+            0,                 // border
+            GL::LUMINANCE,     // src format
+            GL::UNSIGNED_BYTE, // src type
+            Some(&initial_pixels),
+        )
+        .ok();
+
         // Create and upload vertex buffer once
         let vertices: [f32; 12] = [
             1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0,
@@ -184,7 +205,7 @@ impl WebGLRenderer {
             program,
             width,
             height,
-            texture: vec![0; size],
+            texture: vec![255; size],
             gl,
             buffer,
         }

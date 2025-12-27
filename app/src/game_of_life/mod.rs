@@ -48,16 +48,25 @@ pub fn game_of_life() -> impl IntoView {
 
     let render = move || {
         renderer.update_value(|r| {
-            if let Some(r) = r {
-                universe.with_value(|u| r.render(u));
+            if let Err(_) = if let Some(r) = r {
+                universe.with_value(|u| r.render(u))
+            } else {
+                Err(())
+            } {
+                log!("Context lost or renderer missing! Recreating...");
+                if let Some(canvas_ref) = canvas.get() {
+                    let mut new_renderer = WebGLRenderer::new(canvas_ref, width, height);
+                    let _ = universe.with_value(|u| new_renderer.render(u));
+                    *r = Some(new_renderer);
+                }
             }
         });
     };
 
     Effect::new(move |_| {
+        // Initial creation when canvas mounts
         if let Some(canvas) = canvas.get() {
-            let is_none = renderer.with_value(|r| r.is_none());
-            if is_none {
+            if renderer.with_value(|r| r.is_none()) {
                 renderer.set_value(Some(WebGLRenderer::new(canvas, width, height)));
                 render();
             }

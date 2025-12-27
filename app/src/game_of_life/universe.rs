@@ -12,7 +12,7 @@ pub struct DomBounds {
 }
 
 pub trait UniverseRenderer {
-    fn render(&mut self, universe: &Universe);
+    fn render(&mut self, universe: &Universe) -> Result<(), ()>;
     fn get_cell_index(bounding_rect: DomBounds, bounds: Bounds, p: Point2D<i32>) -> (u32, u32);
 }
 

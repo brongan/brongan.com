@@ -3,7 +3,6 @@ precision mediump float;
 uniform float vpw; // Width, in pixels
 uniform float vph; // Height, in pixels
 
-
 uniform vec2 pitch; // idk like the cell size or something
 
 uniform sampler2D uSampler; // give me cells
