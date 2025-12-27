@@ -1,5 +1,6 @@
 use gloo_file::futures::read_as_bytes;
 use gloo_file::File;
+use gloo_net::http::Request;
 use leptos::ev;
 use leptos::html::Canvas;
 use leptos::html::Input;
@@ -7,7 +8,6 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_use::{use_raf_fn, utils::Pausable, UseRafFnCallbackArgs};
 use std::time::Duration;
-use gloo_net::http::Request;
 use wasm_bindgen::prelude::*;
 use web_sys::CanvasRenderingContext2d;
 
@@ -200,7 +200,7 @@ pub fn Debugger() -> impl IntoView {
 
     let on_rom_select = {
         let resume = resume.clone();
-        let init_audio = init_audio.clone();
+        let init_audio = init_audio;
 
         move |url: String| {
             let resume = resume.clone();
@@ -209,24 +209,24 @@ pub fn Debugger() -> impl IntoView {
 
             spawn_local(async move {
                 match Request::get(&url).send().await {
-                     Ok(res) => {
-                          if !res.ok() {
-                               leptos::logging::error!("Failed to fetch ROM: Status {}", res.status());
-                               return;
-                          }
-                          match res.binary().await {
-                              Ok(bytes) => {
-                                  set_rom_name(Some(url));
-                                  emulator.update_value(|emulator| {
-                                      emulator.reset();
-                                      emulator.update_rom(bytes);
-                                  });
-                                  resume();
-                              },
-                              Err(e) => leptos::logging::error!("Failed to get bytes: {:?}", e),
-                          }
-                     },
-                     Err(e) => leptos::logging::error!("Failed to fetch ROM: {:?}", e),
+                    Ok(res) => {
+                        if !res.ok() {
+                            leptos::logging::error!("Failed to fetch ROM: Status {}", res.status());
+                            return;
+                        }
+                        match res.binary().await {
+                            Ok(bytes) => {
+                                set_rom_name(Some(url));
+                                emulator.update_value(|emulator| {
+                                    emulator.reset();
+                                    emulator.update_rom(bytes);
+                                });
+                                resume();
+                            }
+                            Err(e) => leptos::logging::error!("Failed to get bytes: {:?}", e),
+                        }
+                    }
+                    Err(e) => leptos::logging::error!("Failed to fetch ROM: {:?}", e),
                 }
             });
         }

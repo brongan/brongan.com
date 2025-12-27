@@ -7,7 +7,7 @@ pub fn Disassembler(memory: ReadSignal<Vec<u8>>, pc: ReadSignal<u16>) -> impl In
     let instruction_rows = move || {
         let mem = memory.get();
         let current_pc = pc.get() as usize;
-        
+
         // Sliding window: ~25 instructions before and after
         let window_size = 25;
         let start_idx = current_pc.saturating_sub(window_size * 2);
