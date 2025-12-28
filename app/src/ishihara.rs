@@ -6,7 +6,7 @@ use image::{DynamicImage, Rgba, RgbaImage};
 use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut};
 use leptos::html::Canvas;
 use leptos::prelude::*;
-use rand::Rng;
+use rand::{Rng, RngCore};
 use rand::distr::uniform::Uniform;
 use rand::distr::Distribution;
 use rand::rngs::{StdRng, ThreadRng};
@@ -14,7 +14,7 @@ use rand::seq::IndexedRandom;
 use rusttype::{point, Font, Scale};
 use simple_profiler::profile_macro::{self, profile};
 use std::collections::VecDeque;
-use std::fmt;
+use std::{f64, fmt};
 use std::sync::Mutex;
 use std::sync::atomic::AtomicU64;
 use strum::EnumIter;
@@ -154,7 +154,7 @@ impl Circle {
     const MAX_RADIUS: f64 = 6.9;
     const MIN_RADIUS: f64 = 3.0;
     const GOAL_AREA_RATIO: f64 = 0.57;
-    fn create_circles(x: u32, y: u32, rng: &mut ThreadRng) -> Vec<Circle> {
+    fn create_circles(x: u32, y: u32, rng: &mut dyn RngCore) -> Vec<Circle> {
         let goal_area = Circle::GOAL_AREA_RATIO * x as f64 * y as f64;
         let mut circles: Vec<Circle> = Vec::new();
         let mut area: f64 = 0.0;
@@ -274,6 +274,7 @@ pub fn generate_plate(text: &str, blindness: Blindness) -> RgbaImage {
     log::info!("Generating Plate: {}", text);
     // Get an image buffer from rendering the text
     let mut image = render_text(text);
+    // todo!();
     let mut rng = rand::rng();
 
     // Create circles based based on the image buffer's dimensions
@@ -300,95 +301,127 @@ pub fn generate_plate(text: &str, blindness: Blindness) -> RgbaImage {
 }
 
 struct CircleGrid {
-    pixel_width: u32,
-    pixel_height: u32,
-    padding: f64,
-    cell_size: u32,
-    rows: u32,
-    columns: u32,
+    width: u32,
+    height: u32,
+    edge_bias: f64,
     cells: Box<[Option<f64>]>
 }
 
 impl CircleGrid {
-    pub fn new(width: u32, height: u32, cell_size: u32, padding: f64) -> CircleGrid {
-        let columns = width.div_ceil(cell_size);
-        let rows = height.div_ceil(cell_size);
+    pub fn new(width: u32, height: u32, edge_bias: f64) -> CircleGrid {
+        let cells = vec![None; (width * height) as usize].into_boxed_slice();
 
-        println!("rows: {}, columns: {}", rows, columns);
-
-        let cells = vec![None; (rows * columns) as usize].into_boxed_slice();
-
-        CircleGrid { pixel_width: width, pixel_height: height, padding, cell_size, rows, columns, cells }
+        CircleGrid { width, height, edge_bias, cells }
     }
 
-    fn fill(&mut self, row: i32, column: i32, circle: Circle2, max_distance: f64) {
-        let mut visited = vec![false; (self.rows * self.columns) as usize];
+    #[profile]
+    fn fill(&mut self, point: Point2d, circle: Circle2, max_distance: f64) {
+        let mut visited = vec![false; (self.width * self.height) as usize];
         let mut queue = VecDeque::new();
-        queue.push_back((row, column));
+        queue.push_back(point);
 
         while queue.len() > 0 {
-            let (row, column) = queue.pop_front().unwrap();
+            let point = queue.pop_front().unwrap();
 
-            if row < 0 || column < 0 || row as u32 >= self.rows || column as u32 >= self.columns {
+            if point.x < 0 || point.y < 0 || point.x as u32 >= self.width || point.y as u32 >= self.height {
                 continue;
             }
 
-            let i = self.index(row as u32, column as u32);
+            let i = self.index(point.y as u32, point.x as u32);
             if visited[i] {
                 continue;
             }
 
             visited[i] = true;
 
-            let cell_center = Point2d {
-                x: column * self.cell_size as i32 + self.cell_size as i32 / 2,
-                y: row * self.cell_size as i32 + self.cell_size as i32 / 2
-            };
+            // Distance from edge of circle, inside being negative.
+            let distance = (circle.center.distance(&point) - circle.radius);
 
-            // Distance from edge, inside being 0.
-            let distance = (circle.center.distance(&cell_center) - circle.radius).max(0.0);
+            let edge_distance = [
+                // Left edge
+                point.x as u32,
+                // Right edge
+                self.width - point.x as u32,
+                // Top edge
+                point.y as u32,
+                // Bottom edge
+                self.height - point.y as u32
+            ].into_iter().min().unwrap();
+
+            // Use edge distance to bias circles away from the edges (otherwise they line up perfeclty on the edges)
+            let distance = distance.min(edge_distance as f64 * self.edge_bias);
 
             // Replace distance if current distance is None or new distance is less.
             if self.cells[i].map_or(true, |cell_distance| distance < cell_distance && distance <= max_distance) {
                 self.cells[i] = Some(distance);
 
+                let Point2d { x, y} = point;
                 // Only spread when distance gets replaced
-                queue.push_back((row + 1, column));
-                queue.push_back((row, column + 1));
-                queue.push_back((row - 1, column));
-                queue.push_back((row, column - 1));
+                queue.push_back(Point2d { x: x + 1, y});
+                queue.push_back(Point2d { x, y: y + 1});
+                queue.push_back(Point2d { x: x - 1, y});
+                queue.push_back(Point2d { x, y: y - 1});
             }
         }
     }
 
     fn index(&self, row: u32, column: u32) -> usize {
-        (self.columns * row + column) as usize
+        (self.width * row + column) as usize
     }
 
-    pub fn max_radius(&self, point: Point2d) -> f64 {
-        if point.x < 0 || point.y < 0 || point.x >= self.pixel_width as i32 || point.y >= self.pixel_height as i32 {
-            panic!("Circle out of bounds: center: ({}, {}), canvas size: ({} , {})", point.x, point.y, self.pixel_width, self.pixel_height);
+    #[profile]
+    pub fn find_maximum(&self, mut point: Point2d) -> Point2d {
+        if point.x < 0 || point.y < 0 || point.x as u32 >= self.width || point.y as u32 >= self.height {
+            panic!("Out of bounds");
         }
 
-        let row = point.y as u32/ self.cell_size;
-        let column = point.x as u32 / self.cell_size;
-        let i = self.index(row, column);
+        loop {
+            let Point2d { x, y} = point;
+            let neighbors = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1), (x + 1, y + 1), (x + 1, y - 1), (x - 1, y - 1), (x, y + 1)];
 
-        return self.cells[i].map_or(f64::MAX, |distance| distance - self.padding)
+            let max = neighbors.into_iter().filter_map(|(x, y)| {
+                if x < 0 || y < 0 || x as u32 >= self.width || y as u32 >= self.height {
+                    return None;
+                }
+
+                let index = self.index(y as u32, x as u32);
+                Some((x, y, self.cells[index].unwrap_or(f64::NEG_INFINITY)))
+            }).reduce(|a, b| if a.2 > b.2 {
+                a
+            } else {
+                b
+            }).unwrap();
+
+            let i = self.index(y as u32, x as u32);
+            // println!("{}", self.cells[i].unwrap_or(f64::NEG_INFINITY));
+            if self.cells[i].unwrap_or(f64::NEG_INFINITY) >= max.2 {
+                return point;
+            }
+
+            point = Point2d { x: max.0, y: max.1 };
+        }
     }
 
-    pub fn insert_circle(&mut self, circle: Circle2, max_distance: f64) -> bool {
-        if circle.center.x < 0 || circle.center.y < 0 || circle.center.x >= self.pixel_width as i32 || circle.center.y >= self.pixel_height as i32 {
-            panic!("Circle out of bounds: center: ({}, {}), canvas size: ({} , {})", circle.center.x, circle.center.y, self.pixel_width, self.pixel_height);
+    pub fn max_radius(&self, point: Point2d, padding: f64) -> f64 {
+        if point.x < 0 || point.y < 0 || point.x >= self.width as i32 || point.y >= self.height as i32 {
+            panic!("Circle out of bounds: center: ({}, {}), canvas size: ({} , {})", point.x, point.y, self.width, self.height);
         }
 
-        let row = circle.center.y as u32/ self.cell_size;
-        let column = circle.center.x as u32 / self.cell_size;
-        let i = self.index(row, column);
+        let i = self.index(point.y as u32, point.x as u32);
+
+        return self.cells[i].map_or(f64::MAX, |distance| distance - padding)
+    }
+
+    pub fn insert_circle(&mut self, circle: Circle2, max_distance: f64, padding: f64) -> bool {
+        if circle.center.x < 0 || circle.center.y < 0 || circle.center.x >= self.width as i32 || circle.center.y >= self.height as i32 {
+            panic!("Circle out of bounds: center: ({}, {}), canvas size: ({} , {})", circle.center.x, circle.center.y, self.width, self.height);
+        }
+
+        let i = self.index(circle.center.y as u32, circle.center.x as u32);
 
         // Add circle if the nearest circle is < radius + padding away
-        if self.cells[i].map_or(true, |distance| distance >= circle.radius + self.padding) {
-            self.fill(row as i32, column as i32, circle, max_distance);
+        if self.cells[i].map_or(true, |distance| distance >= circle.radius + padding) {
+            self.fill(circle.center, circle, max_distance);
 
             return true;
         };
@@ -404,7 +437,7 @@ struct Circle2 {
 }
 
 impl Circle2 {
-    pub fn generate_circles(width: u32, height: u32, min_radius: f64, max_radius: f64, padding: f64, coverage: f64, rng: &mut StdRng) -> Vec<Circle2> {
+    pub fn generate_circles(width: u32, height: u32, min_radius: f64, max_radius: f64, padding: f64, coverage: f64, edge_bias: f64, rng: &mut dyn RngCore) -> Vec<Circle2> {
         assert!(coverage >= 0.0 && coverage <= 1.0, "coverage must be between 0 and 1.");
 
         const MAX_MISSES: usize = 1000;
@@ -412,7 +445,7 @@ impl Circle2 {
 
         let total_area = (width * height) as f64;
 
-        let mut grid = CircleGrid::new(width, height, 1, padding);
+        let mut grid = CircleGrid::new(width, height, edge_bias);
         let uniform = Uniform::new(
             Point2d { x: 0, y: 0 },
             Point2d {
@@ -431,17 +464,18 @@ impl Circle2 {
             count += 1;
             // println!("count: {}", count);
             let center = uniform.sample(rng);
-            let max_radius = f64::min(grid.max_radius(center), max_radius);
+            let center = grid.find_maximum(center);
+            let max_radius = f64::min(grid.max_radius(center, padding), max_radius);
             let min_radius = f64::max(max_radius * SIZE_VARIATION, min_radius);
 
-            if max_radius < min_radius {
+            if max_radius <= min_radius {
                 missed += 1;
                 continue;
             }
             let radius = rng.random_range(min_radius..max_radius);
             let circle = Circle2 { center, radius };
 
-            if grid.insert_circle(circle, max_radius + padding * 2.0) {
+            if grid.insert_circle(circle, max_radius + padding * 2.0, padding) {
                 circles.push(circle);
                 area += std::f64::consts::PI * radius * radius;
                 missed = 0;
@@ -465,25 +499,76 @@ impl Circle2 {
 mod tests {
     use std::{fs::create_dir_all, path::Path};
 
-    use image::{Rgba, RgbaImage};
+    use image::{ImageBuffer, Rgba, RgbaImage, imageops::{FilterType::Lanczos3, resize}};
     use imageproc::{drawing::{draw_filled_circle_mut, draw_filled_rect_mut}, rect::Rect};
-    use rand::{SeedableRng, rngs::StdRng};
+    use rand::{RngCore, SeedableRng, rngs::StdRng};
     use simple_profiler::profile_macro::profile;
 
-    use crate::ishihara::Circle2;
+    use crate::ishihara::{Circle, Circle2, Point2d};
 
     static TEST_DIR: &str = "../test artifacts/";
-
-    type Circles = Vec<Circle2>;
 
     const WIDTH: u32 = 1920;
     const HEIGHT: u32 = 1080;
 
+    trait CircleTrait {
+        fn center(&self) -> Point2d;
+        fn radius(&self) -> f64;
+        fn create(rng: &mut dyn RngCore) -> Vec<Self>
+            where Self:Sized;
+    }
+
+    impl CircleTrait for Circle {
+        fn center(&self) -> Point2d {
+            self.center
+        }
+    
+        fn radius(&self) -> f64 {
+            self.radius
+        }
+    
+        fn create(rng: &mut dyn RngCore) -> Vec<Self>
+            where Self:Sized {
+            Self::create_circles(WIDTH, HEIGHT, rng)
+        }
+    }
+
+    impl CircleTrait for Circle2 {
+        fn center(&self) -> Point2d {
+            self.center
+        }
+    
+        fn radius(&self) -> f64 {
+            self.radius
+        }
+    
+        fn create(rng: &mut dyn RngCore) -> Vec<Self>
+            where Self:Sized {
+            Self::generate_circles(WIDTH, HEIGHT, 3.0, 6.9, 0.5, 0.80, 8.0, rng)
+        }
+    }
+
     #[profile]
-    fn circles() -> Circles {
+    fn generate_circles<C: CircleTrait>() -> Vec<C> {
         let mut rng = StdRng::seed_from_u64(0);
 
-        Circle2::generate_circles(1920, 1080, 8.0, 16.0, 2.0, 0.5, &mut rng)
+        C::create(&mut rng)
+    }
+
+    #[profile]
+    fn draw<C: CircleTrait>(circles: &[C]) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+        let mut canvas = RgbaImage::new(WIDTH * 2, HEIGHT * 2);
+        let (width, height) = canvas.dimensions();
+        draw_filled_rect_mut(&mut canvas, Rect::at(0, 0).of_size(width, height), Rgba([255, 255, 255, 255]));
+
+        for circle in circles {
+            let center = (circle.center().x * 2, circle.center().y * 2);
+            draw_filled_circle_mut(&mut canvas, center, circle.radius() as i32 * 2, Rgba([0, 0, 0, 255]));
+        }
+
+        let canvas = resize(&canvas, WIDTH, HEIGHT, Lanczos3);
+
+        canvas
     }
 
     #[test]
@@ -493,19 +578,30 @@ mod tests {
 
         let output_file = Path::new(TEST_DIR).join("circle_generator_output.png");
 
-        let circles = circles();
+        let circles: Vec<Circle2> = generate_circles();
+
+        let image = draw(&circles);
 
         simple_profiler::profiler::profile_current_thread(simple_profiler::analysis::Sort::TotalTime, simple_profiler::analysis::Unit::Millisecond);
 
-        let mut canvas = RgbaImage::new(WIDTH, HEIGHT);
-        draw_filled_rect_mut(&mut canvas, Rect::at(0, 0).of_size(WIDTH, HEIGHT), Rgba([255, 255, 255, 255]));
+        image.save(output_file)?;
 
-        for circle in circles {
-            let center = (circle.center.x, circle.center.y);
-            draw_filled_circle_mut(&mut canvas, center, circle.radius as i32, Rgba([0, 0, 0, 255]));
-        }
+        Ok(())
+    }
+    #[test]
+    pub fn circle_generator_original() -> Result<(), Box<dyn std::error::Error>> {
+        println!("test dir: {:?}", std::path::absolute(Path::new(TEST_DIR))?.as_os_str());
+        create_dir_all(TEST_DIR)?;
 
-        canvas.save(output_file)?;
+        let output_file = Path::new(TEST_DIR).join("circle_generator_original_output.png");
+
+        let circles: Vec<Circle> = generate_circles();
+
+        let image = draw(&circles);
+
+        simple_profiler::profiler::profile_current_thread(simple_profiler::analysis::Sort::TotalTime, simple_profiler::analysis::Unit::Millisecond);
+
+        image.save(output_file)?;
 
         Ok(())
     }

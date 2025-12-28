@@ -1156,6 +1156,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive-syn-parse"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d65d7ce8132b7c0e54497a4d9a55a1c2a0912a0d786cf894472ba818fba45762"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "derive-where"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3460,12 +3471,14 @@ dependencies = [
 [[package]]
 name = "profile_macro"
 version = "0.1.0"
-source = "git+https://github.com/BrianPAmsler/simple_profiler.git#cc1c6db3b36635b95af3edc70d3a17ffea59fa17"
+source = "git+https://github.com/BrianPAmsler/simple_profiler.git#ee0ef4d236ba4183ef233a4c75658b0ddd732e04"
 dependencies = [
+ "derive-syn-parse",
  "proc-macro2",
  "quote",
  "rand 0.8.5",
  "syn",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -4497,8 +4510,8 @@ dependencies = [
 
 [[package]]
 name = "simple_profiler"
-version = "0.1.0"
-source = "git+https://github.com/BrianPAmsler/simple_profiler.git#cc1c6db3b36635b95af3edc70d3a17ffea59fa17"
+version = "0.1.1"
+source = "git+https://github.com/BrianPAmsler/simple_profiler.git#ee0ef4d236ba4183ef233a4c75658b0ddd732e04"
 dependencies = [
  "postcard",
  "profile_macro",
