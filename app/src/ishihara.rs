@@ -1,7 +1,7 @@
 use crate::color::{hex_color, Color};
 use crate::ishihara_form::IshiharaArgs;
 use crate::ishihara_form::IshiharaInput;
-use crate::point2d::{Point2D, UniformPoint2D};
+use crate::point2d::Point2D;
 use image::{DynamicImage, Rgba, RgbaImage};
 use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut};
 use leptos::html::Canvas;
@@ -9,14 +9,11 @@ use leptos::prelude::*;
 use rand::{Rng, RngCore};
 use rand::distr::uniform::Uniform;
 use rand::distr::Distribution;
-use rand::rngs::{StdRng, ThreadRng};
+use rand::rngs::ThreadRng;
 use rand::seq::IndexedRandom;
 use rusttype::{point, Font, Scale};
-use simple_profiler::profile_macro::{self, profile};
 use std::collections::VecDeque;
 use std::{f64, fmt};
-use std::sync::Mutex;
-use std::sync::atomic::AtomicU64;
 use strum::EnumIter;
 use strum::EnumString;
 use wasm_bindgen::{Clamped, JsCast};
@@ -30,6 +27,7 @@ enum IshiharaColor {
     Outside,
 }
 
+#[derive(Clone, Copy)]
 struct Circle {
     center: Point2d,
     radius: f64,
@@ -314,8 +312,7 @@ impl CircleGrid {
         CircleGrid { width, height, edge_bias, cells }
     }
 
-    #[profile]
-    fn fill(&mut self, point: Point2d, circle: Circle2, max_distance: f64) {
+    fn fill(&mut self, point: Point2d, circle: Circle, max_distance: f64) {
         let mut visited = vec![false; (self.width * self.height) as usize];
         let mut queue = VecDeque::new();
         queue.push_back(point);
@@ -369,7 +366,6 @@ impl CircleGrid {
         (self.width * row + column) as usize
     }
 
-    #[profile]
     pub fn find_maximum(&self, mut point: Point2d) -> Point2d {
         if point.x < 0 || point.y < 0 || point.x as u32 >= self.width || point.y as u32 >= self.height {
             panic!("Out of bounds");
@@ -412,7 +408,7 @@ impl CircleGrid {
         return self.cells[i].map_or(f64::MAX, |distance| distance - padding)
     }
 
-    pub fn insert_circle(&mut self, circle: Circle2, max_distance: f64, padding: f64) -> bool {
+    pub fn insert_circle(&mut self, circle: Circle, max_distance: f64, padding: f64) -> bool {
         if circle.center.x < 0 || circle.center.y < 0 || circle.center.x >= self.width as i32 || circle.center.y >= self.height as i32 {
             panic!("Circle out of bounds: center: ({}, {}), canvas size: ({} , {})", circle.center.x, circle.center.y, self.width, self.height);
         }
@@ -430,27 +426,102 @@ impl CircleGrid {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-struct Circle2 {
-    center: Point2d,
-    radius: f64
+pub struct CircleGenerator<'a> {
+    rng: &'a mut dyn RngCore,
+    width: u32,
+    height: u32,
+    min_radius: f64,
+    max_radius: f64,
+    padding: f64,
+    coverage: f64,
+    edge_bias: f64,
+    size_variation: f64
 }
 
-impl Circle2 {
-    pub fn generate_circles(width: u32, height: u32, min_radius: f64, max_radius: f64, padding: f64, coverage: f64, edge_bias: f64, rng: &mut dyn RngCore) -> Vec<Circle2> {
+impl<'a> CircleGenerator<'a> {
+    pub fn new(rng: &'a mut dyn RngCore) -> CircleGenerator<'a> {
+        CircleGenerator {
+            rng,
+            width: 1000,
+            height: 1000,
+            min_radius: 3.0,
+            max_radius: 6.9,
+            padding: 0.5,
+            coverage: 0.6,
+            edge_bias: 8.0,
+            size_variation: 0.5
+        }
+    }
+
+    #[allow(unused)]
+    fn size(mut self, width: u32, height: u32) -> Self {
+        self.width = width;
+        self.height = height;
+
+        self
+    }
+
+    #[allow(unused)]
+    fn min_radius(mut self, min_radius: f64) -> Self {
+        assert!(min_radius > 0.0, "min_radius must be > 0.");
+        self.min_radius = min_radius;
+
+        self
+    }
+
+    #[allow(unused)]
+    fn max_radius(mut self, max_radius: f64) -> Self {
+        assert!(max_radius > 0.0, "max_radius must be > 0.");
+        self.max_radius = max_radius;
+
+        self
+    }
+
+    #[allow(unused)]
+    fn padding(mut self, padding: f64) -> Self {
+        assert!(padding > 0.0, "padding must be > 0.");
+        self.padding = padding;
+
+        self
+    }
+
+    #[allow(unused)]
+    fn coverage(mut self, coverage: f64) -> Self {
         assert!(coverage >= 0.0 && coverage <= 1.0, "coverage must be between 0 and 1.");
+        self.coverage = coverage;
 
+        self
+    }
+
+    #[allow(unused)]
+    fn edge_bias(mut self, edge_bias: f64) -> Self {
+        assert!(edge_bias >= 1.0, "edge_bias must be >= 1.");
+        self.edge_bias = edge_bias;
+
+        self
+    }
+
+    #[allow(unused)]
+    fn size_variation(mut self, size_variation: f64) -> Self {
+        assert!(size_variation >= 0.0 && size_variation <= 1.0, "size_variation must be between 0 and 1.");
+        self.size_variation = size_variation;
+
+        self
+    }
+
+    fn generate(self) -> Vec<Circle> {
         const MAX_MISSES: usize = 1000;
-        const SIZE_VARIATION: f64 = 0.5;
 
-        let total_area = (width * height) as f64;
+        assert!(self.max_radius >= self.min_radius, "max_radius must be >= than min_radius");
 
-        let mut grid = CircleGrid::new(width, height, edge_bias);
+        let total_area = (self.width * self.height) as f64;
+
+        let mut grid = CircleGrid::new(self.width, self.height, self.edge_bias);
         let uniform = Uniform::new(
             Point2d { x: 0, y: 0 },
             Point2d {
-                x: width as i32,
-                y: height as i32,
+                x: self.width as i32,
+                y: self.height as i32,
             },
         )
         .unwrap();
@@ -458,24 +529,20 @@ impl Circle2 {
         let mut circles = Vec::new();
         let mut area = 0.0;
         let mut missed = 0;
-        let mut count = 0;
-        while area / total_area <= coverage && missed < MAX_MISSES {
-
-            count += 1;
-            // println!("count: {}", count);
-            let center = uniform.sample(rng);
+        while area / total_area <= self.coverage && missed < MAX_MISSES {
+            let center = uniform.sample(self.rng);
             let center = grid.find_maximum(center);
-            let max_radius = f64::min(grid.max_radius(center, padding), max_radius);
-            let min_radius = f64::max(max_radius * SIZE_VARIATION, min_radius);
+            let max_radius = f64::min(grid.max_radius(center, self.padding), self.max_radius);
+            let min_radius = f64::max(max_radius * self.size_variation, self.min_radius);
 
             if max_radius <= min_radius {
                 missed += 1;
                 continue;
             }
-            let radius = rng.random_range(min_radius..max_radius);
-            let circle = Circle2 { center, radius };
+            let radius = self.rng.random_range(min_radius..max_radius);
+            let circle = Circle { center, radius, ishihara_color: None };
 
-            if grid.insert_circle(circle, max_radius + padding * 2.0, padding) {
+            if grid.insert_circle(circle, max_radius + self.padding * 2.0, self.padding) {
                 circles.push(circle);
                 area += std::f64::consts::PI * radius * radius;
                 missed = 0;
@@ -487,7 +554,7 @@ impl Circle2 {
         // TODO: Probably remove this
         #[cfg(test)]
         {
-            println!("target coverage: {}", coverage);
+            println!("target coverage: {}", self.coverage);
             println!("actual coverage: {}", area / total_area);
         }
 
@@ -501,69 +568,39 @@ mod tests {
 
     use image::{ImageBuffer, Rgba, RgbaImage, imageops::{FilterType::Lanczos3, resize}};
     use imageproc::{drawing::{draw_filled_circle_mut, draw_filled_rect_mut}, rect::Rect};
-    use rand::{RngCore, SeedableRng, rngs::StdRng};
+    use rand::{SeedableRng, rngs::StdRng};
     use simple_profiler::profile_macro::profile;
 
-    use crate::ishihara::{Circle, Circle2, Point2d};
+    use crate::ishihara::{Circle, CircleGenerator};
 
     static TEST_DIR: &str = "../test artifacts/";
 
     const WIDTH: u32 = 1920;
     const HEIGHT: u32 = 1080;
 
-    trait CircleTrait {
-        fn center(&self) -> Point2d;
-        fn radius(&self) -> f64;
-        fn create(rng: &mut dyn RngCore) -> Vec<Self>
-            where Self:Sized;
-    }
-
-    impl CircleTrait for Circle {
-        fn center(&self) -> Point2d {
-            self.center
-        }
-    
-        fn radius(&self) -> f64 {
-            self.radius
-        }
-    
-        fn create(rng: &mut dyn RngCore) -> Vec<Self>
-            where Self:Sized {
-            Self::create_circles(WIDTH, HEIGHT, rng)
-        }
-    }
-
-    impl CircleTrait for Circle2 {
-        fn center(&self) -> Point2d {
-            self.center
-        }
-    
-        fn radius(&self) -> f64 {
-            self.radius
-        }
-    
-        fn create(rng: &mut dyn RngCore) -> Vec<Self>
-            where Self:Sized {
-            Self::generate_circles(WIDTH, HEIGHT, 3.0, 6.9, 0.5, 0.80, 8.0, rng)
-        }
-    }
-
     #[profile]
-    fn generate_circles<C: CircleTrait>() -> Vec<C> {
+    fn generate_circles_new() -> Vec<Circle> {
         let mut rng = StdRng::seed_from_u64(0);
-
-        C::create(&mut rng)
+        CircleGenerator::new(&mut rng)
+            .size(WIDTH, HEIGHT)
+            .generate()
     }
 
     #[profile]
-    fn draw<C: CircleTrait>(circles: &[C]) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    fn generate_circles_old() -> Vec<Circle> {
+        let mut rng = StdRng::seed_from_u64(0);
+        Circle::create_circles(WIDTH, HEIGHT, &mut rng)
+    }
+
+    #[profile]
+    fn draw(circles: &[Circle]) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         let mut canvas = RgbaImage::new(WIDTH * 2, HEIGHT * 2);
         let (width, height) = canvas.dimensions();
         draw_filled_rect_mut(&mut canvas, Rect::at(0, 0).of_size(width, height), Rgba([255, 255, 255, 255]));
 
         for circle in circles {
-            let center = (circle.center().x * 2, circle.center().y * 2);
-            draw_filled_circle_mut(&mut canvas, center, circle.radius() as i32 * 2, Rgba([0, 0, 0, 255]));
+            let center = (circle.center.x * 2, circle.center.y * 2);
+            draw_filled_circle_mut(&mut canvas, center, circle.radius as i32 * 2, Rgba([0, 0, 0, 255]));
         }
 
         let canvas = resize(&canvas, WIDTH, HEIGHT, Lanczos3);
@@ -578,7 +615,7 @@ mod tests {
 
         let output_file = Path::new(TEST_DIR).join("circle_generator_output.png");
 
-        let circles: Vec<Circle2> = generate_circles();
+        let circles = generate_circles_new();
 
         let image = draw(&circles);
 
@@ -595,7 +632,7 @@ mod tests {
 
         let output_file = Path::new(TEST_DIR).join("circle_generator_original_output.png");
 
-        let circles: Vec<Circle> = generate_circles();
+        let circles: Vec<Circle> = generate_circles_old();
 
         let image = draw(&circles);
 
