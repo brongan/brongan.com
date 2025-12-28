@@ -317,7 +317,7 @@ impl CircleGrid {
         let mut queue = VecDeque::new();
         queue.push_back(point);
 
-        while queue.len() > 0 {
+        while !queue.is_empty() {
             let point = queue.pop_front().unwrap();
 
             if point.x < 0 || point.y < 0 || point.x as u32 >= self.width || point.y as u32 >= self.height {
@@ -349,7 +349,7 @@ impl CircleGrid {
             let distance = distance.min(edge_distance as f64 * self.edge_bias);
 
             // Replace distance if current distance is None or new distance is less.
-            if self.cells[i].map_or(true, |cell_distance| distance < cell_distance && distance <= max_distance) {
+            if self.cells[i].is_none_or(|cell_distance| distance < cell_distance && distance <= max_distance) {
                 self.cells[i] = Some(distance);
 
                 let Point2d { x, y} = point;
@@ -405,7 +405,7 @@ impl CircleGrid {
 
         let i = self.index(point.y as u32, point.x as u32);
 
-        return self.cells[i].map_or(f64::MAX, |distance| distance - padding)
+        self.cells[i].map_or(f64::MAX, |distance| distance - padding)
     }
 
     pub fn insert_circle(&mut self, circle: Circle, max_distance: f64, padding: f64) -> bool {
@@ -416,7 +416,7 @@ impl CircleGrid {
         let i = self.index(circle.center.y as u32, circle.center.x as u32);
 
         // Add circle if the nearest circle is < radius + padding away
-        if self.cells[i].map_or(true, |distance| distance >= circle.radius + padding) {
+        if self.cells[i].is_none_or(|distance| distance >= circle.radius + padding) {
             self.fill(circle.center, circle, max_distance);
 
             return true;
@@ -487,7 +487,7 @@ impl<'a> CircleGenerator<'a> {
 
     #[allow(unused)]
     fn coverage(mut self, coverage: f64) -> Self {
-        assert!(coverage >= 0.0 && coverage <= 1.0, "coverage must be between 0 and 1.");
+        assert!((0.0..=1.0).contains(&coverage), "coverage must be between 0 and 1.");
         self.coverage = coverage;
 
         self
@@ -503,7 +503,7 @@ impl<'a> CircleGenerator<'a> {
 
     #[allow(unused)]
     fn size_variation(mut self, size_variation: f64) -> Self {
-        assert!(size_variation >= 0.0 && size_variation <= 1.0, "size_variation must be between 0 and 1.");
+        assert!((0.0..=1.0).contains(&size_variation), "size_variation must be between 0 and 1.");
         self.size_variation = size_variation;
 
         self
@@ -558,7 +558,7 @@ impl<'a> CircleGenerator<'a> {
             println!("actual coverage: {}", area / total_area);
         }
 
-        return circles;
+        circles
     }
 }
 
