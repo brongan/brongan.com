@@ -6,7 +6,6 @@ use image::imageops::FilterType::Lanczos3;
 use image::{DynamicImage, ImageBuffer, Rgba, RgbaImage};
 use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut};
 use leptos::html::Canvas;
-use leptos::leptos_dom::logging::console_log;
 use leptos::prelude::*;
 use rand::{Rng, RngCore};
 use rand::distr::uniform::Uniform;
@@ -193,7 +192,7 @@ fn render_text(text: &str) -> RgbaImage {
         .layout(text, scale, point(0.0, 0.0))
         .collect();
 
-    // work out the layout size
+    // work out the layout bounds
     let glyphs_bounds = glyphs
         .iter()
         .filter_map(|g| g.pixel_bounding_box())
@@ -213,12 +212,14 @@ fn render_text(text: &str) -> RgbaImage {
         if let Some(bounding_box) = glyph.pixel_bounding_box() {
             // Draw the glyph into the image per-pixel by using the draw closure
             glyph.draw(|x, y, v| {
+                // Offset the position by the glyph bounding box and padding
+                // Subtract glyphs_bounds.min to move the origin to (0, 0)
+                // glyphs_bounds ends up negative, so we need to use i32
                 let x = PADDING as i32 + x as i32 + bounding_box.min.x - glyphs_bounds.min.x;
                 let y = PADDING as i32 + y as i32 + bounding_box.min.y - glyphs_bounds.min.y;
                 
                 image.put_pixel(
-                    // Offset the position by the glyph bounding box
-                    // glyphs_bounds ends up negative, so we need to us i32
+                    // These should always be positive, but just in case.
                     x.try_into().unwrap(),
                     y.try_into().unwrap(),
                     // Turn the coverage into an alpha value
@@ -271,9 +272,7 @@ pub fn generate_plate(text: &str, blindness: Blindness) -> RgbaImage {
 
     // Shrink image to original size
     // Supposedly Lanczos3 produces good image quality when downscaling.
-    let image = image::imageops::resize(&image, x, y, Lanczos3);
-    
-    image
+    image::imageops::resize(&image, x, y, Lanczos3)
 }
 
 struct CircleGrid {
@@ -300,6 +299,7 @@ impl CircleGrid {
             // Distance from edge of circle, inside being negative.
             let distance = circle.center.distance(&Point2d { x, y }) - circle.radius;
 
+            // Distance from edge of canvas
             let edge_distance = [
                 // Left edge
                 x as u32,
@@ -311,6 +311,7 @@ impl CircleGrid {
                 this.height - y as u32
             ].into_iter().min().unwrap();
 
+            // Min with edge_distance to prevent the circles from lining up on the edges of the canvas.
             distance.min(edge_distance as f64 * this.edge_bias)
         }
 
@@ -321,8 +322,7 @@ impl CircleGrid {
 
             let distance  = distance(this, x, y, circle);
 
-            let i = this.index(y as u32, x as u32);
-            this.cells[i].is_none_or(|cell_distance| distance < cell_distance && distance <= *max_distance)
+            this.get((x, y)).is_none_or(|cell_distance| distance < cell_distance && distance <= *max_distance)
         }
 
         fn set(this: &mut CircleGrid, x: i32, y: i32, circle: &Circle) {
@@ -330,33 +330,31 @@ impl CircleGrid {
                 return;
             }
 
-            let i = this.index(y as u32, x as u32);
-            this.cells[i] = Some(distance(&this, x, y, &circle));
+            *this.get_mut((x, y)) = Some(distance(this, x, y, circle));
         }
 
-        if !inside(&self, x, y, &circle, &max_distance) {
+        if !inside(self, x, y, &circle, &max_distance) {
             return
         }
 
         let mut stack = Vec::new();
         stack.push((x, x, y, 1));
         stack.push((x, x, y - 1, -1));
-        while !stack.is_empty() {
-            let (mut x1, x2, y, dy) = stack.pop().unwrap();
+        while  let Some((mut x1, x2, y, dy)) = stack.pop() {
             let mut x = x1;
-            if inside(&self, x, y, &circle, &max_distance) {
-                while inside(&self, x - 1, y, &circle, &max_distance) {
+            if inside(self, x, y, &circle, &max_distance) {
+                while inside(self, x - 1, y, &circle, &max_distance) {
                     set(self, x - 1, y, &circle);
-                    x = x - 1;
+                    x -= 1;
                 }
                 if x < x1 {
                     stack.push((x, x1 - 1, y - dy, -dy));
                 }
             }
             while x1 <= x2 {
-                while inside(&self, x1, y, &circle, &max_distance) {
+                while inside(self, x1, y, &circle, &max_distance) {
                     set(self, x1, y, &circle);
-                    x1 = x1 + 1;
+                    x1 += 1;
                 }
                 if x1 > x {
                     stack.push((x, x1 - 1, y + dy, dy));
@@ -364,44 +362,58 @@ impl CircleGrid {
                 if x1 - 1 > x2 {
                     stack.push((x2 + 1, x1 - 1, y - dy, -dy));
                 }
-                x1 = x1 + 1;
-                while x1 <= x2 && !inside(&self, x1, y, &circle, &max_distance) {
-                    x1 = x1 + 1;
+                x1 += 1;
+                while x1 <= x2 && !inside(self, x1, y, &circle, &max_distance) {
+                    x1 += 1;
                 }
                 x = x1;
             }
         }
     }
 
-    fn index(&self, row: u32, column: u32) -> usize {
-        (self.width * row + column) as usize
-    }
-
-    pub fn find_maximum(&self, mut point: Point2d) -> Point2d {
+    // Maybe these should return an Option/Result instead of panicking.
+    fn get<P: Into<Point2d>>(&self, point: P) -> &Option<f64> {
+        let point = point.into();
         if point.x < 0 || point.y < 0 || point.x as u32 >= self.width || point.y as u32 >= self.height {
-            panic!("Out of bounds");
+            panic!("Point ({}, {}) is out of bounds: ({}, {}).", point.x, point.y, self.width, self.height);
         }
 
+        let i = self.width as usize * point.y as usize + point.x as usize;
+        &self.cells[i]
+    }
+
+    fn get_mut<P: Into<Point2d>>(&mut self, point: P) -> &mut Option<f64> {
+        let point = point.into();
+        if point.x < 0 || point.y < 0 || point.x as u32 >= self.width || point.y as u32 >= self.height {
+            panic!("Point ({}, {}) is out of bounds: ({}, {}).", point.x, point.y, self.width, self.height);
+        }
+
+        let i = self.width as usize * point.y as usize + point.x as usize;
+        &mut self.cells[i]
+    }
+
+    // Find local maxiumum in the circle grid
+    pub fn find_maximum(&self, mut point: Point2d) -> Point2d {
         loop {
             let Point2d { x, y} = point;
             let neighbors = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1), (x + 1, y + 1), (x + 1, y - 1), (x - 1, y - 1), (x, y + 1)];
 
+            // Get the largest neighbor
             let max = neighbors.into_iter().filter_map(|(x, y)| {
                 if x < 0 || y < 0 || x as u32 >= self.width || y as u32 >= self.height {
                     return None;
                 }
 
-                let index = self.index(y as u32, x as u32);
-                Some((x, y, self.cells[index].unwrap_or(f64::NEG_INFINITY)))
+                Some((x, y, self.get((x, y)).unwrap_or(f64::NEG_INFINITY)))
             }).reduce(|a, b| if a.2 > b.2 {
                 a
             } else {
                 b
             }).unwrap();
 
-            let i = self.index(y as u32, x as u32);
-            // println!("{}", self.cells[i].unwrap_or(f64::NEG_INFINITY));
-            if self.cells[i].unwrap_or(f64::NEG_INFINITY) >= max.2 {
+            // Return point if it is the maximum, otherwise set point to the
+            // largest neighbor and continue searching.
+            if self.get((x, y)).unwrap_or(f64::NEG_INFINITY) >= max.2 {
                 return point;
             }
 
@@ -410,30 +422,7 @@ impl CircleGrid {
     }
 
     pub fn max_radius(&self, point: Point2d, padding: f64) -> f64 {
-        if point.x < 0 || point.y < 0 || point.x >= self.width as i32 || point.y >= self.height as i32 {
-            panic!("Circle out of bounds: center: ({}, {}), canvas size: ({} , {})", point.x, point.y, self.width, self.height);
-        }
-
-        let i = self.index(point.y as u32, point.x as u32);
-
-        self.cells[i].map_or(f64::MAX, |distance| distance - padding)
-    }
-
-    pub fn insert_circle(&mut self, circle: Circle, max_distance: f64, padding: f64) -> bool {
-        if circle.center.x < 0 || circle.center.y < 0 || circle.center.x >= self.width as i32 || circle.center.y >= self.height as i32 {
-            panic!("Circle out of bounds: center: ({}, {}), canvas size: ({} , {})", circle.center.x, circle.center.y, self.width, self.height);
-        }
-
-        let i = self.index(circle.center.y as u32, circle.center.x as u32);
-
-        // Add circle if the nearest circle is < radius + padding away
-        if self.cells[i].is_none_or(|distance| distance >= circle.radius + padding) {
-            self.fill(circle.center, circle, max_distance);
-
-            return true;
-        };
-
-        false
+        self.get(point).map_or(f64::MAX, |distance| distance - padding)
     }
 }
 
@@ -540,26 +529,36 @@ impl<'a> CircleGenerator<'a> {
         let mut circles = Vec::new();
         let mut area = 0.0;
         let mut missed = 0;
+        // I doubt it's possible to determine if our given parameters can actually achieve the
+        // desired coverage, so just exit if there are too many misses in a row.
         while area / total_area <= self.coverage && missed < MAX_MISSES {
             let center = uniform.sample(self.rng);
+            // Move random point to local maximum to increase the odds of being able to place a circle
             let center = grid.find_maximum(center);
             let max_radius = f64::min(grid.max_radius(center, self.padding), self.max_radius);
             let min_radius = f64::max(max_radius * self.size_variation, self.min_radius);
 
-            if max_radius <= min_radius {
+            // Count as miss if the max radius is smaller than the minimum allowed radius.
+            if max_radius < min_radius {
                 missed += 1;
                 continue;
             }
-            let radius = self.rng.random_range(min_radius..max_radius);
+
+            // Somehow i've had crashes because these are exaclty equal
+            let radius = match max_radius == min_radius {
+                true => max_radius,
+                false => self.rng.random_range(min_radius..max_radius)
+            };
+
             let circle = Circle { center, radius, ishihara_color: None };
 
-            if grid.insert_circle(circle, max_radius + self.padding * 2.0, self.padding) {
-                circles.push(circle);
-                area += std::f64::consts::PI * radius * radius;
-                missed = 0;
-            } else {
-                missed += 1;
-            }
+            // Update the circle grid, place the circle, and update the area
+            grid.fill(circle.center, circle, self.max_radius + self.padding * 2.0);
+            circles.push(circle);
+            area += std::f64::consts::PI * radius * radius;
+
+            // Reset missed count
+            missed = 0;
         }
 
         // TODO: Probably remove this

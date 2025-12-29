@@ -56,3 +56,10 @@ impl<T: std::fmt::Display> fmt::Display for Point2D<T> {
         write!(f, "({}, {})", self.x, self.y)
     }
 }
+
+impl<T> From<(T, T)> for Point2D<T> {
+    fn from(value: (T, T)) -> Self {
+        let (x, y) = value;
+        Point2D { x, y }
+    }
+}
