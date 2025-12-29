@@ -5,13 +5,14 @@ use crate::point2d::Point2D;
 use image::{DynamicImage, Rgba, RgbaImage};
 use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut};
 use leptos::html::Canvas;
+use leptos::leptos_dom::logging::console_log;
 use leptos::prelude::*;
 use rand::{Rng, RngCore};
 use rand::distr::uniform::Uniform;
 use rand::distr::Distribution;
 use rand::rngs::ThreadRng;
 use rand::seq::IndexedRandom;
-use rusttype::{point, Font, Scale};
+use rusttype::{Font, Rect, Scale, point};
 use std::{f64, fmt};
 use strum::EnumIter;
 use strum::EnumString;
@@ -173,6 +174,8 @@ impl Circle {
 }
 
 fn render_text(text: &str) -> RgbaImage {
+    const PADDING: u32 = 50;
+
     let font_data = include_bytes!("../../public/Roboto-Regular.ttf");
     let font = Font::try_from_bytes(font_data as &[u8]).expect("Error constructing Font");
     let scale = Scale::uniform(FONT_SCALE);
@@ -181,39 +184,42 @@ fn render_text(text: &str) -> RgbaImage {
         green: 0,
         blue: 0,
     }; // black
-    let v_metrics = font.v_metrics(scale);
 
     // layout the glyphs in a line with 20 pixels padding
     let glyphs: Vec<_> = font
-        .layout(text, scale, point(20.0, 20.0 + v_metrics.ascent))
+        .layout(text, scale, point(0.0, 0.0))
         .collect();
 
     // work out the layout size
-    let glyphs_height = (v_metrics.ascent - v_metrics.descent).ceil() as u32;
-    let glyphs_width = {
-        let min_x = glyphs
-            .first()
-            .map(|g| g.pixel_bounding_box().unwrap().min.x)
-            .unwrap();
-        let max_x = glyphs
-            .last()
-            .map(|g| g.pixel_bounding_box().unwrap().max.x)
-            .unwrap();
-        (max_x - min_x) as u32
-    };
+    let glyphs_bounds = glyphs
+        .iter()
+        .filter_map(|g| g.pixel_bounding_box())
+        .reduce(|a, b| {
+            let min = point(a.min.x.min(b.min.x), a.min.y.min(b.min.y));
+            let max = point(a.max.x.max(b.max.x), a.max.y.max(b.max.y));
+
+            Rect { min, max }
+        })
+        .unwrap();
+
+    console_log(&format!("{:?}", glyphs_bounds));
 
     // Create a new rgba image with some padding
-    let mut image = DynamicImage::new_rgba8(glyphs_width + 400, glyphs_height + 40).to_rgba8();
+    let mut image = DynamicImage::new_rgba8(glyphs_bounds.width() as u32 + PADDING * 2, glyphs_bounds.height() as u32 + PADDING * 2).to_rgba8();
 
     // Loop through the glyphs in the text, positing each one on a line
     for glyph in glyphs {
         if let Some(bounding_box) = glyph.pixel_bounding_box() {
             // Draw the glyph into the image per-pixel by using the draw closure
             glyph.draw(|x, y, v| {
+                let x = PADDING as i32 + x as i32 + bounding_box.min.x - glyphs_bounds.min.x;
+                let y = PADDING as i32 + y as i32 + bounding_box.min.y - glyphs_bounds.min.y;
+                
                 image.put_pixel(
                     // Offset the position by the glyph bounding box
-                    x + bounding_box.min.x as u32,
-                    y + bounding_box.min.y as u32,
+                    // glyphs_bounds ends up negative, so we need to us i32
+                    x.try_into().unwrap(),
+                    y.try_into().unwrap(),
                     // Turn the coverage into an alpha value
                     Rgba([color.red, color.green, color.blue, (v * 255.0) as u8]),
                 )
