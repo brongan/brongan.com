@@ -270,6 +270,9 @@ impl CircleGrid {
     }
 
     fn fill(&mut self, point: Point2d, circle: Circle, max_distance: f64) {
+        // My code was too slow, so I just yoinked this from wikipedea
+        // https://en.wikipedia.org/wiki/Flood_fill#cite_ref-90Heckbert_8-0
+
         let Point2d { x, y } = point;
 
         fn distance(this: &CircleGrid, x: i32, y: i32, circle: &Circle) -> f64 {
