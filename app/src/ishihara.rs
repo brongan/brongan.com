@@ -236,14 +236,13 @@ pub fn generate_plate(text: &str, blindness: Blindness) -> RgbaImage {
     log::info!("Generating Plate: {}", text);
     // Get an image buffer from rendering the text
     let mut image = render_text(text);
-    // todo!();
     let mut rng = rand::rng();
 
     // Create circles based based on the image buffer's dimensions
     let (x, y) = image.dimensions();
     let mut circles = CircleGenerator::new(&mut rng)
         .size(x, y)
-        .generate(); //Circle::create_circles(x, y, &mut rng);
+        .generate();
 
     // Assign circles colors based on rendered text
     circles
