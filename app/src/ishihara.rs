@@ -2,7 +2,8 @@ use crate::color::{hex_color, Color};
 use crate::ishihara_form::IshiharaArgs;
 use crate::ishihara_form::IshiharaInput;
 use crate::point2d::Point2D;
-use image::{DynamicImage, Rgba, RgbaImage};
+use image::imageops::FilterType::Lanczos3;
+use image::{DynamicImage, ImageBuffer, Rgba, RgbaImage};
 use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut};
 use leptos::html::Canvas;
 use leptos::leptos_dom::logging::console_log;
@@ -158,7 +159,9 @@ impl Circle {
         }
     }
 
-    fn draw(&self, image: &mut RgbaImage, rng: &mut rand::rngs::ThreadRng, blindness: Blindness) {
+    fn draw(&self, image: &mut RgbaImage, upscaling_factor: u32, rng: &mut rand::rngs::ThreadRng, blindness: Blindness) {
+        let upscaling_factor = upscaling_factor as i32;
+
         let color = match &self.ishihara_color {
             Some(color) => get_color(*color, blindness, rng),
             None => hex_color("#ffffff").unwrap().1,
@@ -166,8 +169,8 @@ impl Circle {
 
         draw_filled_circle_mut(
             image,
-            (self.center.x, self.center.y),
-            self.radius as i32,
+            (self.center.x * upscaling_factor, self.center.y * upscaling_factor),
+            self.radius as i32 * upscaling_factor,
             Rgba([color.red, color.green, color.blue, 255]),
         );
     }
@@ -202,8 +205,6 @@ fn render_text(text: &str) -> RgbaImage {
         })
         .unwrap();
 
-    console_log(&format!("{:?}", glyphs_bounds));
-
     // Create a new rgba image with some padding
     let mut image = DynamicImage::new_rgba8(glyphs_bounds.width() as u32 + PADDING * 2, glyphs_bounds.height() as u32 + PADDING * 2).to_rgba8();
 
@@ -230,6 +231,7 @@ fn render_text(text: &str) -> RgbaImage {
 }
 
 pub fn generate_plate(text: &str, blindness: Blindness) -> RgbaImage {
+    const AA_FACTOR: u32 = 2;
     log::info!("Generating Plate: {}", text);
     // Get an image buffer from rendering the text
     let mut image = render_text(text);
@@ -254,10 +256,23 @@ pub fn generate_plate(text: &str, blindness: Blindness) -> RgbaImage {
         Rgba([255, 255, 255, 255]),
     );
 
+    // Create new buffer to draw upscaled circles
+    let mut image = ImageBuffer::new(x * AA_FACTOR, y * AA_FACTOR);
+    draw_filled_rect_mut(
+        &mut image,
+        imageproc::rect::Rect::at(0, 0).of_size(x * AA_FACTOR, y * AA_FACTOR),
+        Rgba([255, 255, 255, 255]),
+    );
+
     // Draw Circles
     circles
         .iter()
-        .for_each(|circle| circle.draw(&mut image, &mut rng, blindness));
+        .for_each(|circle| circle.draw(&mut image, AA_FACTOR, &mut rng, blindness));
+
+    // Shrink image to original size
+    // Supposedly Lanczos3 produces good image quality when downscaling.
+    let image = image::imageops::resize(&image, x, y, Lanczos3);
+    
     image
 }
 

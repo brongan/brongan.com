@@ -41,7 +41,6 @@ rayon = { workspace = true, optional = true }
 rusqlite = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }
 tokio-rusqlite = { workspace = true, optional = true }
-simple_profiler = { git = "https://github.com/BrianPAmsler/simple_profiler.git", version = "0.1.0" }
 
 [dependencies.web-sys]
 version = "0.3"
