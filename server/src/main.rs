@@ -59,16 +59,16 @@ async fn main() {
     let opt = Opt::parse();
     let _sentry = std::env::var("SENTRY_DSN").map(sentry_guard);
 
-    let api_key = std::env::var("HONEYCOMB_API_KEY").expect("$HONEYCOMB_API_KEY should be set");
-    let oltp_exporter = SpanExporter::builder()
-        .with_http()
-        .with_headers(HashMap::from([(String::from("x-honeycomb-team"), api_key)]))
-        .build()
-        .expect("Failed to create OLTP exporter.");
-    let tracer_provider = SdkTracerProvider::builder()
-        .with_batch_exporter(oltp_exporter)
-        .build();
-    global::set_tracer_provider(tracer_provider);
+    // let api_key = std::env::var("HONEYCOMB_API_KEY").expect("$HONEYCOMB_API_KEY should be set");
+    // let oltp_exporter = SpanExporter::builder()
+    //     .with_http()
+    //     .with_headers(HashMap::from([(String::from("x-honeycomb-team"), api_key)]))
+    //     .build()
+    //     .expect("Failed to create OLTP exporter.");
+    // let tracer_provider = SdkTracerProvider::builder()
+    //     .with_batch_exporter(oltp_exporter)
+    //     .build();
+    // global::set_tracer_provider(tracer_provider);
 
     let app = Router::new()
         .leptos_routes_with_context(

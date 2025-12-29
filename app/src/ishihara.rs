@@ -12,7 +12,6 @@ use rand::distr::Distribution;
 use rand::rngs::ThreadRng;
 use rand::seq::IndexedRandom;
 use rusttype::{point, Font, Scale};
-use std::collections::VecDeque;
 use std::{f64, fmt};
 use strum::EnumIter;
 use strum::EnumString;
@@ -149,38 +148,6 @@ pub enum Blindness {
 }
 
 impl Circle {
-    const MAX_RADIUS: f64 = 6.9;
-    const MIN_RADIUS: f64 = 3.0;
-    const GOAL_AREA_RATIO: f64 = 0.57;
-    fn create_circles(x: u32, y: u32, rng: &mut dyn RngCore) -> Vec<Circle> {
-        let goal_area = Circle::GOAL_AREA_RATIO * x as f64 * y as f64;
-        let mut circles: Vec<Circle> = Vec::new();
-        let mut area: f64 = 0.0;
-        let uniform = Uniform::new(
-            Point2d { x: 0, y: 0 },
-            Point2d {
-                x: x as i32,
-                y: y as i32,
-            },
-        )
-        .unwrap();
-
-        //Create circles with random coordinates and radii with size based on its distance from the closest circle
-        while area < goal_area {
-            let candidate_point = uniform.sample(rng);
-            if let Some(radius) = max_allowed_radius(&candidate_point, &circles) {
-                area += std::f64::consts::PI * radius.powi(2);
-                let new_circle = Circle {
-                    center: candidate_point,
-                    radius,
-                    ishihara_color: None,
-                };
-                circles.push(new_circle);
-            }
-        }
-        circles
-    }
-
     fn assign_colors(&mut self, image: &RgbaImage) {
         let pixel = image.get_pixel(self.center.x as u32, self.center.y as u32);
         if pixel.0 == [0, 0, 0, 0] {
@@ -203,18 +170,6 @@ impl Circle {
             Rgba([color.red, color.green, color.blue, 255]),
         );
     }
-}
-
-fn max_allowed_radius(candidate_point: &Point2d, circles: &[Circle]) -> Option<f64> {
-    let mut curr_radius = Circle::MAX_RADIUS;
-    for other in circles {
-        let edge_distance = candidate_point.distance(&other.center) - other.radius;
-        curr_radius = curr_radius.min(edge_distance - 1.0);
-        if curr_radius < Circle::MIN_RADIUS {
-            return None;
-        }
-    }
-    Some(curr_radius)
 }
 
 fn render_text(text: &str) -> RgbaImage {
@@ -248,7 +203,7 @@ fn render_text(text: &str) -> RgbaImage {
     };
 
     // Create a new rgba image with some padding
-    let mut image = DynamicImage::new_rgba8(glyphs_width + 40, glyphs_height + 40).to_rgba8();
+    let mut image = DynamicImage::new_rgba8(glyphs_width + 400, glyphs_height + 40).to_rgba8();
 
     // Loop through the glyphs in the text, positing each one on a line
     for glyph in glyphs {
@@ -277,7 +232,9 @@ pub fn generate_plate(text: &str, blindness: Blindness) -> RgbaImage {
 
     // Create circles based based on the image buffer's dimensions
     let (x, y) = image.dimensions();
-    let mut circles = Circle::create_circles(x, y, &mut rng);
+    let mut circles = CircleGenerator::new(&mut rng)
+        .size(x, y)
+        .generate(); //Circle::create_circles(x, y, &mut rng);
 
     // Assign circles colors based on rendered text
     circles
@@ -313,51 +270,81 @@ impl CircleGrid {
     }
 
     fn fill(&mut self, point: Point2d, circle: Circle, max_distance: f64) {
-        let mut visited = vec![false; (self.width * self.height) as usize];
-        let mut queue = VecDeque::new();
-        queue.push_back(point);
+        let Point2d { x, y } = point;
 
-        while !queue.is_empty() {
-            let point = queue.pop_front().unwrap();
-
-            if point.x < 0 || point.y < 0 || point.x as u32 >= self.width || point.y as u32 >= self.height {
-                continue;
-            }
-
-            let i = self.index(point.y as u32, point.x as u32);
-            if visited[i] {
-                continue;
-            }
-
-            visited[i] = true;
-
+        fn distance(this: &CircleGrid, x: i32, y: i32, circle: &Circle) -> f64 {
             // Distance from edge of circle, inside being negative.
-            let distance = (circle.center.distance(&point) - circle.radius);
+            let distance = circle.center.distance(&Point2d { x, y }) - circle.radius;
 
             let edge_distance = [
                 // Left edge
-                point.x as u32,
+                x as u32,
                 // Right edge
-                self.width - point.x as u32,
+                this.width - x as u32,
                 // Top edge
-                point.y as u32,
+                y as u32,
                 // Bottom edge
-                self.height - point.y as u32
+                this.height - y as u32
             ].into_iter().min().unwrap();
 
-            // Use edge distance to bias circles away from the edges (otherwise they line up perfeclty on the edges)
-            let distance = distance.min(edge_distance as f64 * self.edge_bias);
+            distance.min(edge_distance as f64 * this.edge_bias)
+        }
 
-            // Replace distance if current distance is None or new distance is less.
-            if self.cells[i].is_none_or(|cell_distance| distance < cell_distance && distance <= max_distance) {
-                self.cells[i] = Some(distance);
+        fn inside(this: &CircleGrid, x: i32, y: i32, circle: &Circle, max_distance: &f64) -> bool {
+            if x < 0 || y < 0 || x as u32 >= this.width || y as u32 >= this.height {
+                return false;
+            }
 
-                let Point2d { x, y} = point;
-                // Only spread when distance gets replaced
-                queue.push_back(Point2d { x: x + 1, y});
-                queue.push_back(Point2d { x, y: y + 1});
-                queue.push_back(Point2d { x: x - 1, y});
-                queue.push_back(Point2d { x, y: y - 1});
+            let distance  = distance(this, x, y, circle);
+
+            let i = this.index(y as u32, x as u32);
+            this.cells[i].is_none_or(|cell_distance| distance < cell_distance && distance <= *max_distance)
+        }
+
+        fn set(this: &mut CircleGrid, x: i32, y: i32, circle: &Circle) {
+            if x < 0 || y < 0 || x as u32 >= this.width || y as u32 >= this.height {
+                return;
+            }
+
+            let i = this.index(y as u32, x as u32);
+            this.cells[i] = Some(distance(&this, x, y, &circle));
+        }
+
+        if !inside(&self, x, y, &circle, &max_distance) {
+            return
+        }
+
+        let mut stack = Vec::new();
+        stack.push((x, x, y, 1));
+        stack.push((x, x, y - 1, -1));
+        while !stack.is_empty() {
+            let (mut x1, x2, y, dy) = stack.pop().unwrap();
+            let mut x = x1;
+            if inside(&self, x, y, &circle, &max_distance) {
+                while inside(&self, x - 1, y, &circle, &max_distance) {
+                    set(self, x - 1, y, &circle);
+                    x = x - 1;
+                }
+                if x < x1 {
+                    stack.push((x, x1 - 1, y - dy, -dy));
+                }
+            }
+            while x1 <= x2 {
+                while inside(&self, x1, y, &circle, &max_distance) {
+                    set(self, x1, y, &circle);
+                    x1 = x1 + 1;
+                }
+                if x1 > x {
+                    stack.push((x, x1 - 1, y + dy, dy));
+                }
+                if x1 - 1 > x2 {
+                    stack.push((x2 + 1, x1 - 1, y - dy, -dy));
+                }
+                x1 = x1 + 1;
+                while x1 <= x2 && !inside(&self, x1, y, &circle, &max_distance) {
+                    x1 = x1 + 1;
+                }
+                x = x1;
             }
         }
     }
@@ -575,8 +562,8 @@ mod tests {
 
     static TEST_DIR: &str = "../test artifacts/";
 
-    const WIDTH: u32 = 1920;
-    const HEIGHT: u32 = 1080;
+    const WIDTH: u32 = 1042;
+    const HEIGHT: u32 = 296;
 
     #[profile]
     fn generate_circles_new() -> Vec<Circle> {
@@ -584,12 +571,6 @@ mod tests {
         CircleGenerator::new(&mut rng)
             .size(WIDTH, HEIGHT)
             .generate()
-    }
-
-    #[profile]
-    fn generate_circles_old() -> Vec<Circle> {
-        let mut rng = StdRng::seed_from_u64(0);
-        Circle::create_circles(WIDTH, HEIGHT, &mut rng)
     }
 
     #[profile]
@@ -616,23 +597,6 @@ mod tests {
         let output_file = Path::new(TEST_DIR).join("circle_generator_output.png");
 
         let circles = generate_circles_new();
-
-        let image = draw(&circles);
-
-        simple_profiler::profiler::profile_current_thread(simple_profiler::analysis::Sort::TotalTime, simple_profiler::analysis::Unit::Millisecond);
-
-        image.save(output_file)?;
-
-        Ok(())
-    }
-    #[test]
-    pub fn circle_generator_original() -> Result<(), Box<dyn std::error::Error>> {
-        println!("test dir: {:?}", std::path::absolute(Path::new(TEST_DIR))?.as_os_str());
-        create_dir_all(TEST_DIR)?;
-
-        let output_file = Path::new(TEST_DIR).join("circle_generator_original_output.png");
-
-        let circles: Vec<Circle> = generate_circles_old();
 
         let image = draw(&circles);
 
