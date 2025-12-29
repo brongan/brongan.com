@@ -580,8 +580,6 @@ mod tests {
     use image::{ImageBuffer, Rgba, RgbaImage, imageops::{FilterType::Lanczos3, resize}};
     use imageproc::{drawing::{draw_filled_circle_mut, draw_filled_rect_mut}, rect::Rect};
     use rand::{SeedableRng, rngs::StdRng};
-    use simple_profiler::profile_macro::profile;
-
     use crate::ishihara::{Circle, CircleGenerator};
 
     static TEST_DIR: &str = "../test artifacts/";
@@ -589,7 +587,6 @@ mod tests {
     const WIDTH: u32 = 1042;
     const HEIGHT: u32 = 296;
 
-    #[profile]
     fn generate_circles_new() -> Vec<Circle> {
         let mut rng = StdRng::seed_from_u64(0);
         CircleGenerator::new(&mut rng)
@@ -597,7 +594,6 @@ mod tests {
             .generate()
     }
 
-    #[profile]
     fn draw(circles: &[Circle]) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         let mut canvas = RgbaImage::new(WIDTH * 2, HEIGHT * 2);
         let (width, height) = canvas.dimensions();
@@ -623,8 +619,6 @@ mod tests {
         let circles = generate_circles_new();
 
         let image = draw(&circles);
-
-        simple_profiler::profiler::profile_current_thread(simple_profiler::analysis::Sort::TotalTime, simple_profiler::analysis::Unit::Millisecond);
 
         image.save(output_file)?;
 
