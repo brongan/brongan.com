@@ -187,7 +187,7 @@ fn render_text(text: &str) -> RgbaImage {
         blue: 0,
     }; // black
 
-    // layout the glyphs in a line with 20 pixels padding
+    // layout the glyphs at (0, 0) and offset them manually later.
     let glyphs: Vec<_> = font
         .layout(text, scale, point(0.0, 0.0))
         .collect();
