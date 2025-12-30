@@ -50,7 +50,6 @@ fn render_mandelbrot(
     upper_left: Complex<f64>,
     lower_right: Complex<f64>,
 ) -> impl IntoView {
-    log!("generating mandelbrot image");
     let image = generate_mandelbrot(bounds, upper_left, lower_right);
     view! { <ShowMandelbrot image/> }
 }
@@ -87,7 +86,6 @@ fn render_remote_mandelbrot(
 
 #[component]
 pub fn mandelbrot_model(bounds: Bounds) -> impl IntoView {
-    log!("mandelbrot");
     let upper_left = Complex::<f64> {
         re: -1.20,
         im: 0.35,
