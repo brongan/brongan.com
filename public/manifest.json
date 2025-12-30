@@ -1,0 +1,25 @@
+{
+  "name": "Brongan.com",
+  "short_name": "Brongan",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "icons": [
+    {
+      "src": "web-app-manifest-192.webp",
+      "sizes": "192x192",
+      "type": "image/webp"
+    },
+    {
+      "src": "web-app-manifest-512.webp",
+      "sizes": "512x512",
+      "type": "image/webp"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Prevent crawling backend API endpoints (waste of crawl budget)
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://brongan.com/sitemap.xml
