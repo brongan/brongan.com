@@ -5,7 +5,7 @@ use chip8::Debugger;
 use game_of_life::GameOfLife;
 use ishihara::IshiharaPlate;
 use leptos::prelude::*;
-use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
+use leptos_meta::{provide_meta_context, Meta, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
     StaticSegment,
@@ -51,6 +51,8 @@ pub fn App() -> impl IntoView {
     view! {
         <Stylesheet href="/pkg/brongan_com.css"/>
         <Title text="brongan.com" />
+        <Meta name="description" content="Brennan's personal website featuring Rust experiments like Chip-8 emulator, Game of Life, Ishihara test generator, and more." />
+        <Meta name="theme-color" content="#222222" />
         <Router>
             <main class="main-panel">
                 <Routes fallback=|| "Page not found.".into_view()>
@@ -114,7 +116,7 @@ pub fn navigation() -> impl IntoView {
         NavItem {
             title: "Home",
             route: "/",
-            thumbnail: "brongan.webp",
+            thumbnail: "ai_pfp.webp",
         },
         NavItem {
             title: "Ishihara",
