@@ -1,101 +1,81 @@
-<picture>
-    <source srcset="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_Solid_White.svg" media="(prefers-color-scheme: dark)">
-    <img src="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_RGB.svg" alt="Leptos Logo">
-</picture>
+# Brongan.com
 
-# Leptos Axum Starter Template
+Welcome to the source code for [Brongan.com](https://brongan.com), a personal playground for exploring Rust, WebAssembly, and systems programming in the browser.
 
-This is a template for use with the [Leptos](https://github.com/leptos-rs/leptos) web framework and the [cargo-leptos](https://github.com/akesson/cargo-leptos) tool using [Axum](https://github.com/tokio-rs/axum).
+This project is built using the [Leptos](https://github.com/leptos-rs/leptos) full-stack framework and [Axum](https://github.com/tokio-rs/axum).
 
-## Creating your template repo
+## 🚀 Features
 
-If you don't have `cargo-leptos` installed you can install it with
+### 🖥️ Chip-8 Emulator
+A fully functional Chip-8 interpreter written in Rust and running in WebAssembly.
+- **Cycle-accurate execution**: Runs standard ROMs like Pong, Brix, and Tetris.
+- **Debugger**: detailed view of registers, memory, and stack.
+- **Disassembler**: Real-time instruction decoding.
+- **Keypad**: Interactive on-screen keypad with keyboard support.
 
+### 🧬 Conway's Game of Life
+A high-performance implementation of the Game of Life using WebGL.
+- **WebGL Rendering**: Renders the universe grid directly on the GPU for performance.
+- **Interactivity**: Click to toggle cells, Shift+Click for Pulsars, Ctrl+Click for Gliders.
+- **Simulation Control**: Start, stop, step, and reset the simulation.
+
+### 👁️ Ishihara Test Generator
+A tool to generate Color Blindness tests on the fly.
+- **Algorithmic Generation**: Uses circle packing algorithms to create plates.
+- **Customizable**: Inputs for text and blindness types (Red-Green, Blue-Yellow).
+
+### 🎨 Other Experiments
+- **Mandelbrot Explorer**: Fractal visualization.
+- **Catscii**: Image-to-ASCII art converter.
+- **Analytics**: A privacy-first, custom analytics solution tracking country-level traffic.
+
+## 🛠️ Technology Stack
+
+- **Frontend**: [Leptos](https://leptos.dev) (Rust -> WASM)
+- **Backend**: [Axum](https://github.com/tokio-rs/axum)
+- **Styling**: SCSS (compiled via `cargo-leptos`)
+- **Database**: SQLite / GeoLite2 (for analytics)
+- **Build Tool**: `cargo-leptos` / `just`
+
+## 🏃 Local Development
+
+### Prerequisites
+- [Rust](https://www.rust-lang.org/tools/install) (Nightly toolchain required)
+- `cargo-leptos`: `cargo install cargo-leptos`
+- `sass`: `npm install -g sass` (or your preferred method)
+
+### Running the App
+
+The easiest way to run the app is using the `just` command runner, but you can also use `cargo-leptos` directly.
+
+**Using Just:**
 ```bash
-cargo install cargo-leptos --locked
+# Start the development server (auto-reloads)
+just develop
+
+# Build for production
+just build
 ```
 
-Then run
-```bash
-cargo leptos new --git https://github.com/leptos-rs/start-axum-workspace-0.7/
-```
-
-to generate a new project template.
-
-```bash
-cd {projectname}
-```
-
-to go to your newly created project.  
-Feel free to explore the project structure, but the best place to start with your application code is in `src/app.rs`.  
-Additionally, Cargo.toml may need updating as new versions of the dependencies are released, especially if things are not working after a `cargo update`.
-
-### Islands support
-
-Note that for islands to work correctly, you need to have a `use app;` in your frontend `lib.rs` otherwise rustc / wasm_bindgen gets confused.
-To prevent clippy from complaining, at the top of the `frontend/lib.rs` file place:
-```rust
-#[allow(clippy::single_component_path_imports)]
-#[allow(unused_imports)]
-use app;
-```
-
-## Running your project
-
+**Using Cargo Leptos:**
 ```bash
 cargo leptos watch
 ```
 
-## Installing Additional Tools
+The app will be available at `http://localhost:3000`.
 
-By default, `cargo-leptos` uses `nightly` Rust, `cargo-generate`, and `sass`. If you run into any trouble, you may need to install one or more of these tools.
+## 🐳 Deployment
 
-1. `rustup toolchain install nightly --allow-downgrade` - make sure you have Rust nightly
-2. `rustup default nightly` - setup nightly as default, or you can use rust-toolchain file later on
-3. `rustup target add wasm32-unknown-unknown` - add the ability to compile Rust to WebAssembly
-4. `cargo install cargo-generate` - install `cargo-generate` binary (should be installed automatically in future)
-5. `npm install -g sass` - install `dart-sass` (should be optional in future
-
-## Compiling for Release
-```bash
-cargo leptos build --release
-```
-
-Will generate your server binary in target/server/release and your site package in target/site
-
-## Testing Your Project
-```bash
-cargo leptos end-to-end
-```
+The application is containerized using Docker and deployed to [Fly.io](https://fly.io).
 
 ```bash
-cargo leptos end-to-end --release
+# Build container image
+just container
+
+# Deploy to Fly.io
+just deploy
 ```
 
-Cargo-leptos uses Playwright as the end-to-end test tool.  
-Tests are located in end2end/tests directory.
+## 📄 License
 
-## Executing a Server on a Remote Machine Without the Toolchain
-After running a `cargo leptos build --release` the minimum files needed are:
-
-1. The server binary located in `target/server/release`
-2. The `site` directory and all files within located in `target/site`
-
-Copy these files to your remote server. The directory structure should be:
-```text
-start-axum-workspace
-site/
-```
-Set the following environment variables (updating for your project as needed):
-```text
-LEPTOS_OUTPUT_NAME="start-axum-workspace"
-LEPTOS_SITE_ROOT="site"
-LEPTOS_SITE_PKG_DIR="pkg"
-LEPTOS_SITE_ADDR="127.0.0.1:3000"
-LEPTOS_RELOAD_PORT="3001"
-```
-Finally, run the server binary.
-
-## Licensing
-
-This template itself is released under the Unlicense. You should replace the LICENSE for your own application with an appropriate license if you plan to release it publicly.
+This project is open-source. Feel free to explore the code!
