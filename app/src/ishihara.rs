@@ -139,7 +139,9 @@ fn get_color(color: IshiharaColor, blindness: Blindness, rng: &mut ThreadRng) ->
 pub enum Blindness {
     Demonstration,
     #[default]
+    #[strum(serialize = "Red-Green")]
     RedGreen,
+    #[strum(serialize = "Blue-Yellow")]
     BlueYellow,
 }
 
