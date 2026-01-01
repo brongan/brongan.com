@@ -2,7 +2,7 @@ use crate::point2d::Point2D;
 use anyhow::anyhow;
 use image::{DynamicImage, RgbaImage};
 use leptos::html::Canvas;
-use leptos::logging::log;
+// use leptos::logging::log;
 use leptos::prelude::*;
 use num::Complex;
 use serde::{Deserialize, Serialize};
