@@ -557,68 +557,8 @@ impl<'a> CircleGenerator<'a> {
 
             // Reset missed count
             missed = 0;
-        }
-
-        // TODO: Probably remove this
-        #[cfg(test)]
-        {
-            println!("target coverage: {}", self.coverage);
-            println!("actual coverage: {}", area / total_area);
-        }
+        }   
 
         circles
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::{fs::create_dir_all, path::Path};
-
-    use image::{ImageBuffer, Rgba, RgbaImage, imageops::{FilterType::Lanczos3, resize}};
-    use imageproc::{drawing::{draw_filled_circle_mut, draw_filled_rect_mut}, rect::Rect};
-    use rand::{SeedableRng, rngs::StdRng};
-    use crate::ishihara::{Circle, CircleGenerator};
-
-    static TEST_DIR: &str = "../test artifacts/";
-
-    const WIDTH: u32 = 1042;
-    const HEIGHT: u32 = 296;
-
-    fn generate_circles_new() -> Vec<Circle> {
-        let mut rng = StdRng::seed_from_u64(0);
-        CircleGenerator::new(&mut rng)
-            .size(WIDTH, HEIGHT)
-            .generate()
-    }
-
-    fn draw(circles: &[Circle]) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-        let mut canvas = RgbaImage::new(WIDTH * 2, HEIGHT * 2);
-        let (width, height) = canvas.dimensions();
-        draw_filled_rect_mut(&mut canvas, Rect::at(0, 0).of_size(width, height), Rgba([255, 255, 255, 255]));
-
-        for circle in circles {
-            let center = (circle.center.x * 2, circle.center.y * 2);
-            draw_filled_circle_mut(&mut canvas, center, circle.radius as i32 * 2, Rgba([0, 0, 0, 255]));
-        }
-
-        let canvas = resize(&canvas, WIDTH, HEIGHT, Lanczos3);
-
-        canvas
-    }
-
-    #[test]
-    pub fn circle_generator() -> Result<(), Box<dyn std::error::Error>> {
-        println!("test dir: {:?}", std::path::absolute(Path::new(TEST_DIR))?.as_os_str());
-        create_dir_all(TEST_DIR)?;
-
-        let output_file = Path::new(TEST_DIR).join("circle_generator_output.png");
-
-        let circles = generate_circles_new();
-
-        let image = draw(&circles);
-
-        image.save(output_file)?;
-
-        Ok(())
     }
 }
