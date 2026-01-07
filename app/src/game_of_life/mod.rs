@@ -45,11 +45,11 @@ pub fn game_of_life() -> impl IntoView {
 
     let render = move || {
         renderer.update_value(|r| {
-            if let Err(_) = if let Some(r) = r {
+            if (if let Some(r) = r {
                 universe.with_value(|u| r.render(u))
             } else {
                 Err(())
-            } {
+            }).is_err() {
                 if let Some(canvas_ref) = canvas.get() {
                     let mut new_renderer = WebGLRenderer::new(canvas_ref, width, height);
                     let _ = universe.with_value(|u| new_renderer.render(u));
