@@ -8,6 +8,7 @@ use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, Meta, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
+    hooks::use_location,
     StaticSegment,
 };
 use mandelbrot::Mandelbrot;
@@ -55,6 +56,7 @@ pub fn App() -> impl IntoView {
         <Meta name="theme-color" content="#222222" />
         <Router>
             <main class="main-panel">
+                <GlobalNav/>
                 <Routes fallback=|| "Page not found.".into_view()>
                     <Route path=StaticSegment("") view=HomePage/>
                     <Route path=StaticSegment("ishihara") view=IshiharaPlate/>
@@ -66,6 +68,29 @@ pub fn App() -> impl IntoView {
                 </Routes>
             </main>
       </Router>
+    }
+}
+
+#[component]
+fn GlobalNav() -> impl IntoView {
+    let location = use_location();
+    let is_chip8 = move || location.pathname.get().contains("chip8");
+
+    view! {
+        <nav class="global-nav" class:chip8-nav=is_chip8>
+            <a href="/">"Home"</a>
+            <span class="separator">"/"</span>
+            <span class="current-page">
+                {move || {
+                    let path = location.pathname.get();
+                    if path == "/" {
+                        String::new()
+                    } else {
+                        path.trim_start_matches('/').to_string()
+                    }
+                }}
+            </span>
+        </nav>
     }
 }
 

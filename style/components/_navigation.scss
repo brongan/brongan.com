@@ -51,3 +51,66 @@
         }
     }
 }
+
+.global-nav {
+    width: 100%;
+    padding: 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+
+    a {
+        color: $white;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 1.1rem;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+
+        &:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+    }
+
+    .separator {
+        color: $white;
+        opacity: 0.3;
+        font-weight: bold;
+    }
+
+    .current-page {
+        color: $white;
+        opacity: 1;
+        font-weight: bold;
+        text-transform: capitalize;
+    }
+
+    &.chip8-nav {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 100;
+        padding: 10px 20px;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(4px);
+        margin-bottom: 0;
+        justify-content: flex-start;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+        a {
+            color: $white;
+            opacity: 0.8;
+
+            &:hover {
+                opacity: 1;
+                color: $syntax-teal;
+            }
+        }
+
+        .separator {
+            opacity: 0.5;
+        }
+    }
+}
