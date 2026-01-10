@@ -35,6 +35,11 @@ body,
     min-height: 100vh;
     padding: 0 20px;
     box-sizing: border-box;
+
+    &.chip8-mode {
+        padding: 0;
+        background: $gray-darkest;
+    }
 }
 
 .header {

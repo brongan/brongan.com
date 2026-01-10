@@ -269,7 +269,6 @@ pub fn Debugger() -> impl IntoView {
 
             // --- COL CONTROLS ---
             <div class="panel col-controls">
-                <div class="panel-header">"Controls"</div>
                 <input
                     type="file"
                     node_ref=file_input
@@ -277,6 +276,11 @@ pub fn Debugger() -> impl IntoView {
                     style="display: none"
                     accept=".ch8,.rom"
                 />
+
+                <KeypadComponent keypad />
+
+                <div class="panel-header">"Emulator Controls"</div>
+
                 <Controls is_active pause resume step reset
                 roms=roms
                 on_rom_select
@@ -289,8 +293,6 @@ pub fn Debugger() -> impl IntoView {
                     }
                 }
                 />
-
-                <KeypadComponent keypad />
 
                 <Show when=move || debug_mode.get()>
                     <hr class="divider"/>

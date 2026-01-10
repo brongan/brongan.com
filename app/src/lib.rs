@@ -5,7 +5,7 @@ use chip8::Debugger;
 use game_of_life::GameOfLife;
 use ishihara::IshiharaPlate;
 use leptos::prelude::*;
-use leptos_meta::{provide_meta_context, Meta, MetaTags, Stylesheet, Title};
+use leptos_meta::{provide_meta_context, Body, Meta, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
     hooks::use_location,
@@ -49,25 +49,37 @@ pub fn shell(options: LeptosOptions) -> AnyView {
 #[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
+
     view! {
         <Stylesheet href="/pkg/brongan_com.css"/>
         <Title text="brongan.com" />
         <Meta name="description" content="Brennan's personal website featuring Rust experiments like Chip-8 emulator, Game of Life, Ishihara test generator, and more." />
         <Meta name="theme-color" content="#222222" />
         <Router>
-            <main class="main-panel">
-                <GlobalNav/>
-                <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("") view=HomePage/>
-                    <Route path=StaticSegment("ishihara") view=IshiharaPlate/>
-                    <Route path=StaticSegment("/game-of-life") view=GameOfLife/>
-                    <Route path=StaticSegment("/mandelbrot") view=Mandelbrot />
-                    <Route path=StaticSegment("/catscii") view=Catscii />
-                    <Route path=StaticSegment("/chip8") view=Debugger />
-                    <Route path=StaticSegment("/analytics") view=AnalyticsComponent />
-                </Routes>
-            </main>
-      </Router>
+            <MainLayout/>
+        </Router>
+    }
+}
+
+#[component]
+fn MainLayout() -> impl IntoView {
+    let location = use_location();
+    let is_chip8 = move || location.pathname.get().contains("chip8");
+
+    view! {
+        <Body class:chip8-body=is_chip8/>
+        <main class="main-panel" class:chip8-mode=is_chip8>
+            <GlobalNav/>
+            <Routes fallback=|| "Page not found.".into_view()>
+                <Route path=StaticSegment("") view=HomePage/>
+                <Route path=StaticSegment("ishihara") view=IshiharaPlate/>
+                <Route path=StaticSegment("/game-of-life") view=GameOfLife/>
+                <Route path=StaticSegment("/mandelbrot") view=Mandelbrot />
+                <Route path=StaticSegment("/catscii") view=Catscii />
+                <Route path=StaticSegment("/chip8") view=Debugger />
+                <Route path=StaticSegment("/analytics") view=AnalyticsComponent />
+            </Routes>
+        </main>
     }
 }
 

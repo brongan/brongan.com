@@ -26,7 +26,7 @@ pub fn Controls(
                         }
                     }
                  >
-                    <option value="" selected disabled>"Select ROM..."</option>
+                    <option value="" selected disabled>"Select ROM ▾"</option>
                     {roms.into_iter().map(|(name, url)| {
                         view! {
                             <option value=url>{name}</option>

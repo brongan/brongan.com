@@ -88,13 +88,8 @@
     }
 
     &.chip8-nav {
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 100;
         padding: 10px 20px;
-        background: rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(4px);
+        background: $gray-darkest;
         margin-bottom: 0;
         justify-content: flex-start;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
