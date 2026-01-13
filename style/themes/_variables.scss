@@ -1,0 +1,54 @@
+// Colors
+$white: #ffffff;
+$black: #000000;
+
+// Grays
+$gray-lighter: #f2f2f2;
+$gray-light: #d4d4d4;
+$gray-medium: #888888;
+$gray-dark: #333333;
+$gray-darker: #222222;
+$gray-darkest: #1e1e1e;
+
+// Contextual Colors
+$body-bg: #eee;
+$body-bg-dark: $gray-darkest;
+$text-main: $gray-light;
+$border-color: $gray-dark;
+$active-color: #264f78;
+$header-bg: #252526;
+$focus-border: #550096;
+
+// Syntax Highlighting (Chip8)
+$syntax-blue: #569cd6;
+$syntax-orange: #ce9178;
+$syntax-green: #6a9955;
+$syntax-teal: #4ec9b0;
+$syntax-stop: #f44747;
+
+// UI Elements
+$btn-primary-bg: #F03E3E;
+$btn-red-soft: #D64541;
+$btn-red-soft-hover: #C0392B;
+$btn-primary-text: $white;
+$btn-hover-bg: #bd3232;
+$table-bg: $white;
+$table-hover-bg: #f5f5f5;
+$led-active: #00ff00;
+$scrollbar-track: $gray-darkest;
+$scrollbar-thumb: #555555;
+$scrollbar-thumb-hover: #777777;
+$scrollbar-border: $gray-dark;
+$link-blue: #0000EE;
+
+// Typography
+$font-stack-main: 'Roboto', 'Open Sans', sans-serif;
+$font-stack-mono: 'Fira Code Retina', 'Fira Code', 'Consolas', 'Monaco', monospace;
+
+// Shadows
+$shadow-input: inset -4px 7px 7px -3px rgba(0, 0, 0, 0.36);
+$shadow-1: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+$shadow-2: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+$shadow-3: 0 19px 38px rgba(0, 0, 0, 0.30), 0 15px 12px rgba(0, 0, 0, 0.22);
+$btn-shadow: -4px 7px 9px -1px rgba(0, 0, 0, 0.36);
+$btn-hover-shadow: 0px 15px 20px rgba(46, 229, 157, 0.4);

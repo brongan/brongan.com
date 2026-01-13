@@ -1,26 +1,17 @@
 mod universe;
-mod util;
 mod webgl;
 
 use crate::game_of_life::universe::{Universe, UniverseRenderer};
-use crate::game_of_life::util::Timer;
 use crate::game_of_life::webgl::WebGLRenderer;
 use crate::mandelbrot::Bounds;
 use crate::point2d::Point2D;
 use crate::Footer;
 use leptos::html::Canvas;
-use leptos::logging::log;
 use leptos::prelude::*;
-use leptos_use::{use_interval, UseIntervalReturn};
+use leptos_use::use_raf_fn;
+use leptos_use::utils::Pausable;
 use universe::DomBounds;
 use web_sys::MouseEvent;
-
-#[derive(Clone)]
-pub enum Msg {
-    ToggleCell(u32, u32),
-    InsertGlider(u32, u32),
-    InsertPulsar(u32, u32),
-}
 
 #[component]
 pub fn instructions() -> impl IntoView {
@@ -47,59 +38,61 @@ pub fn instructions() -> impl IntoView {
 pub fn game_of_life() -> impl IntoView {
     let width = 128;
     let height = 64;
-    let (button, press_button) = signal(None);
-    let (universe, set_universe) = signal(Universe::new(width, height));
 
+    let universe = StoredValue::new_local(Universe::new(width, height));
+    let renderer = StoredValue::new_local(None::<WebGLRenderer>);
     let canvas: NodeRef<Canvas> = NodeRef::new();
-    Effect::new(move |_| {
-        if let Some(canvas) = canvas.get() {
-            log!("Creating renderer");
-            let mut renderer = WebGLRenderer::new(canvas, width, height);
-            universe.with(|universe| renderer.render(universe));
-            log!("Created renderer");
-        }
-    });
 
-    let UseIntervalReturn {
-        counter,
-        reset: _,
-        is_active: _,
-        pause,
-        resume,
-    } = use_interval(16);
-
-    match button.get() {
-        Some(Msg::ToggleCell(x, y)) => {
-            set_universe.update(|universe| universe.toggle_cell(x, y));
-        }
-        Some(Msg::InsertGlider(x, y)) => {
-            set_universe.update(|universe| universe.insert_glider(x, y));
-        }
-        Some(Msg::InsertPulsar(x, y)) => {
-            set_universe.update(|universe| universe.insert_pulsar(x, y));
-        }
-        _ => (),
+    let render = move || {
+        renderer.update_value(|r| {
+            if (if let Some(r) = r {
+                universe.with_value(|u| r.render(u))
+            } else {
+                Err(())
+            }).is_err() {
+                if let Some(canvas_ref) = canvas.get() {
+                    let mut new_renderer = WebGLRenderer::new(canvas_ref, width, height);
+                    let _ = universe.with_value(|u| new_renderer.render(u));
+                    *r = Some(new_renderer);
+                }
+            }
+        });
     };
 
     Effect::new(move |_| {
-        if counter.get() > 0 {
-            set_universe.update(|universe: &mut Universe| universe.tick());
+        // Initial creation when canvas mounts
+        if let Some(canvas) = canvas.get() {
+            if renderer.with_value(|r| r.is_none()) {
+                renderer.set_value(Some(WebGLRenderer::new(canvas, width, height)));
+                render();
+            }
         }
+    });
+
+    let Pausable {
+        pause,
+        resume,
+        is_active,
+    } = use_raf_fn(move |_| {
+        universe.update_value(|universe| universe.tick());
+        render();
     });
 
     let tick = move |_| {
-        set_universe.update(|universe: &mut Universe| universe.tick());
+        universe.update_value(|universe| universe.tick());
+        render();
     };
     let reset = move |_| {
-        set_universe.update(|universe| universe.reset());
+        universe.update_value(|universe| universe.reset());
+        render();
     };
     let kill_all = move |_| {
-        set_universe.update(|universe| universe.kill_all());
+        universe.update_value(|universe| universe.kill_all());
+        render();
     };
 
     let on_click = move |event: MouseEvent| {
         if let Some(canvas) = canvas.get() {
-            log!("On Click!");
             let rect = canvas.get_bounding_client_rect();
             let bounding_rect = DomBounds {
                 origin: Point2D {
@@ -117,13 +110,17 @@ pub fn game_of_life() -> impl IntoView {
                     y: event.y(),
                 },
             );
-            press_button.set(Some(if event.shift_key() {
-                Msg::InsertPulsar(x, y)
-            } else if event.ctrl_key() {
-                Msg::InsertGlider(x, y)
-            } else {
-                Msg::ToggleCell(x, y)
-            }));
+
+            universe.update_value(|universe| {
+                if event.shift_key() {
+                    universe.insert_pulsar(x, y);
+                } else if event.ctrl_key() {
+                    universe.insert_glider(x, y);
+                } else {
+                    universe.toggle_cell(x, y);
+                }
+            });
+            render();
         }
     };
 
@@ -138,12 +135,21 @@ pub fn game_of_life() -> impl IntoView {
                         <canvas node_ref=canvas on:click=on_click />
                     </div>
                     <div class="life-buttons">
-                        <button class="game-button" on:click=move |_| {resume();}>{ "Start" }</button>
-                        <button class="game-button" on:click=move |_| {pause();}>{ "Stop" }</button>
+                        <Show when=move || { !is_active.get() }
+                              fallback=move || {
+                                  let pause = pause.clone();
+                                  view! { <button class="game-button" on:click=move |_| pause()>{ "Stop" }</button> }
+                              }>
+                            {
+                                let resume = resume.clone();
+                                view! { <button class="game-button" on:click=move |_| resume()>{ "Start" }</button> }
+                            }
+                        </Show>
                         <button class="game-button" on:click=tick >{ "Tick" }</button>
                         <button class="game-button" on:click=reset >{ "Reset" }</button>
                         <button class="game-button" on:click=kill_all >{ "KillAll" }</button>
                     </div>
+                    <Instructions />
                 </section>
             </section>
             <Footer text=String::from("Game of Life - a rust experiment ")/>

@@ -48,7 +48,7 @@ const KEYS: [(&str, u8); 16] = [
 ];
 
 #[component]
-pub fn KeypadViewer(keypad: RwSignal<Keypad>) -> impl IntoView {
+pub fn KeypadComponent(keypad: RwSignal<Keypad>) -> impl IntoView {
     Effect::new(move |_| {
         let handle_keydown = window_event_listener(ev::keydown, move |ev| {
             if let Some(k) = map_key(&ev.code()) {
@@ -70,12 +70,26 @@ pub fn KeypadViewer(keypad: RwSignal<Keypad>) -> impl IntoView {
 
     view! {
         <div class="chip8-instructions">
-            <p><strong>"Keypad Mapping"</strong></p>
             <div class="key-grid"> {
                 KEYS.iter().map(|(label, val)| {
                     let is_pressed = move || keypad.get().is_pressed(*val);
                     view! {
-                        <div class="key" class:pressed=is_pressed>
+                        <div class="key" class:pressed=is_pressed
+                           on:mousedown=move |_| {
+                                keypad.update(|k| k.enable_key(*val));
+                            }
+                            on:mouseup=move |_| {
+                                keypad.update(|k| k.disable_key(*val));
+                            }
+                            on:mouseleave=move |_| {
+                                keypad.update(|k| k.disable_key(*val));
+                            }
+                            on:touchstart=move |_e| {
+                                keypad.update(|k| k.enable_key(*val));
+                            }
+                            on:touchend=move |_| {
+                                keypad.update(|k| k.disable_key(*val));
+                            }>
                            <span class="key-label">{*label}</span>
                            <span class="hex-label">{format!("{:X}", *val)}</span>
                         </div>

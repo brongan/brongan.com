@@ -1,10 +1,11 @@
+#![feature(duration_millis_float)]
 use analytics::AnalyticsComponent;
 use catscii::Catscii;
 use chip8::Debugger;
 use game_of_life::GameOfLife;
 use ishihara::IshiharaPlate;
 use leptos::prelude::*;
-use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
+use leptos_meta::{provide_meta_context, Meta, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
     StaticSegment,
@@ -50,6 +51,8 @@ pub fn App() -> impl IntoView {
     view! {
         <Stylesheet href="/pkg/brongan_com.css"/>
         <Title text="brongan.com" />
+        <Meta name="description" content="Brennan's personal website featuring Rust experiments like Chip-8 emulator, Game of Life, Ishihara test generator, and more." />
+        <Meta name="theme-color" content="#222222" />
         <Router>
             <main class="main-panel">
                 <Routes fallback=|| "Page not found.".into_view()>
@@ -72,7 +75,7 @@ fn HomePage() -> impl IntoView {
         <header class="header">
             <h1 class="title">{ "Welcome to brongan.com" }</h1>
         </header>
-        <p>{"Hello my name is Brennan I like Rust"}</p>
+        <p class="home-intro">{"Hello my name is Brennan I like Rust"}</p>
         <Navigation/>
     }
 }
@@ -100,9 +103,9 @@ fn nav_button(nav_item: NavItem) -> impl IntoView {
     view! {
         <div class="nav-item">
             <a href={nav_item.route}>
-                <img src={nav_item.thumbnail} />
+                <img src={nav_item.thumbnail} alt={nav_item.title}/>
+                <h3>{ nav_item.title }</h3>
             </a>
-            <h3>{ nav_item.title }</h3>
         </div>
     }
 }
@@ -113,7 +116,7 @@ pub fn navigation() -> impl IntoView {
         NavItem {
             title: "Home",
             route: "/",
-            thumbnail: "brongan.webp",
+            thumbnail: "ai_pfp.webp",
         },
         NavItem {
             title: "Ishihara",

@@ -1,5 +1,6 @@
 use gloo_file::futures::read_as_bytes;
 use gloo_file::File;
+use gloo_net::http::Request;
 use leptos::ev;
 use leptos::html::Canvas;
 use leptos::html::Input;
@@ -10,89 +11,111 @@ use std::time::Duration;
 use wasm_bindgen::prelude::*;
 use web_sys::CanvasRenderingContext2d;
 
-use super::beep::Beep;
+use super::beep::Beeper;
 use super::chip8_disassembler::Disassembler;
-use super::cpu_state::UiSignals;
+use super::colors::ColorSettings;
+use super::controls::Controls;
+use super::cpu_state::CpuState;
+use super::emulator_info::EmulatorInfo;
+use super::keypad_component::KeypadComponent;
 use super::memory_viewer::MemoryViewer;
-use crate::chip8::component::cpu_state::CpuState;
+use super::quirk_settings::QuirkSettings;
+use super::stack_viewer::StackViewer;
 use crate::chip8::emulator::cpu::Keypad;
-use crate::chip8::emulator::cpu::Registers;
 use crate::chip8::emulator::emulator::Emulator;
 use crate::chip8::emulator::screen::Screen;
 
 #[component]
 pub fn Debugger() -> impl IntoView {
-    let emulator = StoredValue::new_local(Emulator::new(None));
+    let emulator = Emulator::new(None);
+    let (pc, set_pc) = signal(emulator.cpu().get_pc());
+    let (registers, set_registers) = signal(emulator.cpu().get_registers().to_owned());
+    let (index, set_index) = signal(emulator.cpu().get_index());
+    let (sound_timer, set_sound_timer) = signal(emulator.cpu().get_sound_timer());
+    let (delay_timer, set_delay_timer) = signal(emulator.cpu().get_delay_timer());
+    let (stack, set_stack) = signal(emulator.cpu().get_stack());
+    let (sp, set_sp) = signal(emulator.cpu().get_sp());
+    let (memory, set_memory) = signal(emulator.cpu().get_memory().to_owned());
+    let (instruction_count, set_instruction_count) = signal(emulator.instruction_counter());
 
-    let ui = UiSignals {
-        pc: RwSignal::new(0x200),
-        registers: RwSignal::new(Registers::default()),
-        index: RwSignal::new(0),
-        timers: RwSignal::new((0, 0)),
-        stack: RwSignal::new(vec![]),
-        memory: RwSignal::new(vec![0; 4096]),
-        instruction_count: RwSignal::new(0),
-    };
+    let emulator = StoredValue::new_local(emulator);
 
     let quirks = RwSignal::new(emulator.get_value().quirks);
+    Effect::new(move |_| {
+        let new_settings = quirks.get();
+        emulator.update_value(|emu| {
+            emu.quirks = new_settings;
+        });
+    });
 
     let keypad = RwSignal::new(Keypad::default());
-    let beep = StoredValue::new_local(None::<Beep>);
-    let emulator = StoredValue::new_local(Emulator::new(None));
+    let beeper = StoredValue::new_local(None::<Beeper>);
     let canvas_ref = NodeRef::<Canvas>::new();
     let ctx_ref = StoredValue::new_local(None::<CanvasRenderingContext2d>);
+
+    let (rom_name, set_rom_name) = signal(None);
+    let (fps, set_fps) = signal(60.0);
+    let (frame_time, set_frame_time) = signal(Duration::default());
+    let (beep, set_beep) = signal(false);
+    let on_color = RwSignal::new("#000000".to_string());
+    let off_color = RwSignal::new("#FFFFFF".to_string());
+    let debug_mode = RwSignal::new(false);
+
+    let sync = move || {
+        emulator.with_value(|emulator| {
+            set_pc(emulator.cpu().get_pc());
+            set_instruction_count(emulator.instruction_counter());
+
+            if debug_mode.get() {
+                set_registers(emulator.cpu().get_registers().to_owned());
+                set_index(emulator.cpu().get_index());
+                set_delay_timer(emulator.cpu().get_delay_timer());
+                set_sound_timer(emulator.cpu().get_sound_timer());
+                set_stack(emulator.cpu().get_stack());
+                set_sp(emulator.cpu().get_sp());
+                set_memory(emulator.cpu().get_memory().to_owned());
+            }
+        });
+    };
 
     let Pausable {
         pause,
         resume,
         is_active,
     } = use_raf_fn({
-        let ui = ui.clone();
-        let emulator = emulator.clone();
+        let emulator = emulator;
 
         move |args: UseRafFnCallbackArgs| {
             let dt = Duration::from_secs_f64(args.delta / 1000.0);
+            set_frame_time(dt);
+            set_fps(1000.0 / dt.as_millis_f64());
             emulator.update_value(|emulator| {
                 emulator.update(keypad.get(), dt);
-                if let Some(audio) = beep.get_value() {
+                if let Some(audio) = beeper.get_value() {
                     if emulator.is_beep() {
+                        set_beep(true);
                         audio.play();
                     } else {
+                        set_beep(false);
                         audio.pause();
                     }
                 }
                 ctx_ref.with_value(|ctx| {
                     if let Some(ctx) = ctx {
-                        draw_screen(ctx, emulator.screen());
+                        draw_screen(ctx, emulator.screen(), on_color.get(), off_color.get());
                     }
                 });
-
-                ui.pc.set(emulator.cpu().get_pc());
-                ui.index.set(emulator.cpu().get_index());
-                ui.registers.set(emulator.cpu().get_registers().to_owned());
-                ui.timers.set((
-                    emulator.cpu().get_delay_timer(),
-                    emulator.cpu().get_sound_timer(),
-                ));
-                ui.instruction_count.set(emulator.instruction_counter());
-                ui.memory.set(emulator.cpu().get_memory().to_owned());
             });
+            sync();
         }
     });
 
-    let manual_sync = move || {
-        emulator.update_value(|emulator| {
-            ui.pc.set(emulator.cpu().get_pc());
-            ui.registers.set(emulator.cpu().get_registers().to_owned());
-            ui.index.set(emulator.cpu().get_index());
-            ui.timers.set((
-                emulator.cpu().get_delay_timer(),
-                emulator.cpu().get_sound_timer(),
-            ));
-            ui.stack.set(emulator.cpu().get_stack().to_owned());
-            ui.memory.set(emulator.cpu().get_memory().to_owned());
-        });
-    };
+    // When switching to debug mode while paused, ensure we sync once
+    Effect::new(move |_| {
+        if debug_mode.get() && !is_active.get() {
+            sync();
+        }
+    });
 
     Effect::new(move |_| {
         if let Some(canvas) = canvas_ref.get() {
@@ -109,15 +132,31 @@ pub fn Debugger() -> impl IntoView {
         }
     });
 
+    Effect::new(move |_| {
+        let on = on_color.get();
+        let off = off_color.get();
+        ctx_ref.with_value(|ctx| {
+            if let Some(ctx) = ctx {
+                emulator.with_value(|emu| {
+                    draw_screen(ctx, emu.screen(), on.clone(), off.clone());
+                });
+            }
+        });
+    });
+
+    let selected_rom_url = RwSignal::new(String::new());
+
     let file_input = NodeRef::<Input>::new();
     let on_file_upload = move |ev: ev::Event| {
         let input = event_target::<web_sys::HtmlInputElement>(&ev);
+        selected_rom_url.set(String::new());
 
         if let Some(file) = input.files().and_then(|files| files.get(0)).map(File::from) {
             spawn_local(async move {
                 match read_as_bytes(&file).await {
                     Ok(bytes) => {
                         leptos::logging::log!("ROM loaded: {} bytes", bytes.len());
+                        set_rom_name(Some(file.name()));
                         emulator.update_value(|emulator| {
                             emulator.reset();
                             emulator.update_rom(bytes);
@@ -130,9 +169,9 @@ pub fn Debugger() -> impl IntoView {
     };
 
     let init_audio = move || {
-        beep.update_value(|b| {
+        beeper.update_value(|b| {
             if b.is_none() {
-                if let Ok(new_beep) = Beep::new() {
+                if let Ok(new_beep) = Beeper::new() {
                     *b = Some(new_beep);
                 }
             }
@@ -143,53 +182,76 @@ pub fn Debugger() -> impl IntoView {
         });
     };
 
-    view! {
-        <header class="header">
-            <h1 class="title">{ "Chip-8 Emulator" }</h1>
-        </header>
-        <div class="debugger-app">
-            <div class="panel">
-                /*<EmulatorInfo ui=ui.clone() is_active.get()/>*/
-                <hr/>
-                <CpuState ui=ui.clone() />
-            </div>
-            <div class="panel">
-            <div class="chip8-controls">
-                <input
-                    type="file"
-                    node_ref=file_input
-                    on:change=on_file_upload
-                    accept=".ch8"
-                    style="display:none"
-                />
-                <button
-                    class="btn"
-                    on:click=move |_| {
-                        init_audio();
-                        if let Some(input) = file_input.get() {
-                            input.click();
+    let reset = move || {
+        emulator.update_value(|e| e.reset());
+        sync();
+    };
+
+    let step = move |steps: u32| {
+        emulator.update_value(|e| e.step(keypad.get(), steps));
+        sync();
+    };
+
+    let roms: Vec<(&'static str, &'static str)> = vec![
+        ("IBM Logo", "/roms/IBMLogo.ch8"),
+        ("Pong", "/roms/Pong.ch8"),
+        ("Brix", "/roms/Brix.ch8"),
+    ];
+
+    let on_rom_select = {
+        let resume = resume.clone();
+        let init_audio = init_audio;
+
+        move |url: String| {
+            let resume = resume.clone();
+            init_audio();
+            selected_rom_url.set(url.clone());
+
+            spawn_local(async move {
+                match Request::get(&url).send().await {
+                    Ok(res) => {
+                        if !res.ok() {
+                            leptos::logging::error!("Failed to fetch ROM: Status {}", res.status());
+                            return;
+                        }
+                        match res.binary().await {
+                            Ok(bytes) => {
+                                set_rom_name(Some(url));
+                                emulator.update_value(|emulator| {
+                                    emulator.reset();
+                                    emulator.update_rom(bytes);
+                                });
+                                resume();
+                            }
+                            Err(e) => leptos::logging::error!("Failed to get bytes: {:?}", e),
                         }
                     }
-                >
-                    "Load ROM"
-                </button>
-                <button class="btn" on:click=move |_| if is_active.get() { pause() } else { resume() }>
-                    {move || if is_active.get() { "Pause" } else { "Resume" }}
-                </button>
-                 <button class="btn" on:click=move |_| {
-                     init_audio();
-                    emulator.update_value(|e| e.reload_rom());
-                }>
-                    "Reset"
-                </button>
-            </div>
-            /*
-                <Controls is_running pause resume reset=move || {
-                    emulator.update_value(|e| e.reset());
-                    manual_sync();
-                }/>
-            */
-                <div class="screen-wrapper" style="border: 1px solid #333; margin: 10px 0;">
+                    Err(e) => leptos::logging::error!("Failed to fetch ROM: {:?}", e),
+                }
+            });
+        }
+    };
+
+    view! {
+        <div
+            class="debugger-app"
+            class:mode-debug=move || debug_mode.get()
+            class:mode-game=move || !debug_mode.get()
+        >
+            // --- COL STATE ---
+            <Show when=move || debug_mode.get()>
+                <div class="panel col-state">
+                    <EmulatorInfo is_active rom_name fps frame_time instruction_count beep />
+                    <hr class="divider"/>
+                    <CpuState pc registers index delay_timer sound_timer memory />
+                    <hr class="divider"/>
+                    <StackViewer stack sp />
+                </div>
+            </Show>
+
+            // --- COL SCREEN & MEMORY ---
+            <div class="panel col-canvas">
+                <div class="screen-wrapper">
                     <canvas
                         node_ref=canvas_ref
                         width="640"
@@ -197,20 +259,69 @@ pub fn Debugger() -> impl IntoView {
                         class="chip8-canvas"
                     />
                 </div>
-                <MemoryViewer memory=ui.memory pc=ui.pc />
+                <hr class="divider"/>
+                <Show when=move || debug_mode.get()>
+                     <div class="memory-wrapper">
+                        <MemoryViewer memory pc />
+                     </div>
+                </Show>
             </div>
-            <div class="panel panel-right">
-                <Disassembler memory=ui.memory pc=ui.pc />
+
+            // --- COL CONTROLS ---
+            <div class="panel col-controls">
+                <div class="panel-header">"Controls"</div>
+                <input
+                    type="file"
+                    node_ref=file_input
+                    on:change=on_file_upload
+                    style="display: none"
+                    accept=".ch8,.rom"
+                />
+                <Controls is_active pause resume step reset
+                roms=roms
+                on_rom_select
+                selected_rom_url
+                debug_mode
+                load=move |_| {
+                    init_audio();
+                    if let Some(input) = file_input.get() {
+                        input.click();
+                    }
+                }
+                />
+
+                <KeypadComponent keypad />
+
+                <Show when=move || debug_mode.get()>
+                    <hr class="divider"/>
+                    <div class="panel-header">"Quirks / Compatibility"</div>
+                    <QuirkSettings quirks />
+                    <hr class="divider"/>
+                    <div class="panel-header">"Display Colors"</div>
+                    <ColorSettings on_color off_color />
+                </Show>
             </div>
+
+            // --- COL DISASSEMBLY ---
+            <Show when=move || debug_mode.get()>
+                <div class="panel col-disassembly">
+                    <Disassembler memory pc />
+                </div>
+            </Show>
         </div>
     }
 }
 
-fn draw_screen(ctx: &CanvasRenderingContext2d, screen: &Screen) {
-    ctx.set_fill_style_str("#1a1a1a");
+fn draw_screen(
+    ctx: &CanvasRenderingContext2d,
+    screen: &Screen,
+    on_color: String,
+    off_color: String,
+) {
+    ctx.set_fill_style_str(&on_color);
     ctx.fill_rect(0.0, 0.0, 640.0, 320.0);
 
-    ctx.set_fill_style_str("#00ff00");
+    ctx.set_fill_style_str(&off_color);
     ctx.begin_path();
 
     let scale = 10.0;

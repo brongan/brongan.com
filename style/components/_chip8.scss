@@ -1,0 +1,683 @@
+@use 'sass:color';
+@use '../themes/variables' as *;
+
+.key {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(145deg, color.adjust($gray-dark, $lightness: 5%), color.adjust($gray-dark, $lightness: -5%));
+    border-radius: 6px;
+    border: 1px solid color.adjust($gray-dark, $lightness: 10%);
+    border-bottom-color: color.adjust($gray-dark, $lightness: -10%);
+    box-shadow: 0 4px 0 color.adjust($gray-dark, $lightness: -15%), 0 5px 10px rgba(0, 0, 0, 0.3);
+    transition: all 0.1s ease;
+    cursor: pointer;
+    position: relative;
+    top: 0;
+
+    .key-label {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: $white;
+        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+    }
+
+    .hex-label {
+        font-size: 0.7rem;
+        color: $gray-medium;
+        margin-top: -2px;
+    }
+
+    &:active,
+    &.pressed {
+        top: 4px;
+        box-shadow: 0 0 0 color.adjust($gray-dark, $lightness: -15%), inset 0 2px 5px rgba(0, 0, 0, 0.4);
+        background: $gray-dark;
+        border-color: $gray-dark;
+
+        background: linear-gradient(145deg, color.adjust($led-active, $lightness: -10%), $led-active);
+        box-shadow: 0 0 15px rgba(0, 255, 0, 0.6), inset 0 2px 5px rgba(0, 0, 0, 0.2);
+        border: 1px solid $led-active;
+
+        .key-label,
+        .hex-label {
+            color: $black;
+            text-shadow: none;
+        }
+    }
+}
+
+.debugger-app {
+    background: $gray-darkest;
+    color: $gray-light;
+    display: grid;
+    font-family: $font-stack-mono;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+
+    &.mode-debug {
+        grid-template-columns: 260px 642px 260px 1fr;
+
+        @media (max-width: 1200px) {
+            display: flex;
+            flex-direction: column;
+            height: auto;
+            min-height: 100vh;
+            padding-bottom: 40px;
+            overflow-y: auto;
+
+            .panel {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid $border-color;
+                flex: none;
+                height: auto;
+                min-height: 300px; // Ensure panels have space
+            }
+
+            // Ensure canvas scales
+            .col-canvas canvas {
+                max-width: 100%;
+                height: auto;
+            }
+        }
+    }
+
+    &.mode-game {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 40px;
+        padding: 40px;
+        overflow-y: auto;
+
+        @media (max-width: 1024px) {
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .panel {
+            border: none;
+            overflow: visible;
+        }
+
+        .col-canvas {
+            flex: 0 0 auto;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+
+            .screen-wrapper {
+                background: transparent;
+                padding: 0;
+
+                canvas {
+                    width: 960px;
+                    height: 480px;
+                    max-width: 100%;
+                    height: auto;
+                    aspect-ratio: 2 / 1;
+                    image-rendering: pixelated;
+                    border-radius: 4px;
+                    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+                    border: 4px solid #222;
+                }
+            }
+
+            .divider {
+                display: none;
+            }
+        }
+
+        .col-controls {
+            flex: 0 0 320px;
+            background: rgba($gray-darker, 0.5);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid $border-color;
+            backdrop-filter: blur(10px);
+
+            @media (max-width: 1024px) {
+                width: 100%;
+                flex: none;
+                order: 3; // Ensure controls are at the bottom if keypad is separate
+            }
+
+            .panel-header {
+                background: transparent;
+                border: none;
+                padding-left: 0;
+                font-size: 14px;
+                margin-bottom: 4px;
+                color: $gray-light;
+            }
+
+            .divider {
+                display: none;
+            }
+        }
+    }
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid $border-color;
+    overflow: hidden;
+    padding: 0;
+
+    &:last-child {
+        border-right: none;
+    }
+}
+
+.panel-header {
+    background-color: $header-bg;
+    color: $white;
+    padding: 6px 10px;
+    font-weight: bold;
+    border-bottom: 1px solid $border-color;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+
+.divider {
+    border: 0;
+    border-top: 1px solid $border-color;
+    margin: 0;
+}
+
+.col-state {
+    padding: 10px;
+    overflow-y: auto;
+
+    .emulator-info-panel .info-grid {
+        display: grid;
+        grid-template-columns: 100px 1fr;
+        gap: 4px 10px;
+        padding: 5px 0;
+        font-size: 12px;
+
+        dt {
+            color: $gray-medium;
+            text-align: right;
+            margin: 0;
+        }
+
+        dd {
+            margin: 0;
+            color: $text-main;
+        }
+
+        .rom-name {
+            color: $syntax-blue;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .state-running {
+            color: $syntax-teal;
+        }
+
+        .state-stopped {
+            color: $syntax-stop;
+        }
+
+        .audio-beep {
+            color: $syntax-orange;
+            font-weight: bold;
+        }
+
+        .audio-ok {
+            color: $syntax-green;
+        }
+    }
+
+    .cpu-state-panel {
+        padding-top: 10px;
+        font-size: 13px;
+
+        .grid-3col {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .grid-4col {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px 4px;
+            margin-top: 10px;
+        }
+
+        .reg-cell {
+            display: flex;
+            flex-direction: column;
+
+            .lbl {
+                color: $gray-medium;
+                font-size: 11px;
+                margin-bottom: 2px;
+            }
+
+            .val {
+                color: $syntax-blue;
+                font-weight: bold;
+            }
+
+            .dec {
+                color: $gray-medium;
+                font-size: 11px;
+            }
+        }
+    }
+
+    .stack-viewer {
+        margin-top: 10px;
+        border: 1px solid $border-color;
+        background: rgba(0, 0, 0, 0.2);
+
+        .stack-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            font-size: 11px;
+            max-height: 200px;
+            overflow-y: auto;
+
+            .stack-row {
+                display: grid;
+                grid-template-columns: 40px 1fr;
+                padding: 2px 8px;
+                border-bottom: 1px solid $gray-darker;
+
+                .idx {
+                    color: #666;
+                    font-weight: bold;
+                    text-align: right;
+                    padding-right: 8px;
+                    border-right: 1px solid $border-color;
+                }
+
+                .val {
+                    color: #555;
+                    padding-left: 8px;
+                    font-family: monospace;
+                }
+
+                &.row-stored {
+                    background: rgba(78, 201, 176, 0.05);
+
+                    .idx {
+                        color: $syntax-teal;
+                    }
+
+                    .val {
+                        color: #eee;
+                    }
+                }
+
+                &.row-sp {
+                    background: rgba(206, 145, 120, 0.1);
+
+                    .idx {
+                        color: $syntax-orange;
+                    }
+
+                    .val {
+                        color: $syntax-orange;
+                        font-style: italic;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Controls Column
+.col-controls {
+    overflow-y: auto;
+
+    .controls-panel {
+        padding: 5px 10px;
+
+        .control-row {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .rom-select {
+                flex: 1;
+                padding: 6px;
+                border-radius: 4px;
+                background: $gray-dark;
+                color: $white;
+                border: 1px solid $border-color;
+                cursor: pointer;
+                font-family: inherit;
+
+                option {
+                    background: $gray-dark;
+                }
+            }
+
+            .debug-label {
+                color: $gray-light;
+                font-size: 0.9rem;
+                display: flex;
+                align-items: center;
+                cursor: pointer;
+                user-select: none;
+
+                input {
+                    margin-right: 8px;
+                    accent-color: $syntax-blue;
+                    cursor: pointer;
+                }
+
+                &:hover {
+                    color: $white;
+                }
+            }
+        }
+
+        padding: 6px;
+        background: $gray-dark;
+        color: $gray-light;
+        border: 1px solid $border-color;
+        cursor: pointer;
+
+        &:hover {
+            background: $border-color;
+        }
+
+        &.active {
+            border-left: 3px solid $syntax-teal;
+        }
+
+        .button-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 5px 0;
+        }
+
+        .btn-control {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid $border-color;
+            border-radius: 6px;
+            color: $gray-light;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            font-size: 13px;
+
+            &:hover:not(:disabled) {
+                background: $gray-darker;
+                border-color: $white;
+                color: $white;
+                transform: translateX(2px);
+            }
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            &.btn-danger {
+                border-color: rgba($syntax-stop, 0.5);
+                color: $syntax-stop;
+
+                &:hover {
+                    background: rgba($syntax-stop, 0.1);
+                    border-color: $syntax-stop;
+                }
+            }
+
+            &.active {
+                border-color: $syntax-teal;
+                color: $syntax-teal;
+                background: rgba($syntax-teal, 0.05);
+
+                &:hover {
+                    background: rgba($syntax-teal, 0.1);
+                }
+            }
+        }
+    }
+}
+
+.quirks-panel {
+    padding: 10px;
+
+    .settings-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 5px 0;
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: $gray-light;
+            cursor: pointer;
+            user-select: none;
+
+            &:hover {
+                color: $white;
+            }
+
+            input {
+                margin: 0;
+                cursor: pointer;
+                accent-color: $syntax-blue;
+            }
+
+            label {
+                cursor: pointer;
+                flex: 1;
+            }
+        }
+    }
+}
+
+.colors-panel {
+    padding: 8px 10px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px 10px;
+    align-items: center;
+
+    label {
+        cursor: pointer;
+        font-size: 11px;
+        color: $gray-light;
+    }
+
+    .picker-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            background: none;
+            cursor: pointer;
+            border-radius: 2px;
+            overflow: hidden;
+            vertical-align: middle;
+
+            &::-webkit-color-swatch-wrapper {
+                padding: 0;
+            }
+
+            &::-webkit-color-swatch {
+                border: 1px solid $gray-dark;
+                border-radius: 2px;
+            }
+        }
+
+        .hex-label {
+            font-family: 'Consolas', monospace;
+            font-size: 10px;
+            color: $gray-medium;
+            width: 50px;
+            text-align: right;
+        }
+    }
+}
+
+.col-canvas {
+    .screen-wrapper {
+        background: $black;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0px;
+
+        canvas {
+            border: 1px solid $border-color;
+            display: block;
+        }
+    }
+
+    .memory-wrapper {
+        overflow: hidden;
+
+        .memory-viewer {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+
+            .memory-content {
+                flex: 1;
+                overflow-y: auto;
+                font-size: 12px;
+                padding: 5px 0;
+
+                .memory-row {
+                    display: grid;
+                    grid-template-columns: 60px max-content max-content;
+                    gap: 10px;
+                    white-space: nowrap;
+                    padding: 2px 10px;
+
+                    &:hover {
+                        background-color: rgba(255, 255, 255, 0.05);
+                    }
+
+                    &.active {
+                        background-color: $active-color;
+                        color: $white;
+
+                        .addr {
+                            color: $white;
+                        }
+                    }
+
+                    .addr {
+                        color: $syntax-blue;
+                    }
+
+                    .hex {
+                        color: $syntax-orange;
+                        letter-spacing: 1px;
+                    }
+
+                    .ascii {
+                        color: $text-main;
+                        opacity: 0.8;
+                    }
+                }
+            }
+        }
+    }
+}
+
+.col-disassembly {
+    .disassembler-panel {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+
+        .code-window {
+            flex: 1;
+            overflow: auto;
+            padding: 5px 0;
+
+            .code-row {
+                display: grid;
+                grid-template-columns: 60px 80px 1fr;
+                padding: 2px 8px;
+                cursor: default;
+                border-left: 3px solid transparent;
+                white-space: nowrap;
+
+                &:hover {
+                    background-color: rgba(255, 255, 255, 0.05);
+                }
+
+                &.active {
+                    background-color: $active-color;
+                    border-left-color: $syntax-blue;
+                    opacity: 1;
+                }
+
+                .addr {
+                    color: $syntax-blue;
+                }
+
+                .hex {
+                    color: $syntax-orange;
+                }
+            }
+        }
+    }
+}
+
+
+
+.chip8-instructions {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: $gray-light;
+}
+
+.key-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    background: $gray-darker;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid $border-color;
+}

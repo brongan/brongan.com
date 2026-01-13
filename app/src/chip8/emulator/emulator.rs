@@ -6,7 +6,6 @@ use super::screen::Screen;
 
 #[derive(Debug, Default, Clone)]
 pub struct Emulator {
-    pub running: bool,
     pub target_ips: u32,
     pub quirks: Quirks,
     cpu: CPU,
@@ -20,7 +19,6 @@ pub struct Emulator {
 impl Emulator {
     pub fn new(rom: Option<Vec<u8>>) -> Self {
         Self {
-            running: rom.is_some(),
             target_ips: 700,
             quirks: Quirks::MODERN,
             cpu: CPU::new(rom.as_ref()),
@@ -46,7 +44,6 @@ impl Emulator {
         self.cpu = CPU::new(self.rom.as_ref());
         self.cycle_accumulator = 0.0;
         self.timer_accumulator = 0.0;
-        self.running = true;
     }
 
     pub fn cpu(&self) -> &CPU {

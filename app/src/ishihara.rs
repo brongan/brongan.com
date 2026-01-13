@@ -8,12 +8,16 @@ use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut};
 use leptos::html::Canvas;
 use leptos::prelude::*;
 use rand::{Rng, RngCore};
+use leptos_router::hooks::use_query_map;
 use rand::distr::uniform::Uniform;
 use rand::distr::Distribution;
 use rand::rngs::ThreadRng;
 use rand::seq::IndexedRandom;
 use rusttype::{Font, Rect, Scale, point};
 use std::{f64, fmt};
+use rusttype::{point, Font, Scale};
+use std::fmt;
+use std::str::FromStr;
 use strum::EnumIter;
 use strum::EnumString;
 use wasm_bindgen::{Clamped, JsCast};
@@ -43,7 +47,7 @@ impl fmt::Display for Circle {
 const FONT_SCALE: f32 = 256.0;
 
 #[component]
-pub fn show_plate(ishihara_args: ReadSignal<IshiharaArgs>) -> impl IntoView {
+pub fn show_plate(#[prop(into)] ishihara_args: Signal<IshiharaArgs>) -> impl IntoView {
     let canvas_element: NodeRef<Canvas> = NodeRef::new();
     Effect::new(move |_| {
         if let Some(canvas) = canvas_element.get() {
@@ -71,11 +75,20 @@ pub fn show_plate(ishihara_args: ReadSignal<IshiharaArgs>) -> impl IntoView {
 
 #[component]
 pub fn ishihara_plate() -> impl IntoView {
-    let (ishihara_args, set_ishihara_args) = signal(IshiharaArgs {
-        blindness: Blindness::Demonstration,
-        text: String::from(""),
+    let query = use_query_map();
+    let ishihara_args = Signal::derive(move || {
+        let q = query.get();
+        IshiharaArgs {
+            text: q.get("text").unwrap_or_default(),
+            blindness: q
+                .get("blindness")
+                .as_ref()
+                .and_then(|b| Blindness::from_str(b).ok())
+                .unwrap_or(Blindness::Demonstration),
+        }
     });
-    let (display, set_display) = signal(false);
+
+    let display = move || !ishihara_args.get().text.is_empty();
 
     view! {
         <header class="header">
@@ -85,18 +98,16 @@ pub fn ishihara_plate() -> impl IntoView {
             <p style="display:inline"> { "Randomly Generates a Colorblindness Test Image in your browser! See: "} </p>
             <a href="https://en.wikipedia.org/wiki/Ishihara_test"> {"wikipedia.org/wiki/Ishihara_test"} </a>
         </div>
-        <div class="input">
-            <IshiharaInput set_data={set_ishihara_args} toggle_display={set_display}/>
-        </div>
+        <IshiharaInput/>
         <Show
-            when=move || { display.get() }
+            when=display
             fallback=|| view! {}>
             <div class="readout">
                 <ShowPlate ishihara_args/>
             </div>
         </Show>
         <footer class="footnote">
-            <p><a href="https://github.com/HBBrennan/brongan.com" target="_blank">{ "source" }</a></p>
+            <p><a href="https://github.com/brongan/brongan.com" target="_blank">{ "source" }</a></p>
         </footer>
     }
 }
@@ -105,7 +116,6 @@ fn get_color(color: IshiharaColor, blindness: Blindness, rng: &mut ThreadRng) ->
     match (color, blindness) {
         (IshiharaColor::Inside, Blindness::Demonstration) => hex_color("#f0712a").unwrap().1,
         (IshiharaColor::Outside, Blindness::Demonstration) => hex_color("#2aa790").unwrap().1,
-        //Red, Red, Orange, Yellow, Light Red, Light Red, Tan
         (IshiharaColor::Inside, Blindness::RedGreen) => {
             hex_color(
                 [
@@ -144,7 +154,9 @@ fn get_color(color: IshiharaColor, blindness: Blindness, rng: &mut ThreadRng) ->
 pub enum Blindness {
     Demonstration,
     #[default]
+    #[strum(serialize = "Red-Green")]
     RedGreen,
+    #[strum(serialize = "Blue-Yellow")]
     BlueYellow,
 }
 

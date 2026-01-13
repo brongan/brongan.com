@@ -1,0 +1,99 @@
+@use 'sass:color';
+@use '../themes/variables' as *;
+
+.analytics-container {
+    display: block;
+    width: 95%;
+    margin: 20px auto 40px auto;
+    max-width: 1000px;
+    background-color: $white;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: $shadow-2;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+
+    @media (max-width: 600px) {
+        padding: 15px;
+        width: 100%;
+        border-radius: 0; // Full width often looks better without rounded corners on small mobile
+        box-shadow: none; // cleaner on mobile
+        margin-top: 20px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+
+        thead {
+            th {
+                text-align: left;
+                padding: 16px;
+                color: $gray-medium;
+                text-transform: uppercase;
+                font-size: 0.8rem;
+                letter-spacing: 1px;
+                font-weight: 600;
+                border-bottom: 2px solid $gray-lighter;
+                white-space: nowrap;
+            }
+        }
+
+        tbody {
+            tr {
+                transition: background-color 0.2s;
+
+                &:hover {
+                    background-color: color.adjust($gray-lighter, $lightness: 2%);
+                }
+
+                td {
+                    padding: 14px 16px;
+                    color: $gray-dark;
+                    border-bottom: 1px solid $gray-lighter;
+                    font-size: 0.95rem;
+
+                    &:first-child,
+                    &:last-child {
+                        font-feature-settings: "tnum";
+                        font-variant-numeric: tabular-nums;
+                        font-family: $font-stack-mono;
+                        font-size: 0.85rem;
+                    }
+                }
+
+                &:last-child td {
+                    border-bottom: none;
+                }
+            }
+        }
+
+        .iso-code {
+            text-align: center;
+            width: 80px;
+        }
+
+        .count {
+            text-align: right;
+            width: 100px;
+        }
+
+        .ip-address {
+            min-width: 200px; // Ensure full IPv6 or long addresses fit
+            white-space: nowrap;
+        }
+
+        @media (max-width: 600px) {
+            thead th {
+                padding: 10px;
+                font-size: 0.7rem;
+            }
+
+            tbody td {
+                padding: 10px;
+                font-size: 0.8rem;
+            }
+        }
+    }
+}

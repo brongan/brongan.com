@@ -1,8 +1,8 @@
 use crate::point2d::Point2D;
 use anyhow::anyhow;
-use image::{DynamicImage, GrayImage, RgbaImage};
+use image::{DynamicImage, RgbaImage};
 use leptos::html::Canvas;
-use leptos::logging::log;
+// use leptos::logging::log;
 use leptos::prelude::*;
 use num::Complex;
 use serde::{Deserialize, Serialize};
@@ -50,7 +50,6 @@ fn render_mandelbrot(
     upper_left: Complex<f64>,
     lower_right: Complex<f64>,
 ) -> impl IntoView {
-    log!("generating mandelbrot image");
     let image = generate_mandelbrot(bounds, upper_left, lower_right);
     view! { <ShowMandelbrot image/> }
 }
@@ -87,7 +86,6 @@ fn render_remote_mandelbrot(
 
 #[component]
 pub fn mandelbrot_model(bounds: Bounds) -> impl IntoView {
-    log!("mandelbrot");
     let upper_left = Complex::<f64> {
         re: -1.20,
         im: 0.35,
@@ -95,15 +93,20 @@ pub fn mandelbrot_model(bounds: Bounds) -> impl IntoView {
     let lower_right = Complex::<f64> { re: -1.0, im: 0.20 };
 
     view! {
-        <header class="header">
-            <h1> { "Mandelbrot" } </h1>
-        </header>
-        <div class="readout">
-            <RenderMandelbrot bounds={bounds} upper_left={upper_left} lower_right={lower_right} />
+        <div class="mandelbrot-container">
+            <header class="header">
+                <h1> { "Mandelbrot" } </h1>
+            </header>
+            <div class="mandelbrot-viewer">
+                <RenderMandelbrot bounds={bounds} upper_left={upper_left} lower_right={lower_right} />
+            </div>
+            <p class="mandelbrot-caption">
+                "Visualizing the set of complex numbers c for which the function f_c(z) = z^2 + c does not diverge."
+            </p>
+            <footer class="mandelbrot-footer">
+                <p><a href="https://github.com/brongan/brongan.com" target="_blank">{ "source" }</a></p>
+            </footer>
         </div>
-        <footer class="footnote">
-            <p><a href="https://github.com/brongan/brongan.com" target="_blank">{ "source" }</a></p>
-        </footer>
     }
 }
 
@@ -118,6 +121,7 @@ pub async fn mandelbrot_get(
     upper_left: Complex<f64>,
     lower_right: Complex<f64>,
 ) -> Result<(), ServerFnError> {
+    use image::GrayImage;
     use opentelemetry::global;
     use opentelemetry::trace::Tracer;
     use rayon::iter::IndexedParallelIterator;

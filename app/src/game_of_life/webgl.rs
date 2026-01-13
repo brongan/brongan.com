@@ -1,7 +1,6 @@
 use super::universe::DomBounds;
 use crate::game_of_life::universe::Universe;
 use crate::game_of_life::universe::UniverseRenderer;
-use crate::game_of_life::Timer;
 use crate::mandelbrot::Bounds;
 use crate::point2d::Point2D;
 use wasm_bindgen::JsCast;
@@ -13,6 +12,8 @@ pub struct WebGLRenderer {
     width: u32,
     height: u32,
     texture: Vec<u8>,
+    gl: GL,
+    buffer: web_sys::WebGlBuffer,
 }
 
 impl UniverseRenderer for WebGLRenderer {
@@ -23,49 +24,31 @@ impl UniverseRenderer for WebGLRenderer {
         let canvas_left = (p.x as f64 - bounding_rect.origin.x) * scale_x;
         let canvas_top = (p.y as f64 - bounding_rect.origin.y) * scale_y;
 
-        let row = (canvas_top / (WebGLRenderer::CELL_SIZE + 1) as f64)
-            .floor()
-            .min((bounds.height - 1) as f64);
-        let col = (canvas_left / (WebGLRenderer::CELL_SIZE + 1) as f64)
-            .floor()
-            .min((bounds.width - 1) as f64);
+        let row = canvas_top.floor().min((bounds.height - 1) as f64);
+        let col = canvas_left.floor().min((bounds.width - 1) as f64);
         (bounds.height - 1 - row as u32, col as u32)
     }
 
-    fn render(&mut self, universe: &Universe) {
-        let gl = self
-            .canvas
-            .get_context("webgl")
-            .unwrap()
-            .unwrap()
-            .dyn_into::<GL>()
-            .unwrap();
+    fn render(&mut self, universe: &Universe) -> Result<(), ()> {
+        let gl = self.gl.clone();
 
-        let _timer = Timer::new("Rendering Frame");
-        self.update_texture(&gl, universe);
+        if gl.is_context_lost() {
+            return Err(());
+        }
 
-        let vertices: [f32; 12] = [
-            1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0,
-        ];
+        // Ensure the viewport matches the drawing buffer size
+        gl.viewport(
+            0,
+            0,
+            self.canvas.width() as i32,
+            self.canvas.height() as i32,
+        );
 
-        let buffer = gl.create_buffer().ok_or("failed to create buffer").unwrap();
-        gl.bind_buffer(GL::ARRAY_BUFFER, Some(&buffer));
+        self.update_texture(universe);
+
+        gl.bind_buffer(GL::ARRAY_BUFFER, Some(&self.buffer));
 
         gl.use_program(Some(&self.program));
-
-        // Note that `Float32Array::view` is somewhat dangerous (hence the
-        // `unsafe`!). This is creating a raw view into our module's
-        // `WebAssembly.Memory` buffer, but if we allocate more pages for ourself
-        // (aka do a memory allocation in Rust) it'll cause the buffer to change,
-        // causing the `Float32Array` to be invalid.
-        //
-        // As a result, after `Float32Array::view` we have to be very careful not to
-        // do any memory allocations before it's dropped.
-        unsafe {
-            let vert_array = js_sys::Float32Array::view(&vertices);
-
-            gl.buffer_data_with_array_buffer_view(GL::ARRAY_BUFFER, &vert_array, GL::STATIC_DRAW);
-        }
 
         gl.vertex_attrib_pointer_with_i32(0, 3, GL::FLOAT, false, 0, 0);
         gl.enable_vertex_attrib_array(0);
@@ -73,23 +56,19 @@ impl UniverseRenderer for WebGLRenderer {
         gl.clear_color(0.0, 0.0, 0.0, 1.0);
         gl.clear(GL::COLOR_BUFFER_BIT);
 
-        gl.draw_arrays(GL::TRIANGLE_STRIP, 0, (vertices.len() / 3) as i32);
+        gl.draw_arrays(GL::TRIANGLE_STRIP, 0, 4);
+
+        Ok(())
     }
 }
 
 fn update_universe_image<'a>(image: &'a mut Vec<u8>, universe: &'_ &Universe) -> &'a [u8] {
-    for elem in image.iter_mut() {
-        *elem = 0;
-    }
-
     for i in 0..((universe.width() * universe.height()) as usize) {
         if universe.is_alive(i) {
+            image[i] = 0;
         } else {
-            image[4 * i] = 255;
-            image[4 * i + 1] = 255;
-            image[4 * i + 2] = 255;
+            image[i] = 255;
         }
-        image[4 * i + 3] = 255;
     }
     image.as_slice()
 }
@@ -100,39 +79,42 @@ impl WebGLRenderer {
     const _DEAD_COLOR: &'static str = "#FFFFFF";
     const _ALIVE_COLOR: &'static str = "#000000";
 
-    pub fn update_texture(&mut self, gl: &GL, universe: &Universe) {
+    pub fn update_texture(&mut self, universe: &Universe) {
         let level = 0;
-        let internal_format = GL::RGBA;
-        let border = 0;
-        let src_format = GL::RGBA;
+        let src_format = GL::LUMINANCE;
         let src_type = GL::UNSIGNED_BYTE;
         let width = self.width;
         let height = self.height;
         let pixel = update_universe_image(&mut self.texture, &universe);
-        assert!(pixel.len() == (width * height * 4) as usize);
-        gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-            GL::TEXTURE_2D,
-            level,
-            internal_format as i32,
-            width as i32,
-            height as i32,
-            border,
-            src_format,
-            src_type,
-            Some(pixel),
-        )
-        .ok();
+        assert!(pixel.len() == (width * height) as usize);
+        self.gl
+            .tex_sub_image_2d_with_i32_and_i32_and_u32_and_type_and_opt_u8_array(
+                GL::TEXTURE_2D,
+                level,
+                0, // xoffset
+                0, // yoffset
+                width as i32,
+                height as i32,
+                src_format,
+                src_type,
+                Some(pixel),
+            )
+            .ok();
 
         if (self.width & (self.width - 1)) == 0 && (self.height & (self.height - 1)) == 0 {
-            gl.generate_mipmap(GL::TEXTURE_2D);
+            self.gl.generate_mipmap(GL::TEXTURE_2D);
         } else {
-            gl.tex_parameteri(GL::TEXTURE_2D, GL::TEXTURE_WRAP_S, GL::CLAMP_TO_EDGE as i32);
-            gl.tex_parameteri(GL::TEXTURE_2D, GL::TEXTURE_WRAP_T, GL::CLAMP_TO_EDGE as i32);
-            gl.tex_parameteri(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR as i32);
+            self.gl
+                .tex_parameteri(GL::TEXTURE_2D, GL::TEXTURE_WRAP_S, GL::CLAMP_TO_EDGE as i32);
+            self.gl
+                .tex_parameteri(GL::TEXTURE_2D, GL::TEXTURE_WRAP_T, GL::CLAMP_TO_EDGE as i32);
+            self.gl
+                .tex_parameteri(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR as i32);
         }
 
         // Change magnification filter to nearest neighbor to prevent fuzzies
-        gl.tex_parameteri(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::NEAREST as i32);
+        self.gl
+            .tex_parameteri(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::NEAREST as i32);
     }
 }
 
@@ -142,7 +124,6 @@ impl WebGLRenderer {
         canvas.set_width((WebGLRenderer::CELL_SIZE + 1) * width + 1);
 
         let size = (width * height) as usize;
-        let texture: Vec<u8> = vec![0; size * 4];
 
         let gl = canvas
             .get_context("webgl")
@@ -167,8 +148,7 @@ impl WebGLRenderer {
                 (WebGLRenderer::CELL_SIZE + 1) as f32,
             ],
         );
-        let offset_loc = gl.get_uniform_location(&program, "offset");
-        gl.uniform2fv_with_f32_array(offset_loc.as_ref(), &[1.0, 1.0]);
+
         let vpw_loc = gl.get_uniform_location(&program, "vpw");
         gl.uniform1f(vpw_loc.as_ref(), canvas.width() as f32);
         let vph_loc = gl.get_uniform_location(&program, "vph");
@@ -185,18 +165,50 @@ impl WebGLRenderer {
         let webgl_texture = gl.create_texture();
         gl.bind_texture(GL::TEXTURE_2D, webgl_texture.as_ref());
 
+        // Allocate texture memory
+        let initial_pixels = vec![255u8; size]; // Start with all dead cells (white)
+        gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+            GL::TEXTURE_2D,
+            0,                    // level
+            GL::LUMINANCE as i32, // internal format
+            width as i32,
+            height as i32,
+            0,                 // border
+            GL::LUMINANCE,     // src format
+            GL::UNSIGNED_BYTE, // src type
+            Some(&initial_pixels),
+        )
+        .ok();
+
+        // Create and upload vertex buffer once
+        let vertices: [f32; 12] = [
+            1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0,
+        ];
+        let buffer = gl.create_buffer().ok_or("failed to create buffer").unwrap();
+        gl.bind_buffer(GL::ARRAY_BUFFER, Some(&buffer));
+
+        // Safety: We are creating a raw view into WASM memory (`Float32Array::view`).
+        // This view is valid ONLY as long as the WASM memory buffer does not grow.
+        // We perform no allocations between creating the view and using it to populate
+        // the WebGL buffer, so this is safe.
+        unsafe {
+            let vert_array = js_sys::Float32Array::view(&vertices);
+            gl.buffer_data_with_array_buffer_view(GL::ARRAY_BUFFER, &vert_array, GL::STATIC_DRAW);
+        }
+
         WebGLRenderer {
             canvas,
             program,
             width,
             height,
-            texture,
+            texture: vec![255; size],
+            gl,
+            buffer,
         }
     }
 }
 
 pub fn compile_shader(gl: &GL, shader_type: u32, source: &str) -> Result<WebGlShader, String> {
-    log::info!("Compiling Shader");
     let shader = gl
         .create_shader(shader_type)
         .ok_or_else(|| String::from("Unable to create shader object"))?;

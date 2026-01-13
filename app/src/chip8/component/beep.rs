@@ -2,13 +2,13 @@ use wasm_bindgen::prelude::*;
 use web_sys::{AudioContext, AudioContextState, GainNode, OscillatorNode};
 
 #[derive(Clone)]
-pub struct Beep {
+pub struct Beeper {
     ctx: AudioContext,
     _oscillator: OscillatorNode,
     gain: GainNode,
 }
 
-impl Beep {
+impl Beeper {
     pub fn new() -> Result<Self, JsValue> {
         let ctx = AudioContext::new()?;
 
