@@ -17,7 +17,6 @@ leptos_axum = { version = "0.8" }
 anyhow = "1.0"
 artem = { version = "3.0", default-features = false }
 axum = { version = "0.8", features = ["macros"] }
-base64 = "0.22"
 cfg-if = "1"
 color-eyre = "0.6.5"
 console_error_panic_hook = "0.1.7"
@@ -38,7 +37,7 @@ opentelemetry_sdk = "0.31.0"
 rand = "0.9"
 rayon = { version = "1.11.0"}
 reqwest = { version = "0.12", default-features = false, features = ["json","rustls-tls-webpki-roots"]}
-rusqlite = { version = "0.37.0" }
+rusqlite = "0.37.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 simple_logger = "5.1.0"

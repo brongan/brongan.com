@@ -2,15 +2,19 @@ use crate::color::{hex_color, Color};
 use crate::ishihara_form::IshiharaArgs;
 use crate::ishihara_form::IshiharaInput;
 use crate::point2d::Point2D;
-use image::{DynamicImage, Rgba, RgbaImage};
+use image::imageops::FilterType::Lanczos3;
+use image::{DynamicImage, ImageBuffer, Rgba, RgbaImage};
 use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut};
 use leptos::html::Canvas;
 use leptos::prelude::*;
+use rand::{Rng, RngCore};
 use leptos_router::hooks::use_query_map;
 use rand::distr::uniform::Uniform;
 use rand::distr::Distribution;
 use rand::rngs::ThreadRng;
 use rand::seq::IndexedRandom;
+use rusttype::{Font, Rect, Scale, point};
+use std::{f64, fmt};
 use rusttype::{point, Font, Scale};
 use std::fmt;
 use std::str::FromStr;
@@ -27,6 +31,7 @@ enum IshiharaColor {
     Outside,
 }
 
+#[derive(Clone, Copy)]
 struct Circle {
     center: Point2d,
     radius: f64,
@@ -156,39 +161,6 @@ pub enum Blindness {
 }
 
 impl Circle {
-    const MAX_RADIUS: f64 = 6.9;
-    const MIN_RADIUS: f64 = 3.0;
-
-    const GOAL_AREA_RATIO: f64 = 0.57;
-    fn create_circles(x: u32, y: u32, rng: &mut ThreadRng) -> Vec<Circle> {
-        let goal_area = Circle::GOAL_AREA_RATIO * x as f64 * y as f64;
-        let mut circles: Vec<Circle> = Vec::new();
-        let mut area: f64 = 0.0;
-        let uniform = Uniform::new(
-            Point2d { x: 0, y: 0 },
-            Point2d {
-                x: x as i32,
-                y: y as i32,
-            },
-        )
-        .unwrap();
-
-        //Create circles with random coordinates and radii with size based on its distance from the closest circle
-        while area < goal_area {
-            let candidate_point = uniform.sample(rng);
-            if let Some(radius) = max_allowed_radius(&candidate_point, &circles) {
-                area += std::f64::consts::PI * radius.powi(2);
-                let new_circle = Circle {
-                    center: candidate_point,
-                    radius,
-                    ishihara_color: None,
-                };
-                circles.push(new_circle);
-            }
-        }
-        circles
-    }
-
     fn assign_colors(&mut self, image: &RgbaImage) {
         let pixel = image.get_pixel(self.center.x as u32, self.center.y as u32);
         if pixel.0 == [0, 0, 0, 0] {
@@ -198,7 +170,9 @@ impl Circle {
         }
     }
 
-    fn draw(&self, image: &mut RgbaImage, rng: &mut rand::rngs::ThreadRng, blindness: Blindness) {
+    fn draw(&self, image: &mut RgbaImage, upscaling_factor: u32, rng: &mut rand::rngs::ThreadRng, blindness: Blindness) {
+        let upscaling_factor = upscaling_factor as i32;
+
         let color = match &self.ishihara_color {
             Some(color) => get_color(*color, blindness, rng),
             None => hex_color("#ffffff").unwrap().1,
@@ -206,26 +180,16 @@ impl Circle {
 
         draw_filled_circle_mut(
             image,
-            (self.center.x, self.center.y),
-            self.radius as i32,
+            (self.center.x * upscaling_factor, self.center.y * upscaling_factor),
+            self.radius as i32 * upscaling_factor,
             Rgba([color.red, color.green, color.blue, 255]),
         );
     }
 }
 
-fn max_allowed_radius(candidate_point: &Point2d, circles: &[Circle]) -> Option<f64> {
-    let mut curr_radius = Circle::MAX_RADIUS;
-    for other in circles {
-        let edge_distance = candidate_point.distance(&other.center) - other.radius;
-        curr_radius = curr_radius.min(edge_distance - 1.0);
-        if curr_radius < Circle::MIN_RADIUS {
-            return None;
-        }
-    }
-    Some(curr_radius)
-}
-
 fn render_text(text: &str) -> RgbaImage {
+    const PADDING: u32 = 50;
+
     let font_data = include_bytes!("../../public/Roboto-Regular.ttf");
     let font = Font::try_from_bytes(font_data as &[u8]).expect("Error constructing Font");
     let scale = Scale::uniform(FONT_SCALE);
@@ -234,39 +198,42 @@ fn render_text(text: &str) -> RgbaImage {
         green: 0,
         blue: 0,
     }; // black
-    let v_metrics = font.v_metrics(scale);
 
-    // layout the glyphs in a line with 20 pixels padding
+    // layout the glyphs at (0, 0) and offset them manually later.
     let glyphs: Vec<_> = font
-        .layout(text, scale, point(20.0, 20.0 + v_metrics.ascent))
+        .layout(text, scale, point(0.0, 0.0))
         .collect();
 
-    // work out the layout size
-    let glyphs_height = (v_metrics.ascent - v_metrics.descent).ceil() as u32;
-    let glyphs_width = {
-        let min_x = glyphs
-            .first()
-            .map(|g| g.pixel_bounding_box().unwrap().min.x)
-            .unwrap();
-        let max_x = glyphs
-            .last()
-            .map(|g| g.pixel_bounding_box().unwrap().max.x)
-            .unwrap();
-        (max_x - min_x) as u32
-    };
+    // work out the layout bounds
+    let glyphs_bounds = glyphs
+        .iter()
+        .filter_map(|g| g.pixel_bounding_box())
+        .reduce(|a, b| {
+            let min = point(a.min.x.min(b.min.x), a.min.y.min(b.min.y));
+            let max = point(a.max.x.max(b.max.x), a.max.y.max(b.max.y));
+
+            Rect { min, max }
+        })
+        .unwrap();
 
     // Create a new rgba image with some padding
-    let mut image = DynamicImage::new_rgba8(glyphs_width + 40, glyphs_height + 40).to_rgba8();
+    let mut image = DynamicImage::new_rgba8(glyphs_bounds.width() as u32 + PADDING * 2, glyphs_bounds.height() as u32 + PADDING * 2).to_rgba8();
 
     // Loop through the glyphs in the text, positing each one on a line
     for glyph in glyphs {
         if let Some(bounding_box) = glyph.pixel_bounding_box() {
             // Draw the glyph into the image per-pixel by using the draw closure
             glyph.draw(|x, y, v| {
+                // Offset the position by the glyph bounding box and padding
+                // Subtract glyphs_bounds.min to move the origin to (0, 0)
+                // glyphs_bounds ends up negative, so we need to use i32
+                let x = PADDING as i32 + x as i32 + bounding_box.min.x - glyphs_bounds.min.x;
+                let y = PADDING as i32 + y as i32 + bounding_box.min.y - glyphs_bounds.min.y;
+                
                 image.put_pixel(
-                    // Offset the position by the glyph bounding box
-                    x + bounding_box.min.x as u32,
-                    y + bounding_box.min.y as u32,
+                    // These should always be positive, but just in case.
+                    x.try_into().unwrap(),
+                    y.try_into().unwrap(),
                     // Turn the coverage into an alpha value
                     Rgba([color.red, color.green, color.blue, (v * 255.0) as u8]),
                 )
@@ -277,6 +244,7 @@ fn render_text(text: &str) -> RgbaImage {
 }
 
 pub fn generate_plate(text: &str, blindness: Blindness) -> RgbaImage {
+    const AA_FACTOR: u32 = 2;
     log::info!("Generating Plate: {}", text);
     // Get an image buffer from rendering the text
     let mut image = render_text(text);
@@ -284,7 +252,9 @@ pub fn generate_plate(text: &str, blindness: Blindness) -> RgbaImage {
 
     // Create circles based based on the image buffer's dimensions
     let (x, y) = image.dimensions();
-    let mut circles = Circle::create_circles(x, y, &mut rng);
+    let mut circles = CircleGenerator::new(&mut rng)
+        .size(x, y)
+        .generate();
 
     // Assign circles colors based on rendered text
     circles
@@ -298,9 +268,309 @@ pub fn generate_plate(text: &str, blindness: Blindness) -> RgbaImage {
         Rgba([255, 255, 255, 255]),
     );
 
+    // Create new buffer to draw upscaled circles
+    let mut image = ImageBuffer::new(x * AA_FACTOR, y * AA_FACTOR);
+    draw_filled_rect_mut(
+        &mut image,
+        imageproc::rect::Rect::at(0, 0).of_size(x * AA_FACTOR, y * AA_FACTOR),
+        Rgba([255, 255, 255, 255]),
+    );
+
     // Draw Circles
     circles
         .iter()
-        .for_each(|circle| circle.draw(&mut image, &mut rng, blindness));
-    image
+        .for_each(|circle| circle.draw(&mut image, AA_FACTOR, &mut rng, blindness));
+
+    // Shrink image to original size
+    // Supposedly Lanczos3 produces good image quality when downscaling.
+    image::imageops::resize(&image, x, y, Lanczos3)
+}
+
+struct CircleGrid {
+    width: u32,
+    height: u32,
+    edge_bias: f64,
+    cells: Box<[Option<f64>]>
+}
+
+impl CircleGrid {
+    pub fn new(width: u32, height: u32, edge_bias: f64) -> CircleGrid {
+        let cells = vec![None; (width * height) as usize].into_boxed_slice();
+
+        CircleGrid { width, height, edge_bias, cells }
+    }
+
+    fn fill(&mut self, point: Point2d, circle: Circle, max_distance: f64) {
+        let Point2d { x, y } = point;
+
+        fn distance(this: &CircleGrid, x: i32, y: i32, circle: &Circle) -> f64 {
+            // Distance from edge of circle, inside being negative.
+            let distance = circle.center.distance(&Point2d { x, y }) - circle.radius;
+
+            // Distance from edge of canvas
+            let edge_distance = [
+                // Left edge
+                x as u32,
+                // Right edge
+                this.width - x as u32,
+                // Top edge
+                y as u32,
+                // Bottom edge
+                this.height - y as u32
+            ].into_iter().min().unwrap();
+
+            // Min with edge_distance to prevent the circles from lining up on the edges of the canvas.
+            distance.min(edge_distance as f64 * this.edge_bias)
+        }
+
+        fn inside(this: &CircleGrid, x: i32, y: i32, circle: &Circle, max_distance: &f64) -> bool {
+            if x < 0 || y < 0 || x as u32 >= this.width || y as u32 >= this.height {
+                return false;
+            }
+
+            let distance  = distance(this, x, y, circle);
+
+            this.get((x, y)).is_none_or(|cell_distance| distance < cell_distance && distance <= *max_distance)
+        }
+
+        fn set(this: &mut CircleGrid, x: i32, y: i32, circle: &Circle) {
+            if x < 0 || y < 0 || x as u32 >= this.width || y as u32 >= this.height {
+                return;
+            }
+
+            *this.get_mut((x, y)) = Some(distance(this, x, y, circle));
+        }
+
+        if !inside(self, x, y, &circle, &max_distance) {
+            return
+        }
+
+        // My code was too slow, so I just yoinked this from wikipedea
+        // https://en.wikipedia.org/wiki/Flood_fill#cite_ref-90Heckbert_8-0
+        let mut stack = Vec::new();
+        stack.push((x, x, y, 1));
+        stack.push((x, x, y - 1, -1));
+        while  let Some((mut x1, x2, y, dy)) = stack.pop() {
+            let mut x = x1;
+            if inside(self, x, y, &circle, &max_distance) {
+                while inside(self, x - 1, y, &circle, &max_distance) {
+                    set(self, x - 1, y, &circle);
+                    x -= 1;
+                }
+                if x < x1 {
+                    stack.push((x, x1 - 1, y - dy, -dy));
+                }
+            }
+            while x1 <= x2 {
+                while inside(self, x1, y, &circle, &max_distance) {
+                    set(self, x1, y, &circle);
+                    x1 += 1;
+                }
+                if x1 > x {
+                    stack.push((x, x1 - 1, y + dy, dy));
+                }
+                if x1 - 1 > x2 {
+                    stack.push((x2 + 1, x1 - 1, y - dy, -dy));
+                }
+                x1 += 1;
+                while x1 <= x2 && !inside(self, x1, y, &circle, &max_distance) {
+                    x1 += 1;
+                }
+                x = x1;
+            }
+        }
+    }
+
+    // Maybe these should return an Option/Result instead of panicking.
+    fn get<P: Into<Point2d>>(&self, point: P) -> &Option<f64> {
+        let point = point.into();
+        if point.x < 0 || point.y < 0 || point.x as u32 >= self.width || point.y as u32 >= self.height {
+            panic!("Point ({}, {}) is out of bounds: ({}, {}).", point.x, point.y, self.width, self.height);
+        }
+
+        let i = self.width as usize * point.y as usize + point.x as usize;
+        &self.cells[i]
+    }
+
+    fn get_mut<P: Into<Point2d>>(&mut self, point: P) -> &mut Option<f64> {
+        let point = point.into();
+        if point.x < 0 || point.y < 0 || point.x as u32 >= self.width || point.y as u32 >= self.height {
+            panic!("Point ({}, {}) is out of bounds: ({}, {}).", point.x, point.y, self.width, self.height);
+        }
+
+        let i = self.width as usize * point.y as usize + point.x as usize;
+        &mut self.cells[i]
+    }
+
+    // Find local maxiumum in the circle grid
+    pub fn find_maximum(&self, mut point: Point2d) -> Point2d {
+        loop {
+            let Point2d { x, y} = point;
+            let neighbors = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1), (x + 1, y + 1), (x + 1, y - 1), (x - 1, y - 1), (x, y + 1)];
+
+            // Get the largest neighbor
+            let max = neighbors.into_iter().filter_map(|(x, y)| {
+                if x < 0 || y < 0 || x as u32 >= self.width || y as u32 >= self.height {
+                    return None;
+                }
+
+                Some((x, y, self.get((x, y)).unwrap_or(f64::NEG_INFINITY)))
+            }).reduce(|a, b| if a.2 > b.2 {
+                a
+            } else {
+                b
+            }).unwrap();
+
+            // Return point if it is the maximum, otherwise set point to the
+            // largest neighbor and continue searching.
+            if self.get((x, y)).unwrap_or(f64::NEG_INFINITY) >= max.2 {
+                return point;
+            }
+
+            point = Point2d { x: max.0, y: max.1 };
+        }
+    }
+
+    pub fn max_radius(&self, point: Point2d, padding: f64) -> f64 {
+        self.get(point).map_or(f64::MAX, |distance| distance - padding)
+    }
+}
+
+pub struct CircleGenerator<'a> {
+    rng: &'a mut dyn RngCore,
+    width: u32,
+    height: u32,
+    min_radius: f64,
+    max_radius: f64,
+    padding: f64,
+    coverage: f64,
+    edge_bias: f64,
+    size_variation: f64
+}
+
+impl<'a> CircleGenerator<'a> {
+    pub fn new(rng: &'a mut dyn RngCore) -> CircleGenerator<'a> {
+        CircleGenerator {
+            rng,
+            width: 1000,
+            height: 1000,
+            min_radius: 3.0,
+            max_radius: 6.9,
+            padding: 0.5,
+            coverage: 0.6,
+            edge_bias: 8.0,
+            size_variation: 0.5
+        }
+    }
+
+    #[allow(unused)]
+    fn size(mut self, width: u32, height: u32) -> Self {
+        self.width = width;
+        self.height = height;
+
+        self
+    }
+
+    #[allow(unused)]
+    fn min_radius(mut self, min_radius: f64) -> Self {
+        assert!(min_radius > 0.0, "min_radius must be > 0.");
+        self.min_radius = min_radius;
+
+        self
+    }
+
+    #[allow(unused)]
+    fn max_radius(mut self, max_radius: f64) -> Self {
+        assert!(max_radius > 0.0, "max_radius must be > 0.");
+        self.max_radius = max_radius;
+
+        self
+    }
+
+    #[allow(unused)]
+    fn padding(mut self, padding: f64) -> Self {
+        assert!(padding > 0.0, "padding must be > 0.");
+        self.padding = padding;
+
+        self
+    }
+
+    #[allow(unused)]
+    fn coverage(mut self, coverage: f64) -> Self {
+        assert!((0.0..=1.0).contains(&coverage), "coverage must be between 0 and 1.");
+        self.coverage = coverage;
+
+        self
+    }
+
+    #[allow(unused)]
+    fn edge_bias(mut self, edge_bias: f64) -> Self {
+        assert!(edge_bias >= 1.0, "edge_bias must be >= 1.");
+        self.edge_bias = edge_bias;
+
+        self
+    }
+
+    #[allow(unused)]
+    fn size_variation(mut self, size_variation: f64) -> Self {
+        assert!((0.0..=1.0).contains(&size_variation), "size_variation must be between 0 and 1.");
+        self.size_variation = size_variation;
+
+        self
+    }
+
+    fn generate(self) -> Vec<Circle> {
+        const MAX_MISSES: usize = 1000;
+
+        assert!(self.max_radius >= self.min_radius, "max_radius must be >= than min_radius");
+
+        let total_area = (self.width * self.height) as f64;
+
+        let mut grid = CircleGrid::new(self.width, self.height, self.edge_bias);
+        let uniform = Uniform::new(
+            Point2d { x: 0, y: 0 },
+            Point2d {
+                x: self.width as i32,
+                y: self.height as i32,
+            },
+        )
+        .unwrap();
+
+        let mut circles = Vec::new();
+        let mut area = 0.0;
+        let mut missed = 0;
+        // I doubt it's possible to determine if our given parameters can actually achieve the
+        // desired coverage, so just exit if there are too many misses in a row.
+        while area / total_area <= self.coverage && missed < MAX_MISSES {
+            let center = uniform.sample(self.rng);
+            // Move random point to local maximum to increase the odds of being able to place a circle
+            let center = grid.find_maximum(center);
+            let max_radius = f64::min(grid.max_radius(center, self.padding), self.max_radius);
+            let min_radius = f64::max(max_radius * self.size_variation, self.min_radius);
+
+            // Count as miss if the max radius is smaller than the minimum allowed radius.
+            if max_radius < min_radius {
+                missed += 1;
+                continue;
+            }
+
+            // Somehow i've had crashes because these are exaclty equal
+            let radius = match max_radius == min_radius {
+                true => max_radius,
+                false => self.rng.random_range(min_radius..max_radius)
+            };
+
+            let circle = Circle { center, radius, ishihara_color: None };
+
+            // Update the circle grid, place the circle, and update the area
+            grid.fill(circle.center, circle, self.max_radius + self.padding * 2.0);
+            circles.push(circle);
+            area += std::f64::consts::PI * radius * radius;
+
+            // Reset missed count
+            missed = 0;
+        }   
+
+        circles
+    }
 }
