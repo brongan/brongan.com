@@ -3,7 +3,7 @@ use rand::distr::Distribution;
 use rand::Rng;
 use std::fmt;
 
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Default, Clone, Copy)]
 pub struct Point2D<T> {
     pub x: T,
     pub y: T,
@@ -54,5 +54,12 @@ impl Point2D<i32> {
 impl<T: std::fmt::Display> fmt::Display for Point2D<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
+impl<T> From<(T, T)> for Point2D<T> {
+    fn from(value: (T, T)) -> Self {
+        let (x, y) = value;
+        Point2D { x, y }
     }
 }
