@@ -1,4 +1,4 @@
 pub mod cpu;
-pub mod emulator;
+pub mod engine;
 pub mod quirks;
 pub mod screen;

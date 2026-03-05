@@ -150,14 +150,6 @@ impl Universe {
         self.to_string()
     }
 
-    pub fn width(&self) -> u32 {
-        self.width
-    }
-
-    pub fn height(&self) -> u32 {
-        self.height
-    }
-
     #[allow(dead_code)]
     pub fn cells(&self) -> *const usize {
         self.cells.as_slice().as_ptr()

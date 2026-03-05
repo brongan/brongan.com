@@ -63,11 +63,11 @@ impl UniverseRenderer for WebGLRenderer {
 }
 
 fn update_universe_image<'a>(image: &'a mut Vec<u8>, universe: &'_ &Universe) -> &'a [u8] {
-    for i in 0..((universe.width() * universe.height()) as usize) {
+    for (i, cell) in image.iter_mut().enumerate() {
         if universe.is_alive(i) {
-            image[i] = 0;
+            *cell = 0;
         } else {
-            image[i] = 255;
+            *cell = 255;
         }
     }
     image.as_slice()
