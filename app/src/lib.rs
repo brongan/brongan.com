@@ -1,4 +1,5 @@
 #![feature(duration_millis_float)]
+#![recursion_limit = "512"]
 use analytics::AnalyticsComponent;
 use catscii::Catscii;
 use chip8::Debugger;
