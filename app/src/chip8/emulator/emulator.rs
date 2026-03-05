@@ -6,7 +6,6 @@ use super::screen::Screen;
 
 #[derive(Debug, Default, Clone)]
 pub struct Emulator {
-    pub target_ips: u32,
     pub quirks: Quirks,
     cpu: CPU,
     rom: Option<Vec<u8>>,
@@ -19,7 +18,6 @@ pub struct Emulator {
 impl Emulator {
     pub fn new(rom: Option<Vec<u8>>) -> Self {
         Self {
-            target_ips: 700,
             quirks: Quirks::MODERN,
             cpu: CPU::new(rom.as_ref()),
             rom,
@@ -62,18 +60,17 @@ impl Emulator {
         }
     }
 
+    pub const TARGET_IPS: u32 = 700;
+
     pub fn instruction_counter(&self) -> u64 {
         self.instruction_counter
     }
 
     /// Emulate a given amount of time passing.
     pub fn update(&mut self, keypad: Keypad, dt: Duration) {
-        if self.target_ips == 0 {
-            return;
-        }
         let dt = dt.as_secs_f32();
         self.cycle_accumulator += dt;
-        let cycle_duration = 1.0 / self.target_ips as f32;
+        let cycle_duration = 1.0 / Self::TARGET_IPS as f32;
 
         let cycles = (self.cycle_accumulator / cycle_duration) as u32;
         if cycles > 0 {
@@ -84,10 +81,7 @@ impl Emulator {
 
     /// Emulate a given number of instructions.
     pub fn step(&mut self, keypad: Keypad, instructions: u32) {
-        if self.target_ips == 0 {
-            return;
-        }
-        let cycle_duration = 1.0 / self.target_ips as f32;
+        let cycle_duration = 1.0 / Self::TARGET_IPS as f32;
         let timer_step = 1.0 / 60.0;
 
         for _ in 0..instructions {

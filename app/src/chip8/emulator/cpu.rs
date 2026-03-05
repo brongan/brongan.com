@@ -623,3 +623,7 @@ impl Keypad {
         self.0 &= !(1 << key_index);
     }
 }
+
+#[cfg(test)]
+#[path = "cpu_test.rs"]
+mod cpu_test;

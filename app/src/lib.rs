@@ -16,7 +16,7 @@ use mandelbrot::Mandelbrot;
 
 mod analytics;
 mod catscii;
-mod chip8;
+pub mod chip8;
 mod color;
 mod game_of_life;
 mod ishihara;
