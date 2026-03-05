@@ -49,7 +49,9 @@ pub fn game_of_life() -> impl IntoView {
                 universe.with_value(|u| r.render(u))
             } else {
                 Err(())
-            }).is_err() {
+            })
+            .is_err()
+            {
                 if let Some(canvas_ref) = canvas.get() {
                     let mut new_renderer = WebGLRenderer::new(canvas_ref, width, height);
                     let _ = universe.with_value(|u| new_renderer.render(u));

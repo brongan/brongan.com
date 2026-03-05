@@ -22,7 +22,7 @@ use super::memory_viewer::MemoryViewer;
 use super::quirk_settings::QuirkSettings;
 use super::stack_viewer::StackViewer;
 use crate::chip8::emulator::cpu::Keypad;
-use crate::chip8::emulator::emulator::Emulator;
+use crate::chip8::emulator::engine::Emulator;
 use crate::chip8::emulator::screen::Screen;
 
 #[component]
@@ -83,8 +83,6 @@ pub fn Debugger() -> impl IntoView {
         resume,
         is_active,
     } = use_raf_fn({
-        let emulator = emulator;
-
         move |args: UseRafFnCallbackArgs| {
             let dt = Duration::from_secs_f64(args.delta / 1000.0);
             set_frame_time(dt);
@@ -200,7 +198,6 @@ pub fn Debugger() -> impl IntoView {
 
     let on_rom_select = {
         let resume = resume.clone();
-        let init_audio = init_audio;
 
         move |url: String| {
             let resume = resume.clone();

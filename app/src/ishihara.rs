@@ -96,7 +96,7 @@ pub fn ishihara_plate() -> impl IntoView {
         <IshiharaInput/>
         <Show
             when=display
-            fallback=|| view! {}>
+            fallback=|| ()>
             <div class="readout">
                 <ShowPlate ishihara_args/>
             </div>
@@ -247,11 +247,11 @@ fn render_text(text: &str) -> RgbaImage {
         let min_x = glyphs
             .first()
             .map(|g| g.pixel_bounding_box().unwrap().min.x)
-            .unwrap();
+            .unwrap_or(0);
         let max_x = glyphs
             .last()
             .map(|g| g.pixel_bounding_box().unwrap().max.x)
-            .unwrap();
+            .unwrap_or(0);
         (max_x - min_x) as u32
     };
 

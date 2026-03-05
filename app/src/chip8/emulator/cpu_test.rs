@@ -111,7 +111,7 @@ fn test_cpu_new_without_rom() {
     assert_eq!(cpu.sp, 0);
     assert_eq!(cpu.get_sound_timer(), 0);
     assert_eq!(cpu.get_delay_timer(), 0);
-    
+
     // Assert all 16 registers initialize to 0
     for reg in Register::iter() {
         assert_eq!(cpu.registers.get(reg), 0);
@@ -134,7 +134,7 @@ fn test_cpu_new_with_rom() {
 #[test]
 fn test_cpu_new_loads_fonts() {
     let cpu = CPU::new(None);
-    // Standard font data occupies 0x000 to 0x1FF in many implementations, 
+    // Standard font data occupies 0x000 to 0x1FF in many implementations,
     // ours specifically loads into 0x050 offset.
     assert_eq!(cpu.memory.get(0x050), 0xF0); // Start of '0'
     assert_eq!(cpu.memory.get(0x054), 0xF0); // End of '0'
@@ -153,28 +153,46 @@ fn test_display_size() {
 #[test]
 fn test_keypad_full_mapping() {
     let mut keypad = Keypad::default();
-    
+
     // Assert mapping for all 16 keys (0-F)
-    keypad.enable_key(0x0); assert!(keypad.is_pressed(0x0));
-    keypad.enable_key(0x1); assert!(keypad.is_pressed(0x1));
-    keypad.enable_key(0x2); assert!(keypad.is_pressed(0x2));
-    keypad.enable_key(0x3); assert!(keypad.is_pressed(0x3));
-    keypad.enable_key(0x4); assert!(keypad.is_pressed(0x4));
-    keypad.enable_key(0x5); assert!(keypad.is_pressed(0x5));
-    keypad.enable_key(0x6); assert!(keypad.is_pressed(0x6));
-    keypad.enable_key(0x7); assert!(keypad.is_pressed(0x7));
-    keypad.enable_key(0x8); assert!(keypad.is_pressed(0x8));
-    keypad.enable_key(0x9); assert!(keypad.is_pressed(0x9));
-    keypad.enable_key(0xA); assert!(keypad.is_pressed(0xA));
-    keypad.enable_key(0xB); assert!(keypad.is_pressed(0xB));
-    keypad.enable_key(0xC); assert!(keypad.is_pressed(0xC));
-    keypad.enable_key(0xD); assert!(keypad.is_pressed(0xD));
-    keypad.enable_key(0xE); assert!(keypad.is_pressed(0xE));
-    keypad.enable_key(0xF); assert!(keypad.is_pressed(0xF));
+    keypad.enable_key(0x0);
+    assert!(keypad.is_pressed(0x0));
+    keypad.enable_key(0x1);
+    assert!(keypad.is_pressed(0x1));
+    keypad.enable_key(0x2);
+    assert!(keypad.is_pressed(0x2));
+    keypad.enable_key(0x3);
+    assert!(keypad.is_pressed(0x3));
+    keypad.enable_key(0x4);
+    assert!(keypad.is_pressed(0x4));
+    keypad.enable_key(0x5);
+    assert!(keypad.is_pressed(0x5));
+    keypad.enable_key(0x6);
+    assert!(keypad.is_pressed(0x6));
+    keypad.enable_key(0x7);
+    assert!(keypad.is_pressed(0x7));
+    keypad.enable_key(0x8);
+    assert!(keypad.is_pressed(0x8));
+    keypad.enable_key(0x9);
+    assert!(keypad.is_pressed(0x9));
+    keypad.enable_key(0xA);
+    assert!(keypad.is_pressed(0xA));
+    keypad.enable_key(0xB);
+    assert!(keypad.is_pressed(0xB));
+    keypad.enable_key(0xC);
+    assert!(keypad.is_pressed(0xC));
+    keypad.enable_key(0xD);
+    assert!(keypad.is_pressed(0xD));
+    keypad.enable_key(0xE);
+    assert!(keypad.is_pressed(0xE));
+    keypad.enable_key(0xF);
+    assert!(keypad.is_pressed(0xF));
 
     // Release and check again
-    keypad.disable_key(0x0); assert!(!keypad.is_pressed(0x0));
-    keypad.disable_key(0xF); assert!(!keypad.is_pressed(0xF));
+    keypad.disable_key(0x0);
+    assert!(!keypad.is_pressed(0x0));
+    keypad.disable_key(0xF);
+    assert!(!keypad.is_pressed(0xF));
 }
 
 #[test]
@@ -363,7 +381,7 @@ fn test_opcode_7xnn_add_to_vx_unmodified_vf() {
     );
     assert_eq!(cpu.registers.get(Register::V0), 0x00);
     assert_eq!(cpu.registers.get(Register::VF), 1); // Remained 1
-    
+
     cpu.registers.set(Register::VF, 0);
     cpu.execute(
         Instruction::Add(Register::V0, 0x01),
@@ -713,7 +731,7 @@ fn test_opcode_fx0a_wait_for_key() {
     let mut cpu = CPU::new(None);
     cpu.pc = 0x200;
     let mut keypad = Keypad::default();
-    
+
     // 1. Initial execution - no key pressed. Should return same PC.
     let next_pc = cpu.execute(Instruction::GetKey(Register::V0), keypad, &Quirks::MODERN);
     assert_eq!(next_pc, 0x200);
@@ -823,7 +841,10 @@ fn test_opcode_fx55_store_memory_unmodified_i() {
     cpu.index = 0x0700;
 
     // Use memory_increment: false as per checklist "I is left unmodified"
-    let quirks = Quirks { memory_increment: false, ..Quirks::MODERN };
+    let quirks = Quirks {
+        memory_increment: false,
+        ..Quirks::MODERN
+    };
     cpu.execute(
         Instruction::StoreMemory(Register::V1),
         Keypad::default(),
@@ -841,7 +862,10 @@ fn test_opcode_fx65_load_memory_unmodified_i() {
     cpu.memory.set(0x0701, 20);
     cpu.index = 0x0700;
 
-    let quirks = Quirks { memory_increment: false, ..Quirks::MODERN };
+    let quirks = Quirks {
+        memory_increment: false,
+        ..Quirks::MODERN
+    };
     cpu.execute(
         Instruction::LoadMemory(Register::V1),
         Keypad::default(),
