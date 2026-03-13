@@ -109,6 +109,16 @@ pub fn Debugger() -> impl IntoView {
             sync();
         }
     });
+ 
+     Effect::new(move |_| {
+         if !is_active.get() {
+             if let Some(audio) = beeper.get_value() {
+                 audio.pause();
+                 set_beep(false);
+             }
+         }
+     });
+
 
     // When switching to debug mode while paused, ensure we sync once
     Effect::new(move |_| {
