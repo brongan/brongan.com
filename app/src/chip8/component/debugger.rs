@@ -91,15 +91,7 @@ pub fn Debugger() -> impl IntoView {
             set_fps(1000.0 / dt.as_millis_f64());
             emulator.update_value(|emulator| {
                 emulator.update(keypad.get(), dt);
-                if let Some(audio) = beeper.get_value() {
-                    if emulator.is_beep() {
-                        set_beep(true);
-                        audio.play();
-                    } else {
-                        set_beep(false);
-                        audio.pause();
-                    }
-                }
+                set_beep(emulator.is_beep());
                 ctx_ref.with_value(|ctx| {
                     if let Some(ctx) = ctx {
                         draw_screen(ctx, emulator.screen(), on_color.get(), off_color.get());
@@ -110,14 +102,15 @@ pub fn Debugger() -> impl IntoView {
         }
     });
  
-     Effect::new(move |_| {
-         if !is_active.get() {
-             if let Some(audio) = beeper.get_value() {
-                 audio.pause();
-                 set_beep(false);
-             }
-         }
-     });
+    Effect::new(move |_| {
+        if let Some(audio) = beeper.get_value() {
+            if beep.get() && is_active.get() {
+                audio.play();
+            } else {
+                audio.pause();
+            }
+        }
+    });
 
 
     // When switching to debug mode while paused, ensure we sync once
