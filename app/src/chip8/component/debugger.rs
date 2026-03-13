@@ -60,6 +60,8 @@ pub fn Debugger() -> impl IntoView {
     let on_color = RwSignal::new("#000000".to_string());
     let off_color = RwSignal::new("#FFFFFF".to_string());
     let debug_mode = RwSignal::new(false);
+    let on_color_val = move || on_color.get();
+    let off_color_val = move || off_color.get();
 
     let sync = move || {
         emulator.with_value(|emulator| {
@@ -84,7 +86,7 @@ pub fn Debugger() -> impl IntoView {
         is_active,
     } = use_raf_fn({
         move |args: UseRafFnCallbackArgs| {
-            let dt = Duration::from_secs_f64(args.delta / 1000.0);
+            let dt = Duration::from_secs_f64((args.delta / 1000.0).min(0.1));
             set_frame_time(dt);
             set_fps(1000.0 / dt.as_millis_f64());
             emulator.update_value(|emulator| {
